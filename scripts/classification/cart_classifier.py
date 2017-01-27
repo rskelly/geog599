@@ -16,18 +16,56 @@ from subprocess import Popen
 
 configs = []
 
-sieve_all = False
+sieve_all = True
 
 config = {
 	'steps' : {
 		'create_samples' : False,
 		'collect_samples' : True,
 		'classify' : True,
-		'seive' : sieve_all and False,
+		'seive' : sieve_all,
+	},
+	'name' : 'slope_mean_norm_wetrough_mean10',
+	'sites_file' : 'sites_random_manual.csv',
+	'max_depth' : 4,
+	'columns' : ['gradient', 'wetness_roughness'],
+	'class_names' : ['none', 'water', 'wetland', 'upland'],
+	'files' : [
+		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
+		('wetness_roughness_mean10.tif', 1),
+	],
+}
+#configs.append(config)
+
+config = {
+	'steps' : {
+		'create_samples' : False,
+		'collect_samples' : True,
+		'classify' : True,
+		'seive' : sieve_all,
+	},
+	'name' : 'slope_mean_norm_wet_mean_norm',
+	'sites_file' : 'sites_random_manual.csv',
+	'max_depth' : 4,
+	'columns' : ['gradient', 'wetness'],
+	'class_names' : ['none', 'water', 'wetland', 'upland'],
+	'files' : [
+		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
+		('../../lm_wetness/GLCM_Wetness/wetness_mean_masked_norm.tif', 1),
+	],
+}
+#configs.append(config)
+
+config = {
+	'steps' : {
+		'create_samples' : False,
+		'collect_samples' : True,
+		'classify' : True,
+		'seive' : sieve_all,
 	},
 	'name' : 'slope_mean_wet_mean_aspect_std',
 	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : None,
+	'max_depth' : 4,
 	'columns' : ['gradient', 'wetness', 'aspect'],
 	'class_names' : ['none', 'water', 'wetland', 'upland'],
 	'files' : [
@@ -43,12 +81,12 @@ config = {
 		'create_samples' : False,
 		'collect_samples' : True,
 		'classify' : True,
-		'seive' : sieve_all and True,
+		'seive' : sieve_all,
 	},
 	'name' : 'slope_mean_wetrough_mean10_aspect_std',
 	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : None,
-	'columns' : ['gradient', 'wetness_roughness', 'aspect'],
+	'max_depth' : 4,
+	'columns' : ['gradient', 'wet_rough', 'aspect'],
 	'class_names' : ['none', 'water', 'wetland', 'upland'],
 	'files' : [
 		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
@@ -56,18 +94,37 @@ config = {
 		('../../lm_wetness/GLCM_SlopeAspect/image_standard_deviation.tif', 1),
 	],
 }
-#configs.append(config)
+configs.append(config)
 
 config = {
 	'steps' : {
 		'create_samples' : False,
 		'collect_samples' : True,
 		'classify' : True,
-		'seive' : sieve_all and True,
+		'seive' : sieve_all,
+	},
+	'name' : 'slope_mean_aspect_std',
+	'sites_file' : 'sites_random_manual.csv',
+	'max_depth' : 4,
+	'columns' : ['gradient', 'aspect'],
+	'class_names' : ['none', 'water', 'wetland', 'upland'],
+	'files' : [
+		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
+		('../../lm_wetness/GLCM_SlopeAspect/image_standard_deviation.tif', 1),
+	],
+}
+configs.append(config)
+
+config = {
+	'steps' : {
+		'create_samples' : False,
+		'collect_samples' : True,
+		'classify' : True,
+		'seive' : sieve_all,
 	},
 	'name' : 'slope_mean_wetrough_mean10',
 	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : None,
+	'max_depth' : 4,
 	'columns' : ['wetness_roughness', 'gradient'],
 	'class_names' : ['none', 'water', 'wetland', 'upland'],
 	'files' : [
@@ -75,22 +132,22 @@ config = {
 		('../../lm_wetness/GLCM_SlopeGradient/image_standard_deviation.tif', 1),
 	],
 }
-#configs.append(config)
+configs.append(config)
 
 config = {
 	'steps' : {
 		'create_samples' : False,
 		'collect_samples' : True,
 		'classify' : True,
-		'seive' : sieve_all and True,
+		'seive' : sieve_all,
 	},
 	'name' : 'b200_slope_mean_wetrough_mean10',
 	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : None,
+	'max_depth' : 4,
 	'columns' : ['gradient', 'wetness', 'b200'],
 	'class_names' : ['none', 'water', 'wetland', 'upland'],
 	'files' : [
-		('../../lm_wetness/GLCM_SlopeGradient/image_standard_deviation.tif', 1),
+		('../../lm_wetness/GLCM_SlopeGradient/image_mean.tif', 1),
 		('wetness_roughness_mean10.tif', 1),
 		('../../hyper/hyperspectral_mosaic_2_25m.tif', 200),
 	],
@@ -102,7 +159,7 @@ config = {
 		'create_samples' : False,
 		'collect_samples' : True,
 		'classify' : True,
-		'seive' : sieve_all and False,
+		'seive' : sieve_all,
 	},
 	'name' : 'water_hs',
 	'sites_file' : 'sites_random_manual.csv',
@@ -116,7 +173,7 @@ config = {
 		('../../hyper/hyperspectral_mosaic_2_25m.tif', 20),
 	],
 }
-#configs.append(config)
+configs.append(config)
 
 
 
@@ -146,9 +203,9 @@ def get_handles(files):
 		t = h.GetGeoTransform()
 		handles.append([h, t, b])
 		bounds[0] = max(bounds[0], t[0])
-		bounds[3] = max(bounds[1], t[3])
+		bounds[3] = min(bounds[3], t[3])
 		bounds[2] = min(bounds[2], t[0] + h.RasterXSize * t[1])
-		bounds[1] = min(bounds[3], t[3] + h.RasterYSize * t[5])
+		bounds[1] = max(bounds[1], t[3] + h.RasterYSize * t[5])
 	return handles, tuple(bounds)
 
 def run(name, steps, sites_file, max_depth, columns, class_names, files):
@@ -226,8 +283,9 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 		samples = []
 		labels = []
 
+		# Create an array with samples, and one with the class identier.
 		sample_file = name + '.csv'
-
+		print 'Loading samples from', sample_file
 		with open(sample_file, 'rU') as f:
 			db = csv.reader(f)
 			db.next()
@@ -236,18 +294,22 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 					samples.append(row[3 : 3 + len(columns)])
 					labels.append(row[3 + len(columns)])
 
+		# Add a sample an lable that represents none.
 		samples.append([-9999.] * len(columns))
 		labels.append(0)
 
+		# Initialize the classifier.
 		clf = tree.DecisionTreeClassifier(max_depth=max_depth)
 		clf = clf.fit(samples, labels)
 
+		# Output the decision tree graph.
 		dot_data = tree.export_graphviz(clf, out_file=None, class_names=class_names, feature_names=columns, node_ids=False)
 		graph = pydotplus.graph_from_dot_data(dot_data)
 		graph.write_pdf(name + "_cart.pdf")
 
+		# Get the handle, transform and band number of the first image.
+		# This determines the properties of the output image.
 		handle, trans, band = handles[0]
-		# Use the cols and rows from the first file
 		cols = handle.RasterXSize
 		rows = handle.RasterYSize
 
@@ -257,86 +319,74 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 		resrast.SetGeoTransform(trans)
 		resrast.SetProjection(handle.GetProjectionRef())
 		resrast = None
-		print 'created', name + "_result.tif", cols, rows
+		print 'Created output file', name + "_result.tif", cols, rows
 
 		# Generate a list of work blocks
 		parts = []
-		step = 256
+		step = 32
 		for row0 in range(0, rows, step):
 			row1 = min(row0 + step, rows)
 			x0 = bounds[0]
 			x1 = bounds[2]
 			y0 = bounds[3] + row0 * trans[5]
 			y1 = bounds[3] + row1 * trans[5]
-			parts.append((x0, y0, x1, y1))
+			parts.append((x0, y0, x1, y1, row0, row1))
 
 		# Parallizable sampling/classification function
 		def doit(parts, files, lock):
 
+			# Get the filehandles and minimum bounds.
 			handles, bounds = get_handles(files)
-			
+
+			# Get the properties of the first image, the one used to define the output image.
 			handle, trans, band = handles[0]
 
-			# Add a buffer slot to each record.
-			for h in handles:
-				h.append(None)
-
+			# Iterate over the blocks.
 			while len(parts):
-				cont = True
-				x0, y0, x1, y1 = parts.pop(0)
-				
-				cols = int((x1 - x0) / trans[1])
-				rows = int((y1 - y0) / trans[5])
+				x0, y0, x1, y1, wrow0, wrow1 = parts.pop(0)
 
+				# Read the buffers from the source images
+				print 'collecting samples'
 				samples = []
-
-				print 'reading buffers - x', x0, 'y', y0
-				for i in range(len(handles)):
-					h, t, b, a = handles[i]
-					col0 = int((t[0] - x0) / t[1])
-					col1 = int(col0 + (x1 - x0) / t[1])
-					row0 = int((t[3] - y1) / -t[5])
-					row1 = int(min(row0 + (y0 - y1) / -t[5], h.RasterYSize))
-					try:
-						handles[i][3] = h.GetRasterBand(b).ReadAsArray(col0, row0, col1 - col0, row1 - row0)
-					except Exception, e:
-						print 'Failed read:', e
-						print ' -- ', col0, ',', col1, ';', row0, ',', row1
-						cont = False
-						break
-
-				if not cont: break
-
-				print 'processing'
-				for r in range(rows):
-					for c in range(cols):
-						x = c * trans[1] + trans[0] + trans[1] * 0.5
-						y = r * trans[5] + trans[3] + trans[5] * 0.5
-						row = []
-						for h, t, b, a in handles:
-							cc = int((x - t[0]) / t[1])
-							rr = int((y - t[3]) / t[5])
+				y = y0 + trans[5] * 0.5
+				cols = 0
+				rows = 0
+				while y > y1:
+					x = x0 + trans[1] * 0.5
+					cols = 0
+					while x < x1:
+						sample = []
+						for h, t, b in handles:
+							col = int((x - t[0]) / t[1])
+							row = int((y - t[3]) / t[5])
+							#print y, t[3], t[5], row
 							try:
-								v = a[rr - row0, cc]
-								if v is None or isnan(v) or v > 999999. or v < -999999.:
-									raise Exception()
-								row.append(v)
+								v = h.GetRasterBand(b).ReadAsArray(col, row, 1, 1)[0, 0]
+								if v == h.GetRasterBand(b).GetNoDataValue():
+									v = -9999.
+								sample.append(v)
 							except:
-								row.append(-9999.)
-						samples.append(row)
+								sample.append(-9999.)
 
-				print 'classifying -', len(samples), 'samples'
+						samples.append(sample if not -9999. in sample else [-9999.] * len(sample))
+						x += trans[1]
+						cols += 1
+					y += trans[5]
+					rows += 1
+
+				print 'classifying -', len(samples), '*', len(samples[0]), 'samples'
 				result = clf.predict(samples)
 				
-				row = int((y0 - bounds[3]) / trans[5])
-				print 'writing -', row, cols, rows
-				result = np.array(result).reshape((rows, cols))
+				row = int((y0 - trans[3]) / trans[5])
+				print 'writing -', cols, row, y0, y1
+				result = np.array(result).reshape((len(samples) / cols, cols))
 				lock.acquire()
 				f = gdal.Open(name + '_result.tif', gdal.GF_Write)
 				f.GetRasterBand(1).WriteArray(result, 0, row)
+				f = None
 				lock.release()
 
-		numThreads = 1
+		numThreads = 9
 		print 'starting', numThreads, 'threads'
 
 		threads = []
@@ -356,9 +406,8 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 	if steps.get('seive', False):
 		print 'running sieve'
 		input = name + '_result.tif'
-		output = 'tmp.tif'
+		output = name + '_result_sieve.tif'
 		Popen(['gdal_sieve.py', '-st', '10', '-8', input, output]).wait()
-		Popen(['mv', output, input])
 
 for config in configs:
 	run(**config)
