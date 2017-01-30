@@ -8,6 +8,7 @@ import pydotplus
 import gdal
 import random
 import sys
+import os
 import struct
 import csv 
 import numpy as np
@@ -23,177 +24,76 @@ config = {
 		'create_samples' : False,
 		'collect_samples' : True,
 		'classify' : True,
+		'validate' : True,
 		'seive' : sieve_all,
 	},
-	'name' : 'slope_mean_norm_wetrough_mean10',
-	'sites_file' : 'sites_random_manual.csv',
+	'name' : None,
+	'sample_file' : None,
+	'validate_fraction' : 0.3,
+	'sites_file' : '/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/e27_samples_strat_random_200.csv',
 	'max_depth' : 4,
-	'columns' : ['gradient', 'wetness_roughness'],
+	'columns' : None,
 	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
-		('wetness_roughness_mean10.tif', 1),
-	],
+	'files' : None,
+	'outdir' : None,
 }
-#configs.append(config)
 
-config = {
-	'steps' : {
-		'create_samples' : False,
-		'collect_samples' : True,
-		'classify' : True,
-		'seive' : sieve_all,
-	},
-	'name' : 'slope_mean_norm_wet_mean_norm',
-	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : 4,
-	'columns' : ['gradient', 'wetness'],
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
-		('../../lm_wetness/GLCM_Wetness/wetness_mean_masked_norm.tif', 1),
-	],
-}
-#configs.append(config)
-
-config = {
-	'steps' : {
-		'create_samples' : False,
-		'collect_samples' : True,
-		'classify' : True,
-		'seive' : sieve_all,
-	},
-	'name' : 'slope_mean_wet_mean_aspect_std',
-	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : 4,
-	'columns' : ['gradient', 'wetness', 'aspect'],
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
-		('../../lm_wetness/GLCM_Wetness/wetness_mean_masked_norm.tif', 1),
-		('../../lm_wetness/GLCM_SlopeAspect/image_standard_deviation.tif', 1),
-	],
-}
-configs.append(config)
-
-config = {
-	'steps' : {
-		'create_samples' : False,
-		'collect_samples' : True,
-		'classify' : True,
-		'seive' : sieve_all,
-	},
-	'name' : 'slope_mean_wetrough_mean10_aspect_std',
-	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : 4,
-	'columns' : ['gradient', 'wet_rough', 'aspect'],
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
-		('wetness_roughness_mean10.tif', 1),
-		('../../lm_wetness/GLCM_SlopeAspect/image_standard_deviation.tif', 1),
-	],
-}
-configs.append(config)
-
-config = {
-	'steps' : {
-		'create_samples' : False,
-		'collect_samples' : True,
-		'classify' : True,
-		'seive' : sieve_all,
-	},
-	'name' : 'slope_mean_aspect_std',
-	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : 4,
-	'columns' : ['gradient', 'aspect'],
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
-		('../../lm_wetness/GLCM_SlopeAspect/image_standard_deviation.tif', 1),
-	],
-}
-configs.append(config)
-
-config = {
-	'steps' : {
-		'create_samples' : False,
-		'collect_samples' : True,
-		'classify' : True,
-		'seive' : sieve_all,
-	},
-	'name' : 'slope_mean_wetrough_mean10',
-	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : 4,
-	'columns' : ['wetness_roughness', 'gradient'],
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('wetness_roughness_mean10.tif', 1),
-		('../../lm_wetness/GLCM_SlopeGradient/image_standard_deviation.tif', 1),
-	],
-}
-configs.append(config)
-
-config = {
-	'steps' : {
-		'create_samples' : False,
-		'collect_samples' : True,
-		'classify' : True,
-		'seive' : sieve_all,
-	},
-	'name' : 'b200_slope_mean_wetrough_mean10',
-	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : 4,
-	'columns' : ['gradient', 'wetness', 'b200'],
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('../../lm_wetness/GLCM_SlopeGradient/image_mean.tif', 1),
-		('wetness_roughness_mean10.tif', 1),
-		('../../hyper/hyperspectral_mosaic_2_25m.tif', 200),
-	],
-}
-#configs.append(config)
-
-config = {
-	'steps' : {
-		'create_samples' : False,
-		'collect_samples' : True,
-		'classify' : True,
-		'seive' : sieve_all,
-	},
-	'name' : 'water_hs',
-	'sites_file' : 'sites_random_manual.csv',
-	'max_depth' : 4,
-	'columns' : ['b176', 'b91', 'b56', 'b20'],
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
-	'files' : [
-		('../../hyper/hyperspectral_mosaic_2_25m.tif', 176),
-		('../../hyper/hyperspectral_mosaic_2_25m.tif', 91),
-		('../../hyper/hyperspectral_mosaic_2_25m.tif', 56),
-		('../../hyper/hyperspectral_mosaic_2_25m.tif', 20),
-	],
-}
-configs.append(config)
-
-
-
-# Files to use for sampling.
-_files = [
-	#('../../hyper/hyperspectral_mosaic_2_25m.tif', 200),
-	#('../../lm_wetness/SlopeGradient_median_7.tif', 1),
-	#('../../lm_wetness/Wetness_median_7.tif', 1),
-	#('../../lm_wetness/SlopeAspect_median_7.tif', 1),
-	#('../../lm_wetness/Wetness_median_21.tif', 1),
-	#('../../lm_wetness/SlopeAspect_median_21.tif', 1),
-	#('../../lm_wetness/SlopeGradient_median_21.tif', 1)
-	#('../../lm_wetness/GLCM_SlopeGradient/image_standard_deviation.tif', 1),
-	#('../../lm_wetness/GLCM_Wetness/image_standard_deviation.tif', 1),
-	('../../lm_wetness/GLCM_SlopeGradient/gradient_mean_masked_norm.tif', 1),
-	('../../lm_wetness/GLCM_Wetness/wetness_mean_masked_norm.tif', 1),
+input_files = [
+	('../../lm_wetness/GLCM_Wetness/image_mean.tif', 1),
+	('../../lm_wetness/GLCM_Wetness/image_standard_deviation.tif', 1),
+	('../../lm_wetness/GLCM_SlopeGradient/image_mean.tif', 1),
+	('../../lm_wetness/GLCM_SlopeAspect/image_mean.tif', 1),
 	('../../lm_wetness/GLCM_SlopeAspect/image_standard_deviation.tif', 1),
-	#('../../lidar_cov_canopy_4_5m.tif', 1),
+	('../../lm_wetness/GLCM_Relief/image_standard_deviation.tif', 1),
+	('../../lm_wetness/GLCM_DownslopeCurvature/image_standard_deviation.tif', 1),
+	('../../lm_wetness/GLCM_AcrossSlopeCurvature/image_standard_deviation.tif', 1),
+	('../../lm_wetness/GLCM_DInf/entropy.tif', 1),
+	('../../lm_wetness/GLCM_DInf/dissimilarity.tif', 1),
+	('../../lm_wetness/GLCM_DownslopeCurvature/image_standard_deviation.tif', 1),
 ]
 
+def combinations(lst, num):
+	from itertools import permutations
+	return permutations(lst, num)
+
+def configure(outdir, n, select = None):
+	# Create configurations for each permutation.
+	from copy import copy
+	combos = combinations(input_files, n)
+	configs = []	
+
+	try:
+		os.makedirs(outdir)
+	except:
+		pass
+
+	with open(os.path.join(outdir, 'configurations.csv'), 'w') as f:
+		f.write('name,{}\n'.format(','.join(['file{}'.format(i) for i in range(n)])))
+
+		i = 65
+		m = 1
+		for combo in combos:
+			
+			name = '{}{}'.format(chr(i), m)
+
+			f.write('{},{}\n'.format(name, ','.join([x[0] for x in combo])))
+
+			# If there's a selection list, filter out the
+			# items not in the list.
+			if not select or name in select:
+				c = copy(config)
+				c['name'] = name
+				c['columns'] = [chr(j) for j in range(65, 65 + n)]
+				c['files'] = combo
+				c['outdir'] = outdir
+				configs.append(c)
+
+			i += 1
+			if i > 90:
+				i = 65
+				m += 1
+
+	return configs
 
 def get_handles(files):
 	handles = []
@@ -208,7 +108,17 @@ def get_handles(files):
 		bounds[1] = max(bounds[1], t[3] + h.RasterYSize * t[5])
 	return handles, tuple(bounds)
 
-def run(name, steps, sites_file, max_depth, columns, class_names, files):
+def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_file, validate_fraction, outdir):
+
+	try:
+		os.makedirs(outdir)
+	except Exception, e:
+		print 'Failed to create directory,', outdir
+		print e
+
+	if not os.path.exists(os.path.join(outdir, 'correct.csv')):
+		with open(os.path.join(outdir, 'correct.csv'), 'w') as f:
+			f.write('name,correct\n');
 
 	# Collect random samples from the study area.
 	# classes: 0 = invalid, 1 = upland, 2 = wetland, 3 = water, 4 = other
@@ -245,7 +155,8 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 	if steps.get('collect_samples', False):
 
 		handles, bounds = get_handles(files)
-		sample_file = name + '.csv'
+		if not sample_file:
+			sample_file = os.path.join(outdir, name + '.csv')
 
 		with open(sample_file, 'w') as g:
 			with open(sites_file, 'rU') as f:
@@ -275,21 +186,30 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 					g.write(tpl.format(*data))
 
 
+	random_samples = None
+
 	if steps.get('classify', False):
 
 		from multiprocessing import Process, Lock
+		from random import shuffle
 
 		handles, bounds = get_handles(files)
 		samples = []
 		labels = []
 
 		# Create an array with samples, and one with the class identier.
-		sample_file = name + '.csv'
+		if not sample_file:
+			sample_file = os.path.join(outdir, name + '.csv')
+
 		print 'Loading samples from', sample_file
 		with open(sample_file, 'rU') as f:
 			db = csv.reader(f)
 			db.next()
+			random_samples = []
 			for row in db:
+				random_samples.append(row)
+			shuffle(random_samples)
+			for row in random_samples[int(len(random_samples) * validate_fraction):]:
 				if int(row[-1]) == 1:
 					samples.append(row[3 : 3 + len(columns)])
 					labels.append(row[3 + len(columns)])
@@ -305,7 +225,7 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 		# Output the decision tree graph.
 		dot_data = tree.export_graphviz(clf, out_file=None, class_names=class_names, feature_names=columns, node_ids=False)
 		graph = pydotplus.graph_from_dot_data(dot_data)
-		graph.write_pdf(name + "_cart.pdf")
+		graph.write_pdf(os.path.join(outdir, name + "_cart.pdf"))
 
 		# Get the handle, transform and band number of the first image.
 		# This determines the properties of the output image.
@@ -315,7 +235,7 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 
 		# Creeate the output file.
 		drv = gdal.GetDriverByName("GTiff")
-		resrast = drv.Create(name + "_result.tif", cols, rows, 1, gdal.GDT_Byte)
+		resrast = drv.Create(os.path.join(outdir, name + "_result.tif"), cols, rows, 1, gdal.GDT_Byte)
 		resrast.SetGeoTransform(trans)
 		resrast.SetProjection(handle.GetProjectionRef())
 		resrast = None
@@ -346,7 +266,7 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 				x0, y0, x1, y1, wrow0, wrow1 = parts.pop(0)
 
 				# Read the buffers from the source images
-				print 'collecting samples'
+				#print 'collecting samples'
 				samples = []
 				y = y0 + trans[5] * 0.5
 				cols = 0
@@ -374,20 +294,20 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 					y += trans[5]
 					rows += 1
 
-				print 'classifying -', len(samples), '*', len(samples[0]), 'samples'
+				#print 'classifying -', len(samples), '*', len(samples[0]), 'samples'
 				result = clf.predict(samples)
 				
 				row = int((y0 - trans[3]) / trans[5])
-				print 'writing -', cols, row, y0, y1
+				#print 'writing -', cols, row, y0, y1
 				result = np.array(result).reshape((len(samples) / cols, cols))
 				lock.acquire()
-				f = gdal.Open(name + '_result.tif', gdal.GF_Write)
+				f = gdal.Open(os.path.join(outdir, name + '_result.tif'), gdal.GF_Write)
 				f.GetRasterBand(1).WriteArray(result, 0, row)
 				f = None
 				lock.release()
 
-		numThreads = 9
-		print 'starting', numThreads, 'threads'
+		numThreads = 4
+		print 'Starting', numThreads, 'threads'
 
 		threads = []
 		lock = Lock()
@@ -401,13 +321,45 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files):
 		for i in range(numThreads):
 			threads[i].join()
 
-		print 'done'
+		print 'Done'
 
 	if steps.get('seive', False):
-		print 'running sieve'
-		input = name + '_result.tif'
-		output = name + '_result_sieve.tif'
+		print 'Running sieve'
+		input = os.path.join(outdir, name + '_result.tif')
+		output = os.path.join(outdir, name + '_result_sieve.tif')
 		Popen(['gdal_sieve.py', '-st', '10', '-8', input, output]).wait()
+
+	if steps.get('validate'):
+		print 'Validating'
+		if not random_samples:
+			raise Exception('No random samples were generated.')
+		filename = os.path.join(outdir, name + '_result_sieve.tif')
+		ds = gdal.Open(filename)
+		band = ds.GetRasterBand(1)
+		trans = ds.GetGeoTransform()
+		results = []
+		correct = 0
+		for row in random_samples[:int(len(random_samples) * validate_fraction)]:
+			if int(row[-1]) == 1:
+				cls = int(row[-2])
+				x, y = map(float, row[1:3])
+				c = int((x - trans[0]) / trans[1])
+				r = int((y - trans[3]) / trans[5])
+				v = band.ReadAsArray(c, r, 1, 1)[0,0]
+				results.append((row[0], x, y, v, cls))
+				if v == cls:
+					correct += 1
+		with open(os.path.join(outdir, name + '_validate.csv'), 'w') as f:
+			f.write('id,x,y,value,cls\n')
+			for result in results:
+				f.write(','.join(map(str, result)) + '\n')
+		correct = float(correct) / len(results) if len(results) else -9999.
+		with open(os.path.join(outdir, 'correct.csv'), 'a') as f:
+			f.write('{},{:.2f}\n'.format(name, correct))
+			print 'Correct:', correct
+
+configs = configure('triples2', 3)
+#configs = configure('pairs', 2)
 
 for config in configs:
 	run(**config)
