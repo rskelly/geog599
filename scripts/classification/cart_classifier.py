@@ -15,25 +15,29 @@ import numpy as np
 from math import isnan
 from subprocess import Popen
 
-configs = []
-
+# Run the sieve function on the output.
 sieve_all = True
 
+# Only these names will be produced, others filtered out.
+matches = ['T26', 'A32', 'J17', 'M20', 'T19', 'D3', 'Z2', 'I2', 'F3', 'X3']
+
+# Template configuration object. Will be copied once for each input permutation.
 config = {
 	'steps' : {
 		'create_samples' : False,
-		'collect_samples' : True,
+		'collect_samples' : False,
 		'classify' : True,
-		'validate' : True,
+		'validate' : False,
 		'seive' : sieve_all,
 	},
 	'name' : None,
 	'sample_file' : None,
+	'sample_file_dir' : '/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/',
 	'validate_fraction' : 0.3,
 	'sites_file' : '/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/e27_samples_strat_random_200.csv',
 	'max_depth' : 4,
 	'columns' : None,
-	'class_names' : ['none', 'water', 'wetland', 'upland'],
+	'class_names' : ['none', 'water', 'wetland', 'upland', 'other'],
 	'files' : None,
 	'outdir' : None,
 }
@@ -108,7 +112,11 @@ def get_handles(files):
 		bounds[1] = max(bounds[1], t[3] + h.RasterYSize * t[5])
 	return handles, tuple(bounds)
 
-def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_file, validate_fraction, outdir):
+def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_file, validate_fraction, outdir, sample_file_dir):
+
+	if os.path.exists(os.path.join(outdir, name + '_result.tif')) or (matches and not name in matches):
+		print 'Skipping', name
+		return
 
 	try:
 		os.makedirs(outdir)
@@ -151,7 +159,7 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 
 
 	# Use sample locations from samples.csv to build a new sampling using
-	# the intputs in the files list.
+	# the inputs in the files list.
 	if steps.get('collect_samples', False):
 
 		handles, bounds = get_handles(files)
@@ -198,8 +206,13 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 		labels = []
 
 		# Create an array with samples, and one with the class identier.
+		# If the sample_file_dir override is specified, use a sample file from
+		# a previous location. This only works if the file list is identical, and
+		# the permutations are the same.
 		if not sample_file:
 			sample_file = os.path.join(outdir, name + '.csv')
+			if sample_file_dir:
+				sample_file = os.path.join(sample_file_dir, sample_file)
 
 		print 'Loading samples from', sample_file
 		with open(sample_file, 'rU') as f:
@@ -358,8 +371,8 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 			f.write('{},{:.2f}\n'.format(name, correct))
 			print 'Correct:', correct
 
-configs = configure('triples2', 3)
-#configs = configure('pairs', 2)
+#configs = configure('triples2', 3)
+configs = configure('pairs2', 2)
 
 for config in configs:
 	run(**config)
