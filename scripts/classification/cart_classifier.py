@@ -13,36 +13,35 @@ import struct
 import csv 
 import numpy as np
 from math import isnan
-from subprocess import Popen
 
 # Run the sieve function on the output.
 sieve_all = True
 
 # Only these names will be produced, others filtered out.
-matches = ['T26', 'A32', 'J17', 'M20', 'T19', 'D3', 'Z2', 'I2', 'F3', 'X3']
+matches = None #['T26', 'A32', 'J17', 'M20', 'T19', 'D3', 'Z2', 'I2', 'F3', 'X3']
 
 # Template configuration object. Will be copied once for each input permutation.
 config = {
 	'steps' : {
 		'create_samples' : False,
-		'collect_samples' : False,
+		'collect_samples' : True,
 		'classify' : True,
-		'validate' : False,
+		'validate' : True,
 		'seive' : sieve_all,
 	},
 	'name' : None,
 	'sample_file' : None,
-	'sample_file_dir' : '/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/',
+	'sample_file_dir' : None, #'/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/',
 	'validate_fraction' : 0.3,
-	'sites_file' : '/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/e27_samples_strat_random_200.csv',
+	'sites_file' : 'sites.csv', #/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/e27_samples_strat_random_200.csv',
 	'max_depth' : 4,
 	'columns' : None,
-	'class_names' : ['none', 'water', 'wetland', 'upland', 'other'],
+	'class_names' : ['none', 'water', 'wetland', 'upland', 'other', 'other2'],
 	'files' : None,
 	'outdir' : None,
 }
 
-input_files = [
+input_files_ = [
 	('../../lm_wetness/GLCM_Wetness/image_mean.tif', 1),
 	('../../lm_wetness/GLCM_Wetness/image_standard_deviation.tif', 1),
 	('../../lm_wetness/GLCM_SlopeGradient/image_mean.tif', 1),
@@ -56,9 +55,246 @@ input_files = [
 	('../../lm_wetness/GLCM_DownslopeCurvature/image_standard_deviation.tif', 1),
 ]
 
+input_files_ = [
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b1.tif', 1),
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b3.tif', 1),
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b5.tif', 1),
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b7.tif', 1),
+	('../../lm_wetness/envi/2m/AccrossSlopeCurvature_cooc_w11_s3_b8.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b1.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b3.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b5.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b7.tif', 1),
+	('../../lm_wetness/envi/2m/Downslopecurvature_cooc_w11_s3_b8.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b1.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b3.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b5.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b7.tif', 1),
+	('../../lm_wetness/envi/2m/Flow_DInf_cooc_w11_s3_b8.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b1.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b3.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b5.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b7.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeAspect_cooc_w11_s3_b8.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b1.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b3.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b5.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b7.tif', 1),
+	('../../lm_wetness/envi/2m/SlopeGradient_cooc_w11_s3_b8.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b1.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b3.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b5.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b7.tif', 1),
+	('../../lm_wetness/envi/2m/Wetness_cooc_w11_s3_b8.tif', 1),
+]
+
+input_files = [
+	#('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b1.tif', 1),
+	#('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b3.tif', 1),
+	#('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b5.tif', 1),
+	#('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b7.tif', 1),
+	#('../../lm_wetness/envi/10m/AccrossSlopeCurvature_cooc_w11_s3_b8.tif', 1),
+	#('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b1.tif', 1),
+	#('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b3.tif', 1),
+	#('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b5.tif', 1),
+	#('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b7.tif', 1),
+	#('../../lm_wetness/envi/10m/Downslopecurvature_cooc_w11_s3_b8.tif', 1),
+	#('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b1.tif', 1),
+	#('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b3.tif', 1),
+	#('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b5.tif', 1),
+	#('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b7.tif', 1),
+	#('../../lm_wetness/envi/10m/Flow_DInf_cooc_w11_s3_b8.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b1.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b3.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b5.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b7.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeAspect_cooc_w11_s3_b8.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b1.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b3.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b5.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b7.tif', 1),
+	#('../../lm_wetness/envi/10m/SlopeGradient_cooc_w11_s3_b8.tif', 1),
+	#('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b1.tif', 1),
+	#('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b2.tif', 1),
+	('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b3.tif', 1),
+	#('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b4.tif', 1),
+	('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b5.tif', 1),
+	#('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b6.tif', 1),
+	('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b7.tif', 1),
+	#('../../lm_wetness/envi/10m/Wetness_cooc_w11_s3_b8.tif', 1),
+]
+
+input_files = [
+	('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/AccrossSlopeCurvature_cooc_w11_s3_median_15_8_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Downslopecurvature_cooc_w11_s3_median_15_8_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Flow_DInf_cooc_w11_s3_median_15_8_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeAspect_cooc_w11_s3_median_15_8_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/SlopeGradient_cooc_w11_s3_median_15_8_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_15/Wetness_cooc_w11_s3_median_15_8_masked.tif', 1),
+]
+
+input_files_ = [
+	('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/AccrossSlopeCurvature_cooc_w11_s3_median_31_8_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Downslopecurvature_cooc_w11_s3_median_31_8_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Flow_DInf_cooc_w11_s3_median_31_8_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_5_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_6_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeAspect_cooc_w11_s3_median_31_8_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_5_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_6_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/SlopeGradient_cooc_w11_s3_median_31_8_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_1_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_2_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_3_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_4_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_5_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_6_masked.tif', 1),
+	('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_7_masked.tif', 1),
+	#('../../lm_wetness/envi/median_31/Wetness_cooc_w11_s3_median_31_8_masked.tif', 1),
+]
+
+#required_files = [
+#	('../../lm_wetness/envi/orig_median_31/SlopeGradient_median_31_masked.tif', 1),
+#	('../../lm_wetness/envi/orig_median_31/SlopeGradient_average_31_masked.tif', 1),
+#	('../../lm_wetness/envi/orig_median_31/SlopeAspect_median_31_masked.tif', 1),
+#	('../../lm_wetness/envi/orig_median_31/SlopeAspect_average_31_masked.tif', 1),
+#]
+
+input_files = [
+	('../../lm_wetness/masked/SlopeGradient_masked_median_5.tif', 1),
+	('../../saga_twi/twi_median_5.tif', 1),
+	('../../tpi/tpi_30.tif', 1)
+]
+
+input_files = [
+	('../../saga_twi/slope_median_5.tif', 1),
+	('../../saga_twi/twi_median_5.tif', 1),
+	('../../tpi/tpi_30.tif', 1)
+]
+
+input_files = [
+	('../../saga_twi/slope_median_5.tif', 1),
+	('../../saga_twi/twi_median_5.tif', 1),
+	('../../tpi/tpi_500.tif', 1)
+]
+
+input_files = [
+	('../../saga_twi/slope_median_5.tif', 1),
+	('../../saga_twi/twi_median_5.tif', 1),
+	('../../tpi/tpi_30.tif', 1),
+	('../../lm_wetness/masked/stats_31/SlopeAspect_masked_stddev_31.tif', 1)
+]
+
+
 def combinations(lst, num):
-	from itertools import permutations
-	return permutations(lst, num)
+	from itertools import combinations
+	return combinations(lst, num)
 
 def configure(outdir, n, select = None):
 	# Create configurations for each permutation.
@@ -114,6 +350,7 @@ def get_handles(files):
 
 def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_file, validate_fraction, outdir, sample_file_dir):
 
+	print 'Running', name
 	if os.path.exists(os.path.join(outdir, name + '_result.tif')) or (matches and not name in matches):
 		print 'Skipping', name
 		return
@@ -267,7 +504,7 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 
 		# Parallizable sampling/classification function
 		def doit(parts, files, lock):
-
+			print 'Doit'
 			# Get the filehandles and minimum bounds.
 			handles, bounds = get_handles(files)
 
@@ -275,7 +512,9 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 			handle, trans, band = handles[0]
 
 			# Iterate over the blocks.
+			print 'Processing'
 			while len(parts):
+				print len(parts), 'left'
 				x0, y0, x1, y1, wrow0, wrow1 = parts.pop(0)
 
 				# Read the buffers from the source images
@@ -340,7 +579,7 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 		print 'Running sieve'
 		input = os.path.join(outdir, name + '_result.tif')
 		output = os.path.join(outdir, name + '_result_sieve.tif')
-		Popen(['gdal_sieve.py', '-st', '10', '-8', input, output]).wait()
+		os.system('/opt/bin/gdal_sieve.py -st 10 -8 {} {}'.format(input, output))
 
 	if steps.get('validate'):
 		print 'Validating'
@@ -372,7 +611,11 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 			print 'Correct:', correct
 
 #configs = configure('triples2', 3)
-configs = configure('pairs2', 2)
+#configs = configure('pairs_envi', 2)
+#configs = configure('triples_envi', 3)
+#configs = configure('pairs_cooc_median15', 2)
+#configs = configure('pairs_cooc_median31', 2)
+configs = configure('tpi_twi_slope3', 2)
 
 for config in configs:
 	run(**config)
