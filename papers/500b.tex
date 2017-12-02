@@ -1,0 +1,143 @@
+\documentclass[10pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{svg}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\author{Rob Skelly}
+\title{Real-Time Terrain Following for Remote-Sensing Unmanned Aerial Vehicles}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\subsection{Remote Sensing Platforms}
+
+Remote sensing is the art and science of sensing, or measuring, objects without the necessity direct physical contact using instruments designed for this purpose. Generally, remote sensing refers to sensing of the environment, of objects on the Earth, from air- or spacecraft, though it can just as easily involve handheld or tripod-mounted instruments. Such instruments might include a spectrometer for measuring the electromagnetic reflectivity of an object or a laser scanner for describing its structure in three dimensions. Indeed, three of a human being’s five senses (smell, sight, hearing) are, in a sense, remote-sensing instruments; remote sensing is as natural to human beings as walking. Fortunately, the evolution of remote sensing technology has provided a means of collecting quantitative insights into phenomena formerly inaccessible to the human sensory apparatus, at distances and scales previously unattainable.
+
+Remote sensing has a virtual infinity of use-cases, from inventorying buildings in a city, to assessing road quality, plant heath, and timber volumes, measuring the extent of arctic sea ice and forest fires, to tracking weather systems  and determining the integrity of hydroelectic dams. Of particular interest are the different spatial scales at which each of the above subjects must be studied. Sea ice and weather systems, for example, may be investigated at a hemispheric scale, while plant health studies may investigate the fine structure of individual plants no more than a metre tall. By its nature, remote sensing demands the consideration of space, in terms of both the contextualization and  interpretation of information so acquired, and of managing their effects on data quality. These considerations carry through from the choice of acquisition distances, instruments and platforms, to the representation and interpretation of remotely-sensed data.
+
+Air- and spaceborne remote sensing platforms can be separated in to three distinct categories: spacecraft, fixed-wing and rotary aircraft, and small, unmanned fixed-wing or rotary aerial vehicles.  In addition, there are large, unmanned aerial vehicles used primarily for militatary purposes. Each platform entails benefits and drawbacks which can be considered on a spectrum.
+
+\begin{table}
+\caption{Comparison of remote sensing platform characteristics.}
+\label{table:platforms}
+\begin{tabular}{l|ccc}
+\hline
+ & Satellite & Aircraft & UAV \\
+\hline
+Scale & Global & Local & Hyper-local \\
+Subject Distance & High & Medium & Low \\
+Resolution & Low & Medium & High \\
+Consistency & High & Medium & Low \\
+Atmospheric Effects & High & Medium & Low \\
+Platform Cost & High & Medium & Low \\
+Per-Mission Cost & High & Medium & Low \\
+Topographic Effects & Low & Medium & High \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Topographic Effects}
+
+The final element in table \ref{table:platforms} is of particular interest. The native resolution of an imaging device, such as an imaging spectrometer, is determined by its instantaneous field of view (IFOV) -- the solid angle within which the instrument is sensitive to radiation -- and the instument-to-subject distance, or elevation, as related by
+\begin{equation}
+r = \sqrt{\sin{\theta}^2+\cos{\theta}^2}*e,
+\label{eq:ifov}
+\end{equation} 
+where $r$ and $e$ are the resolution and elevation in the same units and $\theta$ is the IFOV. A similar relation exists between platform elevation and the point density of a LiDAR instrument. In either case, the size of object resolvable by the instrument is directly controlled by the platform's elevation. A side effect of the above relation is that it induces distortion in the image of the subject. As an example, figure \ref{fig:scale_cam} shows a downward-facing camera with one subject twice as far from the instrument as the other. In the image view (figure \ref{fig:scale_img}), the nearer object is twice as large (and therefore twice as detailed) as the far one.
+
+\begin{figure}
+xxxx
+\caption{Side view of down-facing camera with subjects.}
+\label{fig:scale_cam}
+\end{figure}
+
+\begin{figure}
+\caption{Resulting image with scale distortion.}
+\label{fig:scale_img}
+\end{figure}
+
+
+Variations in terrain elevation naturally affect the instrument to subject distance and thus the native resolution quality of the final data product. .Topographic effects have to do with the effect that variations in terrain elevation have on the instrument-to-subject distance from a platform at constant (i.e., geocentric, orthometric or ellipsoidal) elevation and hence on the precision of measurement. The highest point on Earth (Mount Everest, Nepal; 8848m) and the lowest (Dead Sea, Jordan; 431m), represent a difference of 9279m, a variation of 4.0\% relative to the orbit (233km) of the  Shuttle Radar Topography Mission, corresponding to a 4.0\% variation its native spatial resolution. For a fixed-wing aircraft flying at a typical survey altitude of 5000m a scale distortion of a similar scale would require a change in elevation of 200m. For a UAV flying at the typical survey altitude of 35m, the variation in terrain elevation would be 1.4m.
+
+The converse is true: SRTM would not be considered appropriate for the measurement of local, small-scale terrain variations for the same reason that it was suitable for imaging Mount Everest, while a UAV would be considered ideal for imaging terrain at a small scale. However, a conundrum regarding scale remains. A UAV can image small scale relief but must also negotiate or avoid larger terrain features both to maintain data quality and to avoid a collision.
+
+
+\subsection{Terrain Following}
+
+Research into terrain following has been continuing since the 1960s for the control of ballistic missiles and jet aircraft \cite{KRACHMALNICK1968,Starling1971,Cunningham1980}. Such systems use a forward- and downward-facing RADAR rangefinder to detect the terrain elevation some distance ahead of the vehicle, some means of terrain classification \cite{Cunningham1980}, and a method of altering the vehicle's trajectory to follow the terrain surface as closely as possible. This research, focused on high-speed, low elevation military vehicles with a premium placed on stealth, .........
+
+
+\subsection{Terrain Elevation}
+
+Traditional terrain-following mechanisms used RADAR for measuring the distance from aircraft to terrain. The advent of cheap, lightweight LiDAR instruments, primarily designed for the autonomous vehicle market, has made available 
+
+\subsection{Ground Classification}
+
+\subsection{Position-Finding}
+
+\subsection{Trajectory}
+
+
+\section{Background}
+
+Of particular interest is the effect of distance on the precision of measurement, which may be encountered in several different ways. Consider the issue of point density:
+
+Light detection and ranging (LiDAR) is a relatively new technology that uses one or more laser rangefinders to construct a three-dimensional representation of the environment. In most applications, a spinning mirror deflects a laser pulse towards a subject, and a detector measures the intensity of the reflected light as it returns. Solid-state LiDAR devices are also available as single-beam rangefinders or multi-or split-beam scanners. From a solid surface, a single pulse will return, but from a complex subject, such as a forest canopy, a pulse may reflect several times at multiple ranges. The pulse returns are interpreted by the detector as a continuous waveform which records intensity versus time, from which a fixed number -- typically one to five -- of discrete points may be extracted at the peaks of the wave. Time is, of course, directly related to range by the speed of light. From original polar coordinates (angle and range), each pulse is transformed to a Cartesian (x, y, z) representation from which a “point cloud” is compiled. These points clouds have many uses in the sciences, including the analysis of forest canopy structure and the production of precise terrain models. 
+
+There are several measures of data quality as regards LiDAR data, including relative and abolute vertical and horizontal accuracy and point density. Point density represents the number of discrete cartesian points that can be found within a unit of continuous space, commonly described by a grid. Because a LiDAR instrumen emits a fixed number of pulses per unit time, and because the instrument-to-target distance is proportional to the coverage area, it is clear that point density declines with elevation. 
+
+Point density has scale-determined implications for research. If a researcher is attempting to describe the canopy structure of 90m-tall old-growth forests, a high platform elevation is required to both to cover a large enough forest to acquire a significant number of crowns, but minimize the variance in point density between the ground and the tree top. Fortunately, the point density required for the study of such enormous plants is much lower than that required for, say, a grape vine. To characterize the structure of a grape vine, point density must be suitably high, which, using the same instrument as above, requires a lower flight elevation. If a vinyard is situated in a valley with considerable relief, the variance in point cloud density at a constant elevation may reduce the data quality in lower-elevation  parts of the study area.
+
+There are at least two ways to adress this. First, by raising the platform elevation, the point density variance is reduced, however the point density is also reduced by a corresponding amount; and second, by following the terrain at a constant relative elevation.
+
+A LiDAR instrument may be used at ground level, mounted on a tripod, or installed in an aircraft for aerial surveys. Recently, the explosion of interest in autonomous automobiles has sparked something of a gold rush in the development of compact LiDAR devices which can be mounted on vehicles to assist with modelling their environment. These devices, optimized for compactness and low cost, are ideal for another application: unmanned aerial vehicles (UAVs).
+
+UAVs offer many advantages over traditional, manned aerial platforms. First among these is cost. Fixed-wing and rotary surveys may cost thousands of dollars per flight-hour. The instrumentation required for such surveys may cost hundreds of thousands or millions  of dollars. Flight planning and execution of a UAV survey can be accomplished rapidly, and changes to a flight plan do not represent a significant delay or expense. A UAV survey need not originate at an airport. The training required to operate a UAV in accordance with federal regulations, while substantial, is trivial in comparison to pilot training and certification. Most importantly, the low platform elevation enabled by a UAV survey radically increases the attainable resolution (for raster products) and point density (for LiDAR products.)
+
+There are several drawbacks to the use of UAVs for aerial surveying, but one stands out for the purposes of this work. During a manned aerial survey, the nominal platform elevation might be, for example, 500m. If the terrain relief is 10m, the resulting resolution or point density over the study site will vary by a factor of about +-0.02. For a UAV flying at an elevation of 35m, the factor will be approximately +-0.29 -- much larger than desired. A manned aerial survey will tend to cover a much larger spatial extent than a UAV survey, with the pilot (or terrain-following system) responding to large-scale variations in terrain elevation and ignoring the small-scale relief. A UAV is not subject to large-scale changes in the terrain elevation, but small-scale fluctuations may have a large, detrimental effect on data quality. Given that UAV flights plans are executed autonomously by the platform, and that the pilot is not with the aircraft itself, there must be a way to respond to these fluctuations adaptively and in real time.
+
+There are mechanisms for enabling “terrain following” for UAVs, which depend on the pre-existence of a terrain model. This has two consequences: first, that the survey must have been performed previously and the resulting data processed into a terrain model; second, that the terrain model must be of sufficient quality, accuracy and detail to control the UAV safely, given the nature of the terrain and the flight elevation. Currently-available solutions use the Shuttle Radar Topography Mission (STRM) elevation model, which is one of few freely-accessible global DEMs, but is not a true terrain model -- it includes canopy artifacts -- and its maximum resolution is 30m horizontally and 1m vertically, with stated vertical accuracy of <=16m. An ideal solution would be for the UAV to compute a terrain model on its own, in real time, and follow the terrain at a fixed elevation while executing its flight plan. 
+
+This project will examine the possibility of using a forward facing laser rangefinder and associated software to generate, in real time, a terrain model that a UAV may use to control its flight elevation. The specific objectives are as follows:
+
+1. To identify, implement and assess:
+1. strategies for handling the inflow of point data from the rangefinder in such a way as to feed them to subsequent processing stages with minimal delay;
+2. algorithms for point classification, specifically into ground and non-ground classes;
+3. strategies for characterizing the ground, for example, as a triangulated surface or a raster, in consideration of subsequent processing goals;
+4. strategies for determining the optimal flight elevation for the platform in consideration of the ground elevation, but also of trends in terms of slope and roughness.
+2. To assemble and test a system that accomplishes the goals of this research using a real UAV.
+
+There may be ancillary benefits to the exercise, as well. The point cloud generated by a forward-facing instrument can be contributed to that of the downward facing main LiDAR (if one is used) both to densify it, and to contribute views of the subject from fore and aft, rather than only left and right, as is typical. The system provides an opportunity to implement obstacle avoidance;  objects that are identified as non-ground, yet obstruct UAV’s trajectory may be used to signal a return-to-home response, or a go-around plan (though this is well out of scope for the current project.)
+
+1b) The technology for automating ground classification is not mature (Vosselman, 2002 [later?]) and perfection is, of course, not possible. But what are the implications for UAV control? The point density of the instrument is likely to be limited, as is the capability of processing the full cloud. A higher density is better for classification, but instrument noise and vegetation present serious issues. What if the point cloud cannot penetrate into the canopy? The drone may have some way of reconciling a naive assumption about the nature of the terrain, and the information is receiving from the scanner?
+
+There’s some question of what sampling method is optimal. A single-beam range finder will produce a point cloud in a single line a 2d point “plane” rather than a cloud, from which it may be difficult to distinguish ground points. A fan-shaped lidar would be better, as it would produce a 3d point cloud, although a forward-aimed laser would produce a non-vertical slice, but this may enable something like a preliminary ground estimate at the “wedge” end of the cloud, before it is thickened by subsequent scans.
+
+** Most (all?) current applications use a nadir laser and reactive paradigm. I want to create a smoothed trajectory with configurable limits (for safety) based on a predictive regime. a) from facing forward, and b) from computing trends based on past measurements.
+** Kalman filter. Can be used to compute a trajectory from the vehicle’s current state and inputs from instruments, and flight plan. 
+
+** What if we just use the down-facing lidar and use predictive method to anticipate changes in terrain? Drawback, no obstacle avoidance.
+
+** Photogrammetry -- no penetration.
+
+** Optical flow -- traditional robotics technique, used by insects. Same limitations as photogrammetry.
+
+Photogrammetry
+Still a possibility
+
+Makers:
+Velodyne (solid state lidar coming)
+Quanergy (S3)
+AEye
+Leddar (range sucks; 20m @ 18% grey)
+
+\bibliographystyle{plain}
+\bibliography{/home/rob/Documents/bibtex/library.bib}
+
+\end{document}

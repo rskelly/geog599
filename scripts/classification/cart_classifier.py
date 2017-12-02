@@ -2,7 +2,6 @@
 
 # http://scikit-learn.org/stable/modules/tree.html
 
-from sklearn import tree
 from sklearn.datasets import load_iris
 import pydotplus
 import gdal
@@ -20,6 +19,28 @@ sieve_all = True
 # Only these names will be produced, others filtered out.
 matches = None #['T26', 'A32', 'J17', 'M20', 'T19', 'D3', 'Z2', 'I2', 'F3', 'X3']
 
+class_names = ['none', 'water', 'wetland', 'upland', 'other', 'other2']
+
+cart_config = {
+	'type' : 'cart',
+	'max_depth' : 4
+}
+
+kmeans_config = {
+	'type' : 'kmeans',
+	'clusters' : len(class_names)
+},
+
+svm_config = {
+	'type' : 'svm',
+	'C' : 1.,
+	'kernel' : 'poly',
+	'degree' : 3,
+	'gamma' : 'auto',
+	'coef0' : 0.,
+	'probability' : False
+}
+
 # Template configuration object. Will be copied once for each input permutation.
 config = {
 	'steps' : {
@@ -34,21 +55,32 @@ config = {
 	'sample_file_dir' : None, #'/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/',
 	'validate_fraction' : 0.3,
 	'sites_file' : 'sites.csv', #/Volumes/data1/rob_coop/coop_data/msc/layers/log_lake/classification/cart/e27_samples_strat_random_200.csv',
-	'max_depth' : 4,
 	'columns' : None,
-	'class_names' : ['none', 'water', 'wetland', 'upland', 'other', 'other2'],
+	'class_names' : class_names,
 	'files' : None,
 	'outdir' : None,
+	'config' : None
 }
 
 input_files = [
-	('/home/rob/Documents/msc/layers/horn_river/masked/SlopeAspect_stddev_15_masked.tif',1),
-	('/home/rob/Documents/msc/layers/horn_river/masked/SlopeGradient_median_15_masked.tif',1),
-	('/home/rob/Documents/msc/layers/horn_river/masked/tpi_15_masked.tif',1),
-	('/home/rob/Documents/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_mean_234678_masked.tif',1),
-	('/home/rob/Documents/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_mean_all_masked.tif',1),
-	('/home/rob/Documents/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_stddev_234678_masked.tif',1),
-	('/home/rob/Documents/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_stddev_all_masked.tif',1)
+	('/media/rob/robdata/msc/layers/horn_river/masked/SlopeAspect_stddev_15_masked.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/masked/SlopeGradient_median_15_masked.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/tpi_50_median_5.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/tpi_100_median_5.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/tpi_500_median_5.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_mean_234678_masked.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_mean_all_masked.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_stddev_234678_masked.tif',1),
+	('/media/rob/robdata/msc/layers/horn_river/masked/Wetness_glcm_3_32_16_homo_stddev_all_masked.tif',1)
+]
+
+# Tuples containing indices that cannot exist in the layer set together.
+exclusions = [
+	(2, 3, 4),
+	(5,6),
+	(7,8),
+	(5,8),
+	(6,7)
 ]
 
 def combinations(lst, num):
@@ -57,9 +89,33 @@ def combinations(lst, num):
 	There are num items in each combination.
 	'''
 	from itertools import combinations
-	return combinations(lst, num)
+	comb = list(combinations(lst, num))
+	rem = set()
+	for e in exclusions:
+		# Get the filenames
+		l = []
+		for i in e:
+			l.append(lst[i][0])
 
-def configure(outdir, n, select = None):
+		# Run over the combinations.
+		for i in range(len(comb)):
+			c = comb[i]
+			found = False
+			for j in range(len(c)):
+				if c[j][0] in l:
+					if found:
+						# An exclusion was already found; another has been found so add to the removal list.
+						rem.add(i)
+						break
+					found = True
+	# Create a new filtered list
+	comb0 = []
+	for i in range(len(comb)):
+		if not i in rem:
+			comb0.append(comb[i])
+	return comb0
+
+def configure(outdir, n, cls_config, select = None):
 	'''
 	Prepare configuration objects for each combination of layers.
 	'''
@@ -91,6 +147,7 @@ def configure(outdir, n, select = None):
 				c['columns'] = [chr(j) for j in range(65, 65 + n)]
 				c['files'] = combo
 				c['outdir'] = outdir
+				c['config'] = cls_config
 				configs.append(c)
 			i += 1
 			if i > 90:
@@ -118,7 +175,20 @@ def get_handles(files):
 		bounds[1] = max(bounds[1], t[3] + h.RasterYSize * t[5])
 	return handles, tuple(bounds)
 
-def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_file, validate_fraction, outdir, sample_file_dir):
+def init_classifier(config):
+	if config['type'] == 'cart':
+		from sklearn import tree
+		return tree.DecisionTreeClassifier(max_depth=config['max_depth'])
+	elif config['type'] == 'kmeans':
+		from sklearn import cluster
+		return cluster.KMeans(n_clusters=config['clusters'])
+	elif config['type'] == 'svm':
+		from sklearn import svm
+		return svm.SVC(C=config['C'], kernel=config['kernel'], degree=config['degree'], gamma=config['gamma'], coef0=config['coef0'], probability=config['probability'])
+	else:
+		raise Exception('No classification type given.')
+
+def run(name, steps, sites_file, columns, class_names, files, sample_file, validate_fraction, outdir, sample_file_dir, config):
 	'''
 	Run the classification.
 	'''
@@ -246,15 +316,17 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 		labels.append(0)
 
 		# Initialize the classifier.
-		clf = tree.DecisionTreeClassifier(max_depth=max_depth)
+		clf = init_classifier(config)
 		clf = clf.fit(samples, labels)
 
 		# Output the decision tree graph.
-		with open('/tmp/tree.dot', 'w') as f:
-			tree.export_graphviz(clf, out_file=f, class_names=class_names, feature_names=columns, node_ids=False)
-		with open('/tmp/tree.dot', 'r') as f:
-			graph = pydotplus.graph_from_dot_data(f.read())
-			graph.write_pdf(os.path.join(outdir, name + "_cart.pdf"))
+		if config['type'] == 'cart':
+			from sklearn import tree
+			with open('/tmp/tree.dot', 'w') as f:
+				tree.export_graphviz(clf, out_file=f, class_names=class_names, feature_names=columns, node_ids=False)
+			with open('/tmp/tree.dot', 'r') as f:
+				graph = pydotplus.graph_from_dot_data(f.read())
+				graph.write_pdf(os.path.join(outdir, name + "_cart.pdf"))
 
 		# Get the handle, transform and band number of the first image.
 		# This determines the properties of the output image.
@@ -389,12 +461,12 @@ def run(name, steps, sites_file, max_depth, columns, class_names, files, sample_
 			f.write('{},{:.2f}\n'.format(name, correct))
 			print 'Correct:', correct
 
-#configs = configure('triples2', 3)
-#configs = configure('pairs_envi', 2)
-#configs = configure('triples_envi', 3)
-#configs = configure('pairs_cooc_median15', 2)
-#configs = configure('pairs_cooc_median31', 2)
-configs = configure('wetness_glcm', 2)
+jobs = [
+	configure('cart_2', 2, cart_config),
+	configure('kmeans_2_all_cls', 2, kmeans_config),
+	#configure('svm_2', 2, svm_config),
+]
 
-for config in configs:
-	run(**config)
+for job in jobs:
+	for config in job:
+		run(**config)
