@@ -1,19 +1,34 @@
 \documentclass[10pt,a4paper]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
+%%  Doesn't work... \usepackage{apacite}	% for APA format; requires sudo apt-get install texlive-bibtex-extra
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
-\usepackage{svg}
+\usepackage{setspace}	% for line spacing
+\usepackage{calc}		% for figure scaling
+\usepackage{svg}		% for graphics
 \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
 \author{Rob Skelly}
-\title{Real-Time Terrain Following for Remote-Sensing Unmanned Aerial Vehicles}
+\title{Real-Time Terrain Following and Trajectory Adjustment for Remote-Sensing Unmanned Aerial Vehicles}
+\graphicspath{{images/}}
 
 \begin{document}
 
 \maketitle
 
+\doublespace
+
 \section{Introduction}
+
+Purpose: Build a system that:
+
+\begin{itemize}
+\item Ascertains the vehicle's state using GPS and INS inputs and the Kalman filter.
+\item Ascertains the elevation some fixed distance in front of the vehicle using a forward-facing rangefinder; multi- or single-beam TBD; ground classification requirements TBD.
+\item Adjusts the 2D trajectory using the vehicle's state and future changes in elevation using some smoothing method (possibly Kalman) as well as insight gleaned from other terrain following methods.
+\item Controls the vehicle so that it will follow the trajectory.
+\end{itemize}
 
 \subsection{Remote Sensing Platforms}
 
@@ -52,12 +67,17 @@ r = \sqrt{\sin{\theta}^2+\cos{\theta}^2}*e,
 where $r$ and $e$ are the resolution and elevation in the same units and $\theta$ is the IFOV. A similar relation exists between platform elevation and the point density of a LiDAR instrument. In either case, the size of object resolvable by the instrument is directly controlled by the platform's elevation. A side effect of the above relation is that it induces distortion in the image of the subject. As an example, figure \ref{fig:scale_cam} shows a downward-facing camera with one subject twice as far from the instrument as the other. In the image view (figure \ref{fig:scale_img}), the nearer object is twice as large (and therefore twice as detailed) as the far one.
 
 \begin{figure}
-xxxx
+\centering
+\def\svgscale{0.5}
+\input{images/scale_topography_cam.pdf_tex}
 \caption{Side view of down-facing camera with subjects.}
 \label{fig:scale_cam}
 \end{figure}
 
 \begin{figure}
+\centering
+\def\svgscale{0.5}
+\input{images/scale_topography_img.pdf_tex}
 \caption{Resulting image with scale distortion.}
 \label{fig:scale_img}
 \end{figure}
@@ -72,16 +92,44 @@ The converse is true: SRTM would not be considered appropriate for the measureme
 
 Research into terrain following has been continuing since the 1960s for the control of ballistic missiles and jet aircraft \cite{KRACHMALNICK1968,Starling1971,Cunningham1980}. Such systems use a forward- and downward-facing RADAR rangefinder to detect the terrain elevation some distance ahead of the vehicle, some means of terrain classification \cite{Cunningham1980}, and a method of altering the vehicle's trajectory to follow the terrain surface as closely as possible. This research, focused on high-speed, low elevation military vehicles with a premium placed on stealth, .........
 
+\begin{figure}
+\centering
+\def\svgscale{0.5}
+\input{images/uav_terrain.pdf_tex}
+\caption{Terrain-following UAV.}
+\label{fig:uav_terrain}
+\end{figure}
 
-\subsection{Terrain Elevation}
+
+\subsection{SLAM}
+
+Simultaneous localization and mapping.
 
 Traditional terrain-following mechanisms used RADAR for measuring the distance from aircraft to terrain. The advent of cheap, lightweight LiDAR instruments, primarily designed for the autonomous vehicle market, has made available 
 
 \subsection{Ground Classification}
 
+Single-beam vs. multi-beam.
+
+Multi-element vs. planar. \cite{Nobili2015}
+
 \subsection{Position-Finding}
 
+The Kalman Filter \cite{Kalman1960} is a recursive least-squares optimizing function that effectively converges on a true value -- in one or more dimensions -- at each time step by assigning a weight to the current state and the inputs depending on the confidence in each, and generating a new state estimate which will be subjected to the same process on the next time step. A primary consideration in the development of state-space smoothing methods such as Kalman's is the impossibility of storing a complete history of the object's state and estimating its immediate future based on its entire past. The latter would entail an ever-increasing processing load, as the object's history grew. Another consideration is the temporal variability in the certainty of new estimates of the object's state (i.e. measurements). As these vary through time, they would also have to be stored and computed to derive an estimate of the object's state. The Kalman filter solves these problems by considering only the object's present state, the inputs, and an error estimate for each \cite{Swerling1959}. 
+
+Kalman filtering was originally used for estimating the trajectories of the Apollo lunar landers and for RADAR tracking of targets \cite{Grewal2010}, but is widely used in climate science, econometrics, engineering, especially in the field of robotics. Autonomous robots, UAVs included, must have reliable information their position, orientation and velocity in order to interac effectively with the environment. Airborne vehicles, in particular, must have accurate information about their position and orientation, but also their trajectory.
+
+A typical UAV uses the Global Positioning System (GPS) for absolute positioning and an inertial navigation system (INS) for measuring acceleration and orientation. These inputs together allow the vehicle to ajust its attitude and velocity to maintain a pre-defined trajectory, and -- arguably, more importantly -- for georeferencing collected data. There are numerous sources of measurement error inherent in GPS and INS measurements which hamper the vehicle's ability to ascertain its instantaneous state; the Kalman filter provides a means of determining its true state with a high degree of confidence.
+
+[Extended Kalman filter -- local linearization?]
+
 \subsection{Trajectory}
+
+
+
+
+
+
 
 
 \section{Background}

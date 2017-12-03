@@ -14,8 +14,8 @@
    viewBox="0 0 765 1260"
    id="svg2"
    version="1.1"
-   inkscape:version="0.91 r13725"
-   sodipodi:docname="scale_topography.svg">
+   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   sodipodi:docname="scale_topography_cam.svg">
   <defs
      id="defs4">
     <marker
@@ -126,9 +126,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.979899"
-     inkscape:cx="183.34925"
-     inkscape:cy="781.71403"
+     inkscape:zoom="1.4"
+     inkscape:cx="188.75235"
+     inkscape:cy="985.46693"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -136,10 +136,10 @@
      showguides="true"
      inkscape:guide-bbox="true"
      inkscape:snap-text-baseline="false"
-     inkscape:window-width="2560"
-     inkscape:window-height="1551"
-     inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:window-width="1920"
+     inkscape:window-height="1056"
+     inkscape:window-x="1366"
+     inkscape:window-y="0"
      inkscape:window-maximized="1">
     <inkscape:grid
        type="xygrid"
@@ -147,35 +147,43 @@
     <sodipodi:guide
        position="280,870"
        orientation="1,0"
-       id="guide4213" />
+       id="guide4213"
+       inkscape:locked="false" />
     <sodipodi:guide
        position="360,850"
        orientation="1,0"
-       id="guide4215" />
+       id="guide4215"
+       inkscape:locked="false" />
     <sodipodi:guide
        position="460,900"
        orientation="0,1"
-       id="guide4217" />
+       id="guide4217"
+       inkscape:locked="false" />
     <sodipodi:guide
        position="560,800"
        orientation="0,1"
-       id="guide4219" />
+       id="guide4219"
+       inkscape:locked="false" />
     <sodipodi:guide
        position="470,1100"
        orientation="0,1"
-       id="guide4221" />
+       id="guide4221"
+       inkscape:locked="false" />
     <sodipodi:guide
        position="570,1000"
        orientation="0,1"
-       id="guide4223" />
+       id="guide4223"
+       inkscape:locked="false" />
     <sodipodi:guide
        position="480,1005"
        orientation="1,0"
-       id="guide5765" />
+       id="guide5765"
+       inkscape:locked="false" />
     <sodipodi:guide
        position="320,1030"
        orientation="1,0"
-       id="guide8439" />
+       id="guide8439"
+       inkscape:locked="false" />
   </sodipodi:namedview>
   <metadata
      id="metadata7">
@@ -195,8 +203,8 @@
      id="layer1"
      transform="translate(0,207.6378)">
     <path
-       style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.75553453px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 152.15168,252.54667 336.79112,0"
+       style="fill:#000000;fill-rule:evenodd;stroke:#000000;stroke-width:0.89134258px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 84.375,252.54667 h 468.75"
        id="path3338"
        inkscape:connector-curvature="0"
        inkscape:export-xdpi="127.92757"
@@ -244,101 +252,95 @@
     </g>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="478.4873"
        y="-43.142876"
        id="text5668"
-       sodipodi:linespacing="125%"
        inkscape:export-xdpi="127.92757"
        inkscape:export-ydpi="127.92757"><tspan
          sodipodi:role="line"
          id="tspan5670"
          x="478.4873"
          y="-43.142876"
-         style="font-size:15px">100m</tspan></text>
+         style="font-size:15px;line-height:1.25">100m</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:40px;line-height:125%;font-family:Saab;-inkscape-font-specification:Saab;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:Saab;-inkscape-font-specification:Saab;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="479.90103"
        y="55.99926"
        id="text5672"
-       sodipodi:linespacing="125%"
        inkscape:export-xdpi="127.92757"
        inkscape:export-ydpi="127.92757"><tspan
          sodipodi:role="line"
          id="tspan5674"
          x="479.90103"
          y="55.99926"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">66m</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15px;line-height:1.25;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">66m</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="479.09137"
        y="156.50435"
        id="text5676"
-       sodipodi:linespacing="125%"
        inkscape:export-xdpi="127.92757"
        inkscape:export-ydpi="127.92757"><tspan
          sodipodi:role="line"
          id="tspan5678"
          x="479.09137"
          y="156.50435"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">33m</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15px;line-height:1.25;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">33m</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.5px;line-height:125%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="144.71327"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:0%;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="131.32042"
        y="-65.622597"
        id="text5747"
-       sodipodi:linespacing="125%"
        inkscape:export-xdpi="127.92757"
        inkscape:export-ydpi="127.92757"><tspan
          sodipodi:role="line"
          id="tspan5749"
-         x="144.71327"
-         y="-65.622597">Camera</tspan></text>
+         x="131.32042"
+         y="-65.622597"
+         style="font-size:17.5px;line-height:1.25">Camera</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:30px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="137.54068"
-       y="103.92819"
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;text-align:end;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="186.57201"
+       y="102.58891"
        id="text5751"
-       sodipodi:linespacing="125%"
        inkscape:export-xdpi="127.92757"
        inkscape:export-ydpi="127.92757"><tspan
          sodipodi:role="line"
          id="tspan5753"
-         x="137.54068"
-         y="103.92819"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.5px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">Subjects</tspan></text>
+         x="186.57201"
+         y="102.58891"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.5px;line-height:1.25;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter';text-align:end;text-anchor:end">Subjects</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:30px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="155.15739"
-       y="-5.0134411"
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;text-align:end;letter-spacing:0px;word-spacing:0px;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="188.59349"
+       y="-6.3527269"
        id="text5755"
-       sodipodi:linespacing="125%"
        inkscape:export-xdpi="127.92757"
        inkscape:export-ydpi="127.92757"><tspan
          sodipodi:role="line"
          id="tspan5757"
-         x="155.15739"
-         y="-5.0134411"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.5px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">IFOV</tspan></text>
+         x="188.59349"
+         y="-6.3527269"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.5px;line-height:1.25;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter';text-align:end;text-anchor:end">IFOV</tspan></text>
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:30px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        x="437.71823"
-       y="-65.521072"
+       y="-71.146072"
        id="text5759"
-       sodipodi:linespacing="125%"
        inkscape:export-xdpi="127.92757"
        inkscape:export-ydpi="127.92757"><tspan
          sodipodi:role="line"
          id="tspan5761"
          x="437.71823"
-         y="-65.521072"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.5px;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">Elevation</tspan></text>
+         y="-71.146072"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:17.5px;line-height:1.25;font-family:'Bitstream Charter';-inkscape-font-specification:'Bitstream Charter'">Elevation</tspan></text>
     <path
        style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#Arrow1Mstart);marker-end:url(#Arrow1Mend)"
        d="M 305.07551,-7.4855118 C 315,-2.7640691 325,-2.6378 335.42957,-7.7380499"
