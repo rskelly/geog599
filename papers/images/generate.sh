@@ -2,11 +2,15 @@
 
 # Generates PDFs with Latex text from svgs.
 
-rm -f *.pdf
-rm -f *.pdf_tex
+input=$1
+output=$2
 
-for f in *.svg;
+mkdir -p $2
+rm -f $2/*.pdf
+rm -f $2/*.pdf_tex
+
+for f in $input/*.svg;
 do
 	echo "Exporting $f to $(basename $f .svg).pdf_tex"
-	inkscape -D -z --file=$f --export-pdf=$(basename $f .svg).pdf --export-latex
+	inkscape -D -z --file=$f --export-pdf=$output/$(basename $f .svg).pdf --export-latex
 done
