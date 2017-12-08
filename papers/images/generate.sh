@@ -2,7 +2,7 @@
 
 # Generates PDFs with Latex text from svgs.
 
-exit 0;
+#exit 0;
 
 input=$1
 output=$2
