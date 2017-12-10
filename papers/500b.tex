@@ -81,9 +81,7 @@ Finally, a multi-rotor UAV will be outfitted according to the results of the sim
 
 Research into terrain following has been continuing since the 1960s for the control of ballistic missiles and jet aircraft \cite{KRACHMALNICK1968,Starling1971,Cunningham1980}. Such systems use a forward- and downward-facing RADAR rangefinder to detect the terrain elevation some distance ahead of the vehicle, some means of terrain classification \cite{Cunningham1980}, and a method of altering the vehicle's trajectory to follow the terrain surface as closely as possible. Research on terrain following for military aircraft and missiles has been focused on high-speed, low elevation flight with a premium placed on stealth, speed, efficiency and safety. Neither high speed nor stealth are desireable for a remote sensing mission but some of the same concerns apply. 
 
-When a UAV encounters a change in terrain elevation it must adjust its trajectory. Due to inertia the change in velocity is  necessarily delayed until some time after the vehicle's thrust and attitude have been adjusted. It is thus impossible for a vehicle to follow a terrain exactly using a purely reactive system without backtracking. As an extreme example, if the vehicle approaches a vertical cliff, its horizontal velocity must drop from the nominal flight velocity to zero and its vertical velocity must change from zero. During the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over terrain that is at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will be accellerating in the horizontal direction, causing over-sampling.  These anomalies will have to be rectified in post-processing. 
-
-Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves some or all of the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the sampling density remains constant. In either case, the vehicle must anticipate the change in trajectory in order to successfully follow the terrain without contacting the cliff face or reversing over ground that has already been covered.
+When a UAV encounters a change in terrain elevation it must adjust its trajectory. Due to inertia the change in velocity is  necessarily delayed until some time after the vehicle's thrust and attitude have been adjusted. It is thus impossible for a vehicle to follow a terrain exactly using a purely reactive system without backtracking. As an extreme example, if the vehicle approaches a vertical cliff, its horizontal velocity must drop from the nominal flight velocity to zero and its vertical velocity must change from zero. During the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over terrain that is at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will be accellerating in the horizontal direction, causing over-sampling. These anomalies will have to be rectified in post-processing. Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves some or all of the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the sampling density remains constant. In either case, the vehicle must anticipate the change in trajectory in order to successfully follow the terrain without contacting the cliff face or reversing over ground that has already been covered.
 
 \begin{figure}
 \centering
@@ -93,8 +91,13 @@ Alternatively, the vehicle can follow a smoothed trajectory which departs from t
 \label{fig:uav_smooth_traj}
 \end{figure}
 
-
 With a forward-facing sensor, the problem of an approaching obstacle is easily resolved, but descending presents another problem. As the vehicle approaches the lip of the cliff, the terrain below the face is occluded by its edge (figure \ref{fig:uav_edge_occlude}), depriving the vehicle of elevation information that it needs to optimize its trajectory. With a single-beam rangefinder, at one timestep, the lip will be sampled, and at the next, the ground will be sampled. The vehicle can estimate the terrain as the convex hull of these elevations, and derive a trajectory based on this modelled terrain, but it cannot revise this estimate or its trajectory without a rangefinder with a broader vertical field of view. A similar phenomenon occurs when the vehicle is traversing down a slope that does not intersect with the rangefinder's beam. If the end of the slope is beyond the instrument's range, the vehicle loses contact with the ground and has no information from which to compute a trajectory.  Ideally, the vehicle could have a sensor that is sensitive from nadir to the horizon, and adjust its trajectory iteratively as it approaches the edge. 
+
+This last point reintroduces the discussion of instrument and algorithm selections. 
+
+
+Use the Velodyne for both terrain following and data acquisition by rotating it forward so that the leading edge points 30 degrees forward and the trailing edge is at nadir. This is probably the best plan.
+
 
 \begin{figure}
 \centering
@@ -104,8 +107,15 @@ With a forward-facing sensor, the problem of an approaching obstacle is easily r
 \label{fig:uav_edge_occlude}
 \end{figure}
 
+\subsection{Rangefinder and Algorithm Selection}
 
-This last point reintroduces the discussion of instrument and algorithm selections. A spectrometer (i.e., an RGB camera) with a wide-angle lens will cover the desired field of view at high resolution and low cost, but will require computationally-intensive photogrammetric or optical-flow processing. A wide-swath laser scanner, such as the Velodyne VLP32 provides both a wide swath, and sufficient spread that, if mounted vertically, would provide the desired coverage. Finally, one or more single-beam laser rangefinders could be arranged to sample the space between nadir and the forward-facing laser.
+A spectrometer (i.e., an RGB camera) with a wide-angle lens will cover the desired field of view at high resolution and low cost, but will require computationally-intensive photogrammetric or optical-flow processing to extract range measurements. These methods work only when the platform velocity is sufficient to induce detectable changes in the pixel array. Also, spectrometers are passive sensors, meaning they record reflected light from variable environmental sources, especially the sun. Tracking changes in intensity or colour across the pixel array becomes difficult without the consistency of a controlled energy source, or on low-contrast surfaces, hampering the detection of objects which would be used to compute ranges.
+
+One or more single-beam laser range finders can be mounted statically, on a scanning gimbal or in a mixture of configurations. Laser rangefinders are active scanners that emit laser pulses and measure the time of return from a subject to compute the subject distance. Environmental conditions and scene contrast are not likely to affect measurement accuracy, however point density reduced by scattering, absorbtion or reflection on some surfaces. 
+
+A rotating beam laser scanner, such as the Velodyne VLP-C32, which provides a $40\deg$ vertical and $360\deg$ horizontal field of view, can be mounted vertically to give wide swath that extends from nadir to the horizon. The point density of such instruments can provide a highly accurate and detailed model of the terrain, but they are currently heavy and expensive. 
+
+Finally, one or more single-beam rangea and sufficient spread that, if mounted vertically, would provide the desired coverage. Finally, one or more single-beam laser rangefinders could be arranged to sample the space between nadir and the forward-facing laser.
 
 The analysis should consider a parameter that adjusts the transition distance (i.e., smoothing) between zero and some limit, in consideration of the impact on data quality.
 
