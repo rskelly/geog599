@@ -70,10 +70,14 @@ It is clear that subject distance, and therefore, platform elevation, have impor
 \label{fig:uav_terrain}
 \end{figure}
 
-With the current explosion in interest in low-elevation remote-sensing UAVs, the need for accurate terrain following systems is being felt. Terrain following contributes not only to the safety of the vehicle and people, animals and property within the study area, but has a profound influence on the quality of data. Terrain-following systems entail the ability to measure the platform's elevation, an accurate sense of where the vehicle is in geodetic space, and algorithms for identifying the true surface elevation and adjusting the vehicle's trajectory to match it. The need for these systems motivates this research, and the question:
+With the current explosion in interest in low-elevation remote-sensing UAVs, the need for accurate terrain following systems is being felt. Terrain following contributes not only to the safety of the vehicle and people, animals and property within the study area, but has a profound influence on the quality of data. Terrain-following systems entail the ability to measure the platform's elevation, an accurate sense of where the vehicle is in geodetic space, and algorithms for identifying the true surface elevation and adjusting the vehicle's trajectory to match it.
+
+Unfortunately, the state of the art in battery technology is not adequate to the power requirements of heavily-laden remote-sensing UAVs. The overuse of battery resources entails significant costs in terms of mission turn-around time and expense, in terms of the number of flights required to cover a study area and the number of sets of batteries required to complete a mission. 
+
+These issues motivate the present research via the question:
 
 
-\textbf{For a remote sensing unmanned aerial vehicle with terrain-following capability, what combination of hardware, software and configuration maximizes the quality of data in terms of the stability of resolution and point density?}
+\textbf{For a remote sensing unmanned aerial vehicle with terrain-following capability, what combination of hardware, software and configuration maximizes the quality of data in terms of the stability of resolution and point density while also minimizing power consumption?}
 
 This research will simulate the point patterns of a variety of laser rangefinder configurations, with a variety of error characteristics on a variety of modelled terrains. Existing points clouds produced by real campaigns over different terrains will be used to test the efficacy of the solution. Data quality will be inferred from the size of the variance in the subject distance during flight. Finally, a multi-rotor UAV will be outfitted according to the results of the simulation for testing.
 
@@ -97,7 +101,7 @@ v_i = \dfrac{ v_h^2 } { \sqrt{ (v_\infty \cos \alpha)^2 + (v_\infty \sin \alpha 
 \label{eq:move_force}
 \end{equation}, where $\alpha$ is the angle of attack, $v_\infty$ is the free stream speed (platform velocity plus wind) and $v_h$ is the hover velocity \cite{Hoffmann2007}.
 
-When a UAV encounters a change in terrain elevation it must adjust its trajectory. Due to the inertia of the platform, the change in velocity is  necessarily delayed until some time after the vehicle's thrust and attitude have been adjusted. It is thus impossible for a vehicle to follow a terrain exactly using a purely reactive system without backtracking. As an extreme example, if the vehicle approaches a vertical cliff, its horizontal velocity must drop from the nominal flight velocity to zero and its vertical velocity must change from zero. During the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over terrain that is at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will be accellerating in the horizontal direction, causing over-sampling. These anomalies will have to be rectified in post-processing. Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves some or all of the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the sampling density remains constant. In either case, the vehicle must anticipate the change in trajectory in order to successfully follow the terrain without contacting the cliff face or reversing over ground that has already been covered.
+When a UAV encounters a change in terrain elevation it must adjust its trajectory. Due to the inertia of the platform, the change in velocity is  necessarily delayed until some time after the vehicle's thrust and attitude have been adjusted. It is thus impossible for a vehicle to follow a terrain exactly using a purely reactive system without backtracking. As an extreme example, if the vehicle approaches a vertical cliff, its horizontal velocity must drop from the nominal flight velocity to zero and its vertical velocity must change from zero. During the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over terrain that is at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will be accellerating in the horizontal direction, causing over-sampling. These anomalies will have to be rectified in post-processing. Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the sampling density remains constant. In either case, the vehicle must anticipate the change in trajectory in order to successfully follow the terrain without contacting the cliff face or reversing over ground that has already been covered.
 
 \begin{figure}
 \centering
@@ -107,7 +111,10 @@ When a UAV encounters a change in terrain elevation it must adjust its trajector
 \label{fig:uav_smooth_traj}
 \end{figure}
 
+
 With a forward-facing sensor, the problem of an approaching obstacle is easily resolved, but descending presents another problem. As the vehicle approaches the lip of the cliff, the terrain below the face is occluded by its edge (figure \ref{fig:uav_edge_occlude}), depriving the vehicle of elevation information that it needs to optimize its trajectory. With a single-beam rangefinder, at one timestep, the lip will be sampled, and at the next, the ground will be sampled. The vehicle can estimate the terrain as the convex hull of these elevations, and derive a trajectory based on this modelled terrain, but it cannot revise this estimate or its trajectory without a rangefinder with a broader vertical field of view. A similar phenomenon occurs when the vehicle is traversing down a slope that does not intersect with the rangefinder's beam. If the end of the slope is beyond the instrument's range, the vehicle loses contact with the ground and has no information from which to compute a trajectory.  Ideally, the vehicle could have a sensor that is sensitive from nadir to the horizon, and adjust its trajectory iteratively as it approaches the edge. 
+
+*** The power required by the vehicle following any trajectory can be calculated by taking the integral of the function decribing the thrust or power curve. This curve will be something like figure \ref{fig:uav_power_curve}.
 
 To identify a sufficient advance angle for a forward-facing sensor, it is necessary to first calculate the time reqired for a UAV to change its velocity. At the extreme, in the case of the vertical cliff, this is the time required to reduce the vehicle's horizontal velocity to zero. It would be a simple matter to calculate the time required for the vehicle to decelerate given its mass, available thrust, velocity and environmental conditions. However, owing to the fact that a multi-copter must control its speed by pitching, which should be minimized to protect image quality, the rate of deceleration should be carefully considered. The advance warning
 
@@ -115,6 +122,15 @@ To identify a sufficient advance angle for a forward-facing sensor, it is necess
 T_d = \dfrac{v}{\sin(\theta) * E}
 \label{eq:decel}
 \end{equation} 
+
+\begin{figure}
+\centering
+\def\svgscale{0.8}
+\input{build/images/uav_power_curve.pdf_tex}
+\caption{The power curve of a terrain-following event.}
+\label{fig:uav_power_curve}
+\end{figure}
+
 
 \begin{figure}
 \centering
