@@ -10,13 +10,17 @@
 \usepackage{calc}		% for figure scaling
 \usepackage{svg}		% for graphics
 \usepackage{graphicx}	% for graphics
-\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
-\author{Rob Skelly}
-\title{Real-Time Terrain Following and Trajectory Adjustment for Remote-Sensing Unmanned Aerial Vehicles}
+\usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+
+\fontfamily{ptm}
 
 % Images are build by calling images/generate.sh <images> <output> where
 % output is the "build" directory used by Texmaker.
 \graphicspath{{./build/images/}}
+
+\author{Rob Skelly}
+\title{Real-Time Terrain Following and Trajectory Adjustment for Remote-Sensing Unmanned Aerial Vehicles}
+
 
 \begin{document}
 
@@ -26,17 +30,17 @@
 
 \section{Introduction}
 
-Remote sensing is the art and science of sensing, or measuring, objects without the necessity of direct physical contact between the subject and the observer. Three of the human sense organs --- the eyes, ears and nose --- are remote sensing instruments, though remote sensing more commonly refers to the quantitative observation of objects on the Earth, in a geospatial context, using technology designed for this purpose. Remote sensing instruments are typically mounted on air- or spacecraft, though they can just as easily be handheld or tripod-mounted. Such instruments might include a spectrometer for measuring the electromagnetic reflectance of an object or a laser rangefinder scanner (LiDAR) for describing its structure in three dimensions. Satellite and airborne remote sensing have many use-cases, from tracking sea ice extent \cite{Dierking2006}, to estimating standing timber volumes \cite{Allouis2011,Tonolli2011}, to investigating plant health at the scale of a single leaf \cite{Palou2013}.
+Remote sensing is the art and science of sensing, or measuring, objects without the necessity of direct physical contact between the subject and the observer. Three of the human sense organs --- the eyes, ears and nose --- are remote sensing instruments, though remote sensing more commonly refers to the quantitative observation of objects on the Earth, in a geospatial context, using technology designed for this purpose. Remote sensing instruments are typically mounted on air- or spacecraft, though they can just as easily be handheld or tripod-mounted. Such instruments might include a spectrometer for measuring the electromagnetic reflectance of an object or a laser rangefinder scanner (LiDAR) for describing its structure in three dimensions. Satellite and airborne remote sensing have many use-cases, from tracking sea ice extent \cite{Dierking2006,Shuchman2004}, to estimating standing timber volumes \cite{Allouis2011,Tonolli2011}, to investigating plant health at the scale of a single leaf \cite{Palou2013}.
 
-The scale of the phenomenon under investigation in part determines the distance from the instrument to the subject. Sea ice, for example, must be observed at a hemispheric scale from a high-orbit satellite, while a study of the fine structure of individual plants must be performed at a much smaller remove. The subject distance has a deterministic relationship with the resolution of a given instrument, where resoluton is defined as minimum the size of object that can be discriminated. A large resolution of 20m might be suitable for the study of Arctic ice extent while 5cm or less \cite{Palou2013} would be appropriate for the study of plant health at the leaf level. 
+The scale of the phenomenon under investigation in part determines the distance from the instrument to the subject. Sea ice, for example, must be observed at a hemispheric scale from a high-orbit satellite, while a study of the fine structure of individual plants must be performed at a much smaller remove. A large resolution of 25m-1000m \cite{Shuchman2004} might be suitable for the study of Arctic ice extent while 5cm or less \cite{Palou2013} would be appropriate for the study of plant health at the leaf level. The subject distance has a deterministic relationship with the resolution of a given instrument, where resoluton is defined as minimum the size of object that can be discriminated. If an object is larger than the resolution of an individual element in a spectrometer, that element's specta will be pure --- they will not be contaminated by those of surrounding objects. If, on the other hand, the object is smaller than the instrument's resolution, the spectra will be mixed. This leads to a degradation in the quality of the image and challenges in extracting useful information from the spectral \cite{Lillesand1999}. 
 
 The resolution of an instrument is determined by its instantaneous field of view (IFOV), that is the solid angle or cone, parallel to the instrument's measurement axis, within which it is sensitive to incoming information. Resolution, subject distance and IFOV are related by the identity, 
 
 \begin{equation}
-R = 2 E \tan{(\theta / 2)},
+r = d \theta
 \label{eq:ifov}
 \end{equation} 
-where $R$ and $E$ are the resolution and elevation in the same units and $\theta$ is the IFOV in radians. A similar relation exists between platform elevation and the point density of a LiDAR instrument, where scan angle is analogous to the IFOV. 
+where $r$ and $d$ are the resolution and distance in the same units and $\theta$ is the IFOV in radians \cite{Lillesand1999}. A similar relation exists between platform elevation and the point density of a LiDAR instrument, where the scan angle is analogous to the IFOV. 
 
 A side effect of the relation in eq. \ref{eq:ifov} is that changes in the subject distance induce scale distortion in the image. As an example, figure \ref{fig:scale_cam} shows a nadir-aligned camera with the black object twice as far from the instrument as the white object. In the image view (figure \ref{fig:scale_img}), the nearer object appears twice as large --- and therefore twice as detailed --- as the far one. This phenomenon also implies increasing scale distortion with distance from nadir: As the subject's distance from the instrument's measurement axis increases, so does the subject distance, hence the scale, which results in a gradient in the resolution across the image.
 
@@ -56,7 +60,7 @@ A side effect of the relation in eq. \ref{eq:ifov} is that changes in the subjec
 \label{fig:scale_img}
 \end{figure}
 
-It is clear that subject distance and platform elevation, have important effects on the quality of remotely-sensed data. For a spectrometer, whose output is rendered as a regular grid of measurements, elevation determines the resolving power of the instrument and conversely the amount of mixing within each pixel; for LiDAR, elevation determines the acheivable point density and thus the stastical power of any discretization of the sampled space. It is also clear that, in the interest in maintaining the resolution or point density of remotely-sensed data, it is necessary to control the elevation of an airborne platform to account for variation in the terrain elevation, particularly at lower elevations and smaller scales, where such variations have a larger effect. This ability is called terrain-following (Figure \ref{fig:uav_terrain}).
+It is clear that subject distance, and therefore, platform elevation, have important effects on the quality of remotely-sensed data. For a spectrometer, whose output is rendered as a regular grid of intensities, elevation determines the resolving power of the instrument and conversely the amount of mixing within each pixel; for LiDAR, elevation determines the acheivable point density and thus the stastical power of any discretization of the sampled space. It follows that, in the interest in maintaining the resolution and point density of remotely-sensed data, it is necessary to control the elevation of an airborne platform to account for variation in the terrain elevation, particularly at lower elevations and smaller scales, where such variations have a larger effect. This ability is called terrain-following (figure \ref{fig:uav_terrain}).
 
 \begin{figure}
 \centering
@@ -71,17 +75,29 @@ With the current explosion in interest in low-elevation remote-sensing UAVs, the
 
 \textbf{For a remote sensing unmanned aerial vehicle with terrain-following capability, what combination of hardware, software and configuration maximizes the quality of data in terms of the stability of resolution and point density?}
 
-This research will simulate the point patterns of a variety of laser rangefinder configurations, with a variety of error characteristics on a variety of modelled terrains. Existing points clouds produced by real campaigns over different terrains will be used to test the efficacy of the solution. Data quality will be inferred from the size of the variance in the subject distance during flight.
-
-Finally, a multi-rotor UAV will be outfitted according to the results of the simulation for testing.
+This research will simulate the point patterns of a variety of laser rangefinder configurations, with a variety of error characteristics on a variety of modelled terrains. Existing points clouds produced by real campaigns over different terrains will be used to test the efficacy of the solution. Data quality will be inferred from the size of the variance in the subject distance during flight. Finally, a multi-rotor UAV will be outfitted according to the results of the simulation for testing.
 
 \section{Background}
 
 \subsection{Terrain Following}
 
-Research into terrain following has been continuing since the 1960s for the control of ballistic missiles and jet aircraft \cite{KRACHMALNICK1968,Starling1971,Cunningham1980}. Such systems use a forward- and downward-facing RADAR rangefinder to detect the terrain elevation some distance ahead of the vehicle, some means of terrain classification \cite{Cunningham1980}, and a method of altering the vehicle's trajectory to follow the terrain surface as closely as possible. Research on terrain following for military aircraft and missiles has been focused on high-speed, low elevation flight with a premium placed on stealth, speed, efficiency and safety. Neither high speed nor stealth are desireable for a remote sensing mission but some of the same concerns apply. 
+Research into terrain following has been continuing since the 1960s for the control of ballistic missiles and jet aircraft \cite{KRACHMALNICK1968,Starling1971,Cunningham1980}. Such systems use a forward- and downward-facing RADAR rangefinder to detect the terrain elevation some distance ahead of the vehicle, some means of terrain classification \cite{Cunningham1980}, and a method of altering the vehicle's trajectory to follow the terrain surface as closely as possible. Research on terrain following for military aircraft and missiles has been focused on high-speed, low elevation flight with a premium placed on stealth, speed, efficiency and safety \cite{KRACHMALNICK1968}. Neither high speed nor stealth are desireable for a remote sensing mission but the consistency of forward speed and elevation have other benefits: data quality.
 
-When a UAV encounters a change in terrain elevation it must adjust its trajectory. Due to inertia the change in velocity is  necessarily delayed until some time after the vehicle's thrust and attitude have been adjusted. It is thus impossible for a vehicle to follow a terrain exactly using a purely reactive system without backtracking. As an extreme example, if the vehicle approaches a vertical cliff, its horizontal velocity must drop from the nominal flight velocity to zero and its vertical velocity must change from zero. During the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over terrain that is at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will be accellerating in the horizontal direction, causing over-sampling. These anomalies will have to be rectified in post-processing. Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves some or all of the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the sampling density remains constant. In either case, the vehicle must anticipate the change in trajectory in order to successfully follow the terrain without contacting the cliff face or reversing over ground that has already been covered.
+A standard multi-rotor UAV moves by coordinating its thrust and attitude. Unlike a fixed-wing aircaft, which uses control surfaces on its wings, or a helicopter, which tilts its main rotor(s), a mutli-rotor UAV must rotate its chassis to direct the downwash of its fixed rotors and thus its fore, aft and lateral movements. This, too, has an impact on data quality. As the vehicle rotates, its instruments move away from their nadir orientation. 
+
+A hovering UAV requires an amount of thrust (measured in Newtons, $N$) equal to the downward force on the vehicle, given by, 
+
+\begin{equation}
+f = ma,
+\label{eq:hover_force}
+\end{equation} where $f$ is the downwad force, also in Newtons, $m$ is the mass of the vehicle in kg, and $a$ is the acceleration of gravity on Earth, approximately $9.8m/s^2$. A UAV moving forward at a steady state requires an amount of thrust equal to the hovering thrust plus an additional force to maintain altitude while it moves horizontally. This is given by,
+
+\begin{equation}
+v_i = \dfrac{ v_h^2 } { \sqrt{ (v_\infty \cos \alpha)^2 + (v_\infty \sin \alpha + v_i)^2 } } 
+\label{eq:move_force}
+\end{equation}, where $\alpha$ is the angle of attack, $v_\infty$ is the free stream speed (platform velocity plus wind) and $v_h$ is the hover velocity \cite{Hoffmann2007}.
+
+When a UAV encounters a change in terrain elevation it must adjust its trajectory. Due to the inertia of the platform, the change in velocity is  necessarily delayed until some time after the vehicle's thrust and attitude have been adjusted. It is thus impossible for a vehicle to follow a terrain exactly using a purely reactive system without backtracking. As an extreme example, if the vehicle approaches a vertical cliff, its horizontal velocity must drop from the nominal flight velocity to zero and its vertical velocity must change from zero. During the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over terrain that is at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will be accellerating in the horizontal direction, causing over-sampling. These anomalies will have to be rectified in post-processing. Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves some or all of the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the sampling density remains constant. In either case, the vehicle must anticipate the change in trajectory in order to successfully follow the terrain without contacting the cliff face or reversing over ground that has already been covered.
 
 \begin{figure}
 \centering
@@ -93,11 +109,12 @@ When a UAV encounters a change in terrain elevation it must adjust its trajector
 
 With a forward-facing sensor, the problem of an approaching obstacle is easily resolved, but descending presents another problem. As the vehicle approaches the lip of the cliff, the terrain below the face is occluded by its edge (figure \ref{fig:uav_edge_occlude}), depriving the vehicle of elevation information that it needs to optimize its trajectory. With a single-beam rangefinder, at one timestep, the lip will be sampled, and at the next, the ground will be sampled. The vehicle can estimate the terrain as the convex hull of these elevations, and derive a trajectory based on this modelled terrain, but it cannot revise this estimate or its trajectory without a rangefinder with a broader vertical field of view. A similar phenomenon occurs when the vehicle is traversing down a slope that does not intersect with the rangefinder's beam. If the end of the slope is beyond the instrument's range, the vehicle loses contact with the ground and has no information from which to compute a trajectory.  Ideally, the vehicle could have a sensor that is sensitive from nadir to the horizon, and adjust its trajectory iteratively as it approaches the edge. 
 
-This last point reintroduces the discussion of instrument and algorithm selections. 
+To identify a sufficient advance angle for a forward-facing sensor, it is necessary to first calculate the time reqired for a UAV to change its velocity. At the extreme, in the case of the vertical cliff, this is the time required to reduce the vehicle's horizontal velocity to zero. It would be a simple matter to calculate the time required for the vehicle to decelerate given its mass, available thrust, velocity and environmental conditions. However, owing to the fact that a multi-copter must control its speed by pitching, which should be minimized to protect image quality, the rate of deceleration should be carefully considered. The advance warning
 
-
-Use the Velodyne for both terrain following and data acquisition by rotating it forward so that the leading edge points 30 degrees forward and the trailing edge is at nadir. This is probably the best plan.
-
+\begin{equation}
+T_d = \dfrac{v}{\sin(\theta) * E}
+\label{eq:decel}
+\end{equation} 
 
 \begin{figure}
 \centering
@@ -109,13 +126,21 @@ Use the Velodyne for both terrain following and data acquisition by rotating it 
 
 \subsection{Rangefinder and Algorithm Selection}
 
-A spectrometer (i.e., an RGB camera) with a wide-angle lens will cover the desired field of view at high resolution and low cost, but will require computationally-intensive photogrammetric or optical-flow processing to extract range measurements. These methods work only when the platform velocity is sufficient to induce detectable changes in the pixel array. Also, spectrometers are passive sensors, meaning they record reflected light from variable environmental sources, especially the sun. Tracking changes in intensity or colour across the pixel array becomes difficult without the consistency of a controlled energy source, or on low-contrast surfaces, hampering the detection of objects which would be used to compute ranges.
+
+.  at a given velocity and direction. This is dependent on the mass of the vehicle, its available thrust, the acceleration of gravity and the direction of travel. Temperature, wind and other conditions also play a role. 
+
+TODO: Problems with crabbing.
+
+A spectrometer (i.e., an RGB camera) with a wide-angle lens will cover the desired field of view at high resolution and low cost, but will require computationally-intensive photogrammetric or optical-flow processing to extract range measurements. These methods work only when the platform velocity is sufficient to induce detectable changes in the pixel array. Also, spectrometers are passive sensors, meaning they record reflected light from variable environmental sources, specifically the sun. Tracking changes in intensity or colour across the pixel array becomes difficult without the consistency of a controlled energy source, or on low-contrast surfaces, hampering the detection of objects which would be used to compute ranges.
 
 One or more single-beam laser range finders can be mounted statically, on a scanning gimbal or in a mixture of configurations. Laser rangefinders are active scanners that emit laser pulses and measure the time of return from a subject to compute the subject distance. Environmental conditions and scene contrast are not likely to affect measurement accuracy, however point density reduced by scattering, absorbtion or reflection on some surfaces. 
 
-A rotating beam laser scanner, such as the Velodyne VLP-C32, which provides a $40\deg$ vertical and $360\deg$ horizontal field of view, can be mounted vertically to give wide swath that extends from nadir to the horizon. The point density of such instruments can provide a highly accurate and detailed model of the terrain, but they are currently heavy and expensive. 
+Finally, if the main sensing LiDAR is a rotating multi-beam type, it can be rotated slightly forward so that the rear laser points to nadir, and the front laser points forward. Rotating multi-beam scanners such as the Velodyne VLP-C32 differ from standard aerial LiDARs in that, whereas the latter uses a single laser and a rotating mirror to scan the ground, the former uses multiple lasers mounted on a rotating head; insead of a single scan line, the Velodyne creates 32 scan lines on every rotation. The difference is due to the intended application of the scanner, the aerial instrument need only produce a 2-dimensional scan on each rotation, which will be assembled into a 3-dimensional point cloud in post-processing; a car-mounted instrument must produce a 3-dimensional model of the environment on every rotation.
 
-Finally, one or more single-beam rangea and sufficient spread that, if mounted vertically, would provide the desired coverage. Finally, one or more single-beam laser rangefinders could be arranged to sample the space between nadir and the forward-facing laser.
+Because the lasers in a rotating multi-beam scanner revolve around the same axis, each beam forms a cone of light as it does so. When these cones of light intersect a planar surface, they project a parabolic scan line.
+
+, which provides a $40\deg$ vertical and $360\deg$ horizontal field of view, can be mounted vertically to give wide swath that extends from nadir to the horizon. The point density of such instruments can provide a highly accurate and detailed model of the terrain, but they are currently heavy and expensive. 
+
 
 The analysis should consider a parameter that adjusts the transition distance (i.e., smoothing) between zero and some limit, in consideration of the impact on data quality.
 
@@ -242,11 +267,11 @@ Figure \ref{fig:point_plane} shows an example of the output of a hypothetical re
 
 \begin{figure}
 \centering
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_grid_0.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_grid_0001.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_grid_001.pdf_tex}
 \caption{Simulated grid sampling of planar surface with Gaussian error; $\sigma 0$, $\sigma 0.01$ and $\sigma 0.001$.}
 \label{fig:point_plane}
@@ -257,11 +282,11 @@ Figure \ref{fig:sinus_plane} shows the result when the planar model is scanned i
 
 \begin{figure}
 \centering
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_sinus_0.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_sinus_0001.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_sinus_001.pdf_tex}
 \caption{Simulated sinusoidal scan of planar surface with Gaussian error; $\sigma 0$, $\sigma 0.01$ and $\sigma 0.001$.}
 \label{fig:sinus_plane}
@@ -272,11 +297,11 @@ Figure \ref{fig:linear_plane} shows the result when the planar model is scanned 
 
 \begin{figure}
 \centering
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_linear_0.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_linear_0001.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/plane_linear_001.pdf_tex}
 \caption{Simulated linear scan of planar surface with Gaussian error; $\sigma 0$, $\sigma 0.01$ and $\sigma 0.001$.}
 \label{fig:linear_plane}
@@ -286,11 +311,11 @@ Figure \ref{fig:plane_object} shows the result of scanning a plane with a square
 
 \begin{figure}
 \centering
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/block_grid_0.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/block_sinus_0.pdf_tex}
-\def\svgscale{0.4}
+\def\svgscale{0.25}
 \input{build/images/block_linear_0.pdf_tex}
 \caption{Simulated scans of planar surface with obstacle.}
 \label{fig:plane_object}
