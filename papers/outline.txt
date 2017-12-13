@@ -1,0 +1,41 @@
+Intro
+	 - Remote sensing
+	 	- Scales
+	 - Data quality
+	 	- Resolution
+	 	- Mixing
+	 	- Point density
+	 	- Subject distance, IFOV
+	 	- Need for terrain following.
+ 	 - UAVs
+ 	 	- Applications
+ 	 	- Expanding market
+ 	 - LiDAR
+ 	 	- Applications
+ 	 	- Expanding market
+ 	 - Batteries
+ 	 	- Not capable of long flights
+ 	 - Research question
+ 	 - Purpose statement
+ 	 	- Instruments
+ 	 	- Simulation -> Testing
+Background
+	- Data quality
+		- Scale
+		- Resolution
+		- Point density
+		- Elevation
+	- Terrain following
+		- History
+		- Methods
+		- UAV-specific considerations
+		- Physics - advance timing, etc.
+	- Range-finding
+		- Instruments
+		- Possible configurations
+		- Ground classification
+	- Positioning
+		- SLAM
+	- Trajectory determination
+	- Control system
+	- Simulation
