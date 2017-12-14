@@ -20,15 +20,15 @@ Intro
  	 	- Instruments
  	 	- Simulation -> Testing
 Background
-	- Data quality
+	- LiDAR & Hyperspectral
 		- Scale
 		- Resolution
 		- Point density
 		- Elevation
 	- Terrain following
+		- UAV-specific considerations
 		- History
 		- Methods
-		- UAV-specific considerations
 		- Physics - advance timing, etc.
 	- Range-finding
 		- Instruments
