@@ -1,6 +1,6 @@
 %%  Doesn't work... \usepackage{apacite}	% for APA format; requires sudo apt-get install texlive-bibtex-extra
 
-\documentclass[10pt,a4paper]{report}
+\documentclass[10pt]{report}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage{amsmath}
@@ -13,6 +13,7 @@
 \usepackage{svg}		% for graphics
 \usepackage{graphicx}	% for graphics
 \usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+\usepackage{listings}
 
 \fontfamily{ptm}
 
@@ -22,10 +23,13 @@
 
 \DeclareUnicodeCharacter{2010}{ }
 
-
 \author{Rob Skelly}
 \title{Real-Time Terrain Following and Trajectory Adjustment for Remote-Sensing Unmanned Aerial Vehicles}
 
+\lstset{%
+  basicstyle=\small\ttfamily,
+  language=Python
+}
 
 \begin{document}
 
@@ -77,7 +81,7 @@ It is clear that subject distance and, therefore, platform elevation, in the cas
 \label{fig:uav_terrain}
 \end{figure}
 
-The current explosion in interest in UAVs for everything from home delivery to remote sensing to toys to military applications, has made compact UAVs more accessible to researchers than previously. Commercial-grade UAVs with payload capacities of over 6kg are now common, and at reasonable prices. However the use of UAVs for scienctific purposes, though growing, is still fairly new and use-appropriate control systems are a field of rapid development. For remote sensing applications, the need for accurate terrain following systems is being felt. Terrain following contributes not only to the safety of the vehicle and people, animals and property within the study area, but has a profound influence on the quality of data as explained previously. 
+The current explosion in interest in UAVs for everything from home delivery to remote sensing to toys to military applications, has made compact UAVs more accessible to researchers than previously. Commercial-grade UAVs with payload capacities of over 6kg are now common, and at reasonable prices. However the use of UAVs for scienctific purposes, though growing, is still fairly new and use-appropriate control systems are a field of rapid development. For remote sensing applications, the need for accurate terrain following systems is being felt. Terrain following contributes not only to the safety of the vehicle and people, animals and property within the study area, but has a profound influence on the quality of data as explained previously.
 
 UAVs offer many advantages over traditional, manned aerial platforms. First among these is cost. Fixed-wing and rotary surveys may cost thousands of dollars per flight-hour. The instrumentation required for such surveys may cost hundreds of thousands or millions  of dollars. Flight planning and execution of a UAV survey can be accomplished rapidly, and changes to a flight plan do not represent a significant delay or expense. A UAV survey need not originate at an airport. The training required to operate a UAV in accordance with federal regulations, while substantial, is trivial in comparison to pilot training and certification, and a UAV pilot need not be dedicated to the profession. Most importantly, the low platform elevation of a UAV survey radically increases the attainable resolution for raster products and point density for LiDAR products.
 
@@ -85,7 +89,7 @@ Coincidentally, there is a simultaneous explosion of interest robotics, and espe
 
 Unfortunately, the state of the art in battery technology is not adequate to the power requirements of heavily-laden remote-sensing UAVs. The overuse of battery resources entails significant costs in terms of mission turn-around time and expense, in terms of the number of flights required to cover a study area and the number of sets of batteries required to complete a mission. The extra mass and power draw of extra rangefinders for terrain following exacerbates this problem.
 
-These issues motivate the present research and the questions:
+These issues motivate the present research and the questions: \\
 
 \textbf{For a remote sensing unmanned aerial vehicle,
 \begin{enumerate}
@@ -130,15 +134,15 @@ A major issue with all spectrometers is the interaction between light and the at
 
 Platform elevation has several effects on hyperspectral data quality aside from atmospheric effects. The first of these is the effect on resolution, as discussed above: As the platform elevation increases, the sensor's spatial resolution -- that is, its ability to resolve discrete objects -- declines, resulting in spectral mixing within pixels. Another effect is on the ratio of signal to noise. Each element of a hyperspectral scanner captures a discrete value by recording incoming radiation for a specified interval, called the intergration time. For a given platform velocity and integration time (which are set during the planning phase of the mission), the amount of energy received by an element is proportional to the area of visible reflective surface, which is in turn proportional to the platform's elevation. Since the instrument noise is constant, the reduced proportion of incoming energy reduces the signal-to-noise ratio. In order to maintain this ratio despite variations in elevation, the platform must either adjust its speed, which has other undesireable consequences, or the sensor's integration time, which is not possible or desireable in real time. The integration time has consequences with respect to vehicle velocity as well. When the sensor is active, it smears across the target for the duration of its integration time. So long as the velocity is constant and pitching movements are minimized, this effect is constant.
 
-\subsection{Terrain (Surface) Following}
+\subsection{Terrain Following}
 
-The quality issues highlighted in previous sections can be addressed, to an extent, through careful control of the platform's elevtaion, which should remain constant relative to the surface. The axial movements of the platform should also be minimized. However, unlike a fixed-wing aircaft and helicopters, which maintain the attitudes of their chassis using control surfaces and tilting rotors, respectively, a mutli-rotor UAV moves by coordinating the differential thrust of its fixed rotors to rotate its chassis. This poses a unique challenge for the autonomous control of UAVs used in remote sensing. It is important to note that, in remote sensing applications, the surface to be followed may or may not be terrain \emph{per se}, so the more general term, "surface," is preferred.
+The quality issues highlighted in previous sections can be addressed, to an extent, through careful control of the platform's elevation, which should remain constant relative to the surface of interest. The axial movements of the platform should also be minimized. However, unlike a fixed-wing aircaft and helicopters, which maintain the attitudes of their chassis using control surfaces and tilting rotors, respectively, a mutli-rotor UAV moves by coordinating the differential thrust of its fixed rotors to rotate its chassis. This poses a unique challenge for the autonomous control of UAVs used in remote sensing. It is important to note that, in remote sensing applications, the surface to be followed may or may not be terrain \emph{per se}, so the more general term, "surface," may be substituted.
 
 When a UAV encounters a change in surface elevation it must adjust its vertical trajectory. Due to the inertia of the platform, the change in velocity is necessarily delayed until some time after the vehicle's thrust and attitude have been adjusted. It is thus impossible for a vehicle to follow a terrain exactly using a purely reactive system without backtracking. This situation pertains when the vehicle's rangefinder is oriented to nadir. Trivially, if the vehicle approaches a vertical face and is not capable of sensing forward, it will contact the face.  Alternatively, the vehicle may have the ability to sense changes in surface elevation some distance ahead in the direction of travel. Should it encounter a vertical face, it can take evasive action.
 
-In a naive approach to the problem, should the vehicle approach a vertical obstacle, its horizontal velocity must drop to zero and its vertical velocity must increase from zero. This is undesireable in a remote sensing context as, during the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over a surface at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will begin accelerating in the horizontal direction again, with gradually-decreasing over-sampling over the elevated surface. These anomalies will have to be rectified in post-processing, if possible. This strategy entails a considerable increase in flight time. Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the along-track sampling density remains constant.
+In a naive approach to the problem, should the vehicle approach a vertical obstacle, its horizontal velocity must drop to zero and its vertical velocity must increase from zero. This is undesireable in a remote sensing context as, during the deceleration, the sampling density will increase until, during the ascent, the instruments will continue to sample the same ground repeatedly. After the ascent, there will be a brief flight over a surface at the original elevation while the vehicle is at the new elevation. Scale distortion in this region will be maximized. Also at this time, the vehicle will begin accelerating in the horizontal direction again, with gradually-decreasing over-sampling over the elevated surface. These anomalies will have to be rectified in post-processing, if possible. This strategy also entails a considerable increase in flight time. Alternatively, the vehicle can follow a smoothed trajectory which departs from the nominal flight elevation but preserves the vehicle's horizontal velocity (figure \ref{fig:uav_smooth_traj}). In this case, scale distortion is induced in the data, but the along-track sampling density remains constant.
 
-There are mechanisms for enabling terrain following for UAVs which depend on the pre-existence of a digital surface model (DSM). This has two consequences: first, that the survey must have been performed previously and the resulting data processed into a DSM; second, that the DSM must be of sufficient quality, accuracy and detail to control the UAV safely and accurately enough to satisfy the data-quality demands of a remote sensing campaign, given the nature of the terrain, ground cover and the desired flight elevation. Currently-available solutions use the Shuttle Radar Topography Mission (STRM) elevation model, which is one of few freely-accessible global DEMs, but is not a true DSM; C-band RADAR may penetrate up to half way through a forest canopy \cite{Carabajal2005} and will penetrate into snow, depending on its porosity and wetness \cite{Tighe2009}. The maximum resolution of the SRTM DEM is $30'$ (approximately $30\si{\m}$) horizontally and $1\si{\m}$ vertically, with stated vertical accuracy of $\leq16\si{\m}$, much too coarse for low-elevation remote sensing work, particularly in steep or forested terrain.
+There are mechanisms for enabling terrain following for UAVs which depend on the pre-existence of a digital surface model (DSM). This has two consequences: first, that the survey must have been performed previously and the resulting data processed into a DSM; second, that the DSM must be of sufficient quality, accuracy and detail to control the UAV safely and accurately enough to satisfy the data-quality demands of a remote sensing campaign, given the nature of the terrain, ground cover and the desired flight elevation. Currently-available solutions use the Shuttle Radar Topography Mission (STRM) elevation model, which is one of few freely-accessible global digital elevation models (DEMs), but is not a true DSM; C-band RADAR may penetrate up to half way through a forest canopy \cite{Carabajal2005} and will penetrate into snow, depending on its porosity and wetness \cite{Tighe2009}. The maximum resolution of the SRTM DEM is $30'$ (approximately $30\si{\m}$) horizontally and $1\si{\m}$ vertically, with stated vertical accuracy of $\leq16\si{\m}$, much too coarse for low-elevation remote sensing work, particularly in steep or forested terrain.
 
 An ideal solution would be for the UAV to compute a surface model on its own, in real time, and follow the surface at a fixed elevation while executing its flight plan. The point cloud generated by a forward-facing laser may be contributed to that of the downward-facing main LiDAR, both to densify it and to contribute views of the subject from fore and aft, rather than only left and right, as is typical. 
 
@@ -176,15 +180,15 @@ To identify a sufficient advance angle for a forward-facing rangefinder, it is n
 
 Research into terrain following has been continuing since the 1960s for the control of ballistic missiles and jet aircraft \cite{KRACHMALNICK1968,Starling1971,Cunningham1980}. Such systems use a forward- and downward-facing RADAR rangefinder to detect the terrain elevation some distance ahead of the vehicle, some means of terrain classification \cite{Cunningham1980}, and a method of altering the vehicle's trajectory to follow the terrain surface as closely as possible. Research on terrain following for military aircraft and missiles has been focused on high-speed, low elevation flight with a premium placed on stealth, speed, efficiency and safety \cite{KRACHMALNICK1968}. It is important to note the distinction between terrain following and terrain avoidance, here: terrain avoidance involves changing the trajectory of the vehicle, vertically or horizontally, in order to avoid terrain; terrain following implies the maintenance of a minimum distance to the terrain, but also a maximum distance. Missiles and military aircraft must fly low to avoid detection by radar and interception by surface-to-air or airborne weapons. Neither high speed nor stealth are desireable for a remote sensing mission but many of the insights from this research are nevertheless applicable to remote-sensing UAVs.
 
-The key feature of these terrain following systems is their predictive, rather than reactive, nature. Most existing UAV terrain following systems use either a nadir-aligned rangefinder and a feedback loop for adjusting the vehicle's elevation to a predetermined value in real time \cite{ArduPilot2017}, or a pre-exiting elevation model which is interpolated to generate a three dimensional flight path \cite{ArduPilot2017,Samar2011}. Military terrain following systems provide both the ability to adaptively respond to terrain without pre-planning, and the ability to optimize their flight plans in flight with some degree of foresight. 
+The key feature of these terrain following systems is their predictive, rather than reactive, nature. Most existing UAV terrain following systems have used either a nadir-aligned rangefinder and a feedback loop for adjusting the vehicle's elevation to a predetermined value in real time \cite{ArduPilot2017}, or a pre-exiting elevation model which is interpolated to generate a three dimensional flight path \cite{ArduPilot2017,Samar2011}. Military terrain following systems provide both the ability to adaptively respond to terrain without pre-planning, and the ability to optimize their flight plans in flight with some degree of foresight. 
 
 For example, Starling \cite{Starling1971} envisioned a RADAR-based system featuring a virtual "ski" sliding on the terrain ahead of, and in alignment with, the aircraft. As the ski encountered a rise, its axis would intersect that of the aircraft, generating a climb-command, causing the aircraft to climb. As the ski rode the terrain down again, the axes of the aircraft and the ski would diverge, generating a descend-command. This feature had the valueable quality that on low-frequency terrain, the aircraft would follow it closely. On high-frequency terrain, the aircraft woud tend to smooth the terrain, following a trajectory that would not exceed the gravitational tolerances of the pilot (about 1g). Several authors (\cite{MENON1991,Popovic2017,Lu1995,Rahim2011,Samar2011}) suggest the use of polynomial splines for developing smoothed trajectories from terrain elevations, and Lu and Pierson \cite{Lu1995} documented a method for terrain-following in a fixed-wing aircraft by exploiting the lift and drag properties of the vehicle and "bang-bang" (on/off) throttle control. 
 
 None of these strategies are ideal for remote sensing UAVs. In the first and second instances, maintaining a constant elevation with respect to terrain immediately below the vehicle is not the rsearchers' primary concern. In the third, reliance on the aerodynamic lift of the craft to smooth elevation changes in a power-off situation is a non-starter, as multi-copters have essentially none.
 
-Alqahtani and Emron \cite{Alqahtani2018} devised a system using using downward- and forward-facing single-beam rangefinders and a Gaussian surface filter with various window sizes to anticipate terrain undulations and project a forward trajectory for terrain avoidance. This research generated some important insights and resolved some of the issues highlighted at the beginning of this section. The authors found that, though a small Gaussian window would enable the vehicle to follow terrain closely, it would also cause the vehicle to hit large obstacles if the laser were not aimed high enough. The occlusion problem (figure \ref{fig:uav_edge_occlude}) could be resolved, in part, by reducing the Gaussian window dynamically according to the orientation of the terrain surface. The authors found that this strategy could reduce the vehicle's power consumption by eliminating hard transitions in and out of altitude control.
+Alqahtani and Emron \cite{Alqahtani2018} devised a system using using downward- and forward-facing rangefinders with a Gaussian surface filter with various window sizes to anticipate terrain undulations and project a forward trajectory. This research generated some important insights and resolved some of the issues highlighted at the beginning of this section. The authors found that, though a small Gaussian window would enable the vehicle to follow terrain closely, it would also cause the vehicle to hit large obstacles if the laser were not aimed high enough. The occlusion problem (figure \ref{fig:uav_edge_occlude}) could be resolved, in part, by reducing the Gaussian window dynamically according to the orientation of the terrain surface. The authors found that this strategy could reduce the vehicle's power consumption by eliminating hard transitions in and out of the altitude control loop.
 
-The use of a three-dimensional point cloud and ground classification algorithms do not seem to have not appeared in the been the literature concerning UAV terrain following, perhaps because the LiDAR devices small enough for use on such vehicles are a recent innovation. While Alqahtani and Emron did not address the use these devices, their work nevertheless provides a valuable starting point for the present research. 
+The use of a three-dimensional point cloud and ground classification algorithms do not seem to have not appeared in the literature on UAV terrain following, perhaps because LiDAR devices small enough for use on such vehicles are a recent innovation. While Alqahtani and Emron did not address the use these devices, their work nevertheless provides a valuable starting point for research in this area. 
 
 \iffalse
 
@@ -208,23 +212,45 @@ T_d = \dfrac{v}{\sin(\theta) * E}
 
 \subsection{Rangefinder and Algorithm Selection}
 
-A digital RGB camera with a wide-angle lens will cover the desired field of view at high resolution and low cost, but will require computationally-intensive photogrammetric or optical-flow processing to extract range measurements. These methods work only when the platform velocity is sufficient to induce detectable changes in the pixel array. Also, spectrometers are passive sensors, meaning they record reflected light from variable environmental sources, specifically the sun and are thus subject to weather conditions and the availability of daylight. Tracking changes in intensity or colour across the pixel array becomes difficult without the consistency of a controlled energy source, or on low-contrast surfaces, hampering the detection of objects which would be used to compute ranges. Finally, neither photogrammetry or optical-flow provide the level of canopy penetration that laser instrument can.
+The success of a surface-following application depends on the ability to accurately locate the terrain with respect to a moving vehicle. There are many instruments capable of providing this service, including RGB cameras, lasers, sonar devices and RADAR. Laser and camera rangefinders are considered here.
 
-One or more single-beam laser range finders can be mounted statically (as per \cite{Alqahtani2018}), on a scanning gimbal \cite{LightWare2017} or in a mixture of configurations. Laser rangefinders are active scanners that emit laser pulses and measure the time of return from a subject to compute the subject distance. Environmental conditions and scene contrast are not likely to affect measurement accuracy, however point density reduced by scattering, absorbtion or reflection on some surfaces, such as water. These rangefinders are cheap and light but do not offer the spatial coverage of either a digital camera or a scanning LiDAR, making the intelligent analysis of terrain conditions difficult.
+\subsubsection{RGB Camera}
 
-Scanning LiDAR devices --- whether spinning or oscillating mirror type, rotating single- or multi-beam or solid state --- provide the most complete coverage of a surface and enable the most comprehensive analysis of the surface. These are heavier than other options, consume more power, and produce a large enough volume of data that processing can be complex and time consuming, but they resolve most of the problems inherent in digital cameras and single-beam rangefinders.
+A digital RGB camera with a wide-angle lens will cover a wide field of view at high resolution and reasonably low cost relative to other instruments, but will require computationally-intensive photogrammetry or optical-flow processing to extract range measurements \cite{Campos2016,Herisse2010,Netter2002,Hammoud2011}, though, as noted by Campos \cite{Campos2016}, the most processing-intensive step in this process may be the image encoding. In general, the quality and resolution of a camera are proportional to its cost and weight. Also, spectrometers are passive sensors, meaning they record reflected light from variable environmental sources, specifically the sun, and are thus subject to weather conditions and the availability of daylight. Tracking changes in intensity or colour across the pixel array becomes difficult without the consistency of a controlled energy source or on low-contrast and complex surfaces, hampering the detection of objects which would be used to compute ranges. 
+
+Optical flow is a method that attempts to estimate the structure of a three-dimensional space by tracking the changes in position of objects within the space, as projected into two-dimensional space (the image itself). The motion of objects is represented in the image as changes in intensity of pixels within the pixel array. This method works only when the camera motion, hence platform velocity, is sufficient to induce detectable changes in the pixel array during the required time interval, and may fail when the magnitude of change exceeds a reference value \cite{Srinivasan1994}. Optical flow works best over planar terrain, with errors of up to 10\% \cite{Campos2016} on more complex surfaces. Also, platform rotation can interfere with the accuracy of range measurements and the penetration of porous surfaces, such as forest canopies is not possible. Indeed, such surfaces may confuse the algorithm. Interestingly, in studies of photo-flow for use in UAV terrain following, single-beam laser rangefinders mounted with the camer are often used for validation \cite{Campos2016}.
+
+Photogrammetry is a method using parallax to generate a point cloud from sequential image frames \cite{Carrivick2016}. These points may then be used as if they were generated by a scanning LiDAR, however this method suffers from many of the same limitations as optical flow.
+
+\subsubsection{Single-beam Laser Rangefinders}
+
+One or more single-beam laser range finders can be mounted statically (per \cite{Alqahtani2018}), on a scanning gimbal \cite{LightWare2017} or in a mixture of configurations. These instruments use the time-of-return of a pulse of laser light to calculate the distance to a reflector. This distance must be transformed, if desired, into a polar or Cartesian coordinate by an external computer. Laser rangefinders are active scanners that emit their own energy, so they are less dependent on environmental conditions and scene contrast for measurement accuracy, however measurement density with respect to time may be reduced by scattering, absorbtion or reflection on some surfaces, such as water which both reflects and absorbs light at the typical wavelength of $\sim1000\si{\nm}$. These devices are cheap and light but do not offer the spatial coverage of either a digital camera or a scanning LiDAR, making the intelligent analysis of terrain conditions an   d ground cover --- as opposed to the simple elevation --- difficult. However, they are highly accurate within their nominal range \cite{Campos2016} and the type and volume of data they produce is fairly trivial to process using a Gaussian \cite{Alqahtani2018}, Kalman \cite{Kalman1960} or other smoothing regime. High-qality versions of these instruments produce over 18,000 pulses per second at accuracies of $\pm10\si{\cm}$ or better \cite{LightWare2016}.
+
+
+\subsubsection{Scanning LiDAR}
+
+Scanning LiDAR devices --- whether spinning or oscillating mirror type, rotating single- or multi-beam or solid state --- provide scene coverage second only to that of a digital camera and, being active sensors, suffer less from the influence of environmental conditions. These are heavier than other options, consume more power, and produce a large enough volume of data that processing can be complex and time consuming, but they resolve most of the problems inherent in digital cameras and single-beam rangefinders. With a high-enough scanning frequency, the servo-mounted single-beam laser could be included in this category.
 
 With the advent of automotive multi-beam scanning LiDAR devices, a unique opportunity arises. Unlike traditional scanning LiDARs, these devices produce multiple, simultaneous scan-lines over an arc from $30\degree$ to $40\degree$. By tilting these instruments slightly forward, they can serve as both the main remote sensing instrument, and the the terrain following sensor, and can provide sufficient point density and coverage for extremely accurate real-time terrain characterization. For a vehicle flying at 35m elevation, a LiDAR scanning $30\degree$ forward offers approximately $20\si{\m}$ of advance coverage, or $4\si{\s}$ at $5\si{\m\per\s}$. 
 
-The data produced by the rangefinder must be processed for several purposes. 
+With the dense, three-dimensional point clouds produced by scanning LiDARs, there arises the opportunity to characterize terrain features in a way that is impossible with other methods. This is due in part to the distribution of points and to their number. If the space under examination is discretized into useable parcels, there are enough measurements in each to perform a robust statistical analyisis and classification of the features that lie therein. There are many methods for analyzing dense point clouds, removing noise and classifying objects, but it is important to remember for this research that the object is less the accurate classification of ground cover and more the rapid determination of a safe and accurate trajectory.
 
-If a photo-flow or photogrammetric solution is selected, the imagery generated by the camera must be processed in real time to produce a three-dimensional model of the environment, from which ranges can be extracted.
+A Cartesian LiDAR-derived z-coordinate is composed of three elements, 
 
-If one or more single-beam rangefinders are chosen, there is not much processing, unless one or more of them is mounted on a scanning servo.
+\begin{equation}
+E_{sensor} = E_{ground} + E_{non-ground} + M_{noise},
+\label{eq:decel}
+\end{equation} 
 
-If a scanning LiDAR is used, either separately or the main instrument, there are many more opportunities to derive useful navigational cues, such as the identification of vegetation vs. terrain (for terrain surveys), the distinction between small obstacles and slopes, side-views while turning.
+where $E_{sensor}$ is the measured height, $E_{ground}$ is the true ground elevation, $E_{non-ground}$ is the height of objects on the ground, and $M_{noise}$ is measurement error, which may arise from a variety of sources \cite{Meng2010}. The various classification methods interact with different parts of this triad, with different goals. Isolating the terrain elevation may be a simple case of marking all last-return points points as ground, and then removing outliers according to specified criteria. Though objects on the terrain are often penetrable by the laser and therefore distinguishable from terrain, the opposite is sometimes true. When such objects are opaque, a more sophisticated method must be used to isolate and identify them.
 
-Once an accurate picture of the surface elevations is derived, the flight controller must decide what to do and when to do it. This includes calculating the ideal trajectory given the current state of knowledge of the surface and the dynamic constraints on the platform.
+Motivated by Tobler's principle, in which objects nearer to each other in space are likely to be more similar, Vosselman \cite{Vosselman2000} proposed a method whereby the slope measured between two adjacent points could determine, based on a threshold, whether both were ground, or one was non-ground. In this case, the threshold angle would be determined by the scale of measurement and the nature of the environment. For example, a very low threshold angle would detect a person standing on a football field, while it would take a significantly higher angle to detect the same person on a steep slope. Also in the Toblerian vein, Khosravipour \cite{Khosravipour2016} used the "spikiness" of facets in a triangulated irregular network (TIN) of LiDAR points to idenitfy points that did not belong to the terrain surface; given the presumption of regularity in the distribution of points in the horizontal dimensions, an overly accute angle in any facet could likely be caused by an extreme in the vertical dimension. 
+
+The progressive morphological filter \cite{Zhang2003} uses a progressively-opening "window," within which the minimum-elevation point is selected, to iteratively distinguish ground points from objects. Chang \emph{et al} \cite{Chang2008} used the detection of occluded --- that is, empty --- regions in an oblique scan to identify and filter non-ground points, and there are other methods using thin plate splines \cite{Hudak2012}, Hermite splines \cite{Silvan-Cardenas2006} and others \cite{Hodgson2005,Zheng2007,Zhang2005}.
+
+These methods have in common single object of accuracy with respect to the true terrain elevation and the identification of points that are representative of terrain. For the purposes of terrain following, accuracy and object identification are less important than efficiency and safety. To determine the correct flight elevation over terrain, the UAV needs a reasonably accurate representation of the elevation, excluding objects such as plants and vehicles, for example, but the respresentation will be smoothed as it is developed into a trajectory so absolute accuracy is relatively unimportant. For vehicles that must follow the surface, which includes the vegetative canopy or buildings, the vehicle need not perform any classification at all, only remove points suspected of being noise and develop a smooth trajectory over the rest. This considerably simplifies the task of developing the surface model.
+
+One possible solution is to store all LiDAR points during a time interval into a grid of lists, with each list representing a column with a predetermined spatial extent. At the end of the interval, the mean of a selected quantile will be used as the elevation --- a high quantile for a forest canopy, for example, and a low quantile for terrain.
 
 
 \iffalse
@@ -250,47 +276,37 @@ A typical UAV uses the Global Positioning System (GPS) for absolute positioning 
 \subsection{Mission Planning}
 
 
-For remote sensing surveys using UAVs, missions are generally not flown manually by the pilot, but planned using software that lays out a regular grid of flightlines optimised for data resolution and flight line overlap. However, these mission plans are two-dimensional only, and must be augmented by an auxiliary terrain-following process.
+For remote sensing surveys using UAVs, missions are generally not flown manually by the pilot, but planned using software that lays out a regular grid of flightlines optimised for data resolution and flight line overlap. However, these mission plans are two-dimensional only, and must be augmented by an auxiliary terrain-following process. One such software product is Maps Made Easy, which produces flight plans for popular UAVs made by the DJI company.
 
-One such software product is Maps Made Easy, which produces flight plans for popular UAVs made by the DJI company. 
-
-
-\subsection{Ground Classification}
-
-Single-beam vs. multi-beam.
-
-Multi-element vs. planar. \cite{Nobili2015}
-
-
-In cases where the researcher is concerned with vegetation or human-made structures, a UAV will generally be required to follow the surface elevation. In the case of forest or agricultural research, this will be the vegetative canopy, while in the case of structures, this will simply be a safe elevation. For surveys of the underlying terrain, some kind of ground classification must occur --- the vehicle must be able to distinguish between object on the terrain (which will be filtered out in post-processing) and the terrain itself. At the same time, the vehicle must maintain the ability to reconize the existence of object which are higher than its flight elevation, and react accordinly.
-
-The technology for automating ground classification is not mature \cite{Vosselman2001,Vosselman2000} and perfection is, of course, not possible. But what are the implications for UAV control, but there are several methods for the identification of terrain features. The simplest of these is to take the last return from every pulse, as this represents the most distant surface from the platform --- the ground.
-
-The point density of the instrument is likely to be limited, as is the capability of processing the full cloud. A higher density is better for classification, but instrument noise and vegetation present serious issues. What if the point cloud cannot penetrate into the canopy? The drone may have some way of reconciling a naive assumption about the nature of the terrain, and the information is receiving from the scanner?
-
+\section{Methods}
 
 \subsection{Simulation}
 
-Given the variety of laser scanner types and configurations, and the variety of terrain and ground-cover types a UAV may encounter, it is prudent to attempt to simulate and assess a variety of virtual instruments and conditions before purchasing hardware. Several rangefinder configurations are listed in figure \ref{list:rangefinder_configs}.
+Given the number of available laser scanner types and configurations, ground classification routines and trajectory methods and the variety terrain and ground-cover types a UAV may encounter, it will be prudent to execute computerized simulations of a number of permutations before acquiring hardware and performing flight tests. Several rangefinder configurations are listed in figure \ref{list:rangefinder_configs}. 
 
-\begin{itemize}
-\item Single-beam, single-return.
-\item Single-beam, multi-return.
-\item Single-beam, single-return with a servo driver for mechanical, side-to-side scanning.
-\item Split-beam, multi-return, solid-state.
-\item Multi-beam, multi-return, solid-state.
-\item single-beam, multi-return, spinning laser.
-\item Multi-beam, multi-return, spinning laser.
-\item Multi-beam, multi-return, spinning mirror.
-%% \caption{Laser rangefinder configurations.}
+\begin{table}
+\caption{Rangefinder configurations.}
 \label{list:rangefinder_configs}
-\end{itemize}
+\begin{tabular}{r | l}
+\hline
+1 & Single-beam, single-return. \\
+2 & Single-beam, multi-return. \\
+3 & Single-beam, single-return with a servo driver for mechanical, side-to-side scanning. \\
+4 & Split-beam, multi-return, solid-state. \\
+5 & Multi-beam, multi-return, solid-state. \\
+6 & Single-beam, multi-return, spinning laser. \\
+7 & Single-beam, multi-return, spinning mirror. \\
+9 & Single-beam, multi-return, oscillating mirror. \\
+10 & Multi-beam, multi-return, spinning laser. \\
+\hline
+\end{tabular}
+\end{table}
 
-It must also be determined which sampling method is optimal. A static single-beam range finder will produce a series of points in a line along trajectory of the platform. This may be sufficient to detect the surface elevation directly in front of the platform, but may not be robust to noise, may not enable the detection of ground returns, and will not produce a useful side-view when the vehicle is turning. Single-beam lasers are cheap and lightweight, which reduces the load on the platform's power supply. A fan-shaped scanning pattern would produce a 3-dimensional point cloud which would enable ground point filtering, some noise removal and limited side-looking ability in turns. These instruments are more costly and heavier, but may be able to contribute to improved data quality and platform safety. Single-beam rangefinders may be mounted statically or on a servo, which scans back and forth across the terrain in a sinusoidal fasion (figure \ref{fig:sinus_plane}).
 
 The output of any rangefinder can be simulated by defining a terrain-generating function and sampling it at positions that would be read by the instrument. Gaussian noise can be applied to the samples simulate measurement error using the characteristics documented by the manufacturer or testing. In a real-world scenario, it would be neccessary to account for uncertainty about the vehicle's elevation and the actual elevation of the terrain. In a simulated environment these can be controlled, leaving only the optimality of the trajectory to be assessed.
 
-Figure \ref{fig:point_plane} shows an example of the output of a hypothetical regular sampling of a planar surface. The first plot shows the outcome using measurements with zero uncertainty. In the second and third images, the measurements are perturbed by random Gaussian noise with standard deviations of 0.001 and 0.01, respectively, to simulate error.
+Figure \ref{fig:point_plane} shows an example of the output of a hypothetical regular sampling of a planar surface. The first plot shows the outcome using measurements with zero uncertainty. In the second and third images, the measurements are perturbed by random Gaussian noise with standard deviations of 0.001 and 0.01, respectively, to simulate error. Single-beam rangefinders may be mounted statically (figure \ref{fig:linear_plane}) or on a servo, which scans back and forth across the terrain in a sinusoidal fasion (figure \ref{fig:sinus_plane}). A list of possible surface types can be found in figure \ref{list:ground_types}. These lists are not exhaustive. 
+
 
 \begin{figure}
 \centering
@@ -304,9 +320,6 @@ Figure \ref{fig:point_plane} shows an example of the output of a hypothetical re
 \label{fig:point_plane}
 \end{figure}
 
-
-Figure \ref{fig:sinus_plane} shows the result when the planar model is scanned in a sinusoidal fasion by a servo-mounted rangefinder.
-
 \begin{figure}
 \centering
 \def\svgscale{0.25}
@@ -318,9 +331,6 @@ Figure \ref{fig:sinus_plane} shows the result when the planar model is scanned i
 \caption{Simulated sinusoidal scan of planar surface with Gaussian error; $\sigma 0$, $\sigma 0.01$ and $\sigma 0.001$.}
 \label{fig:sinus_plane}
 \end{figure}
-
-
-Figure \ref{fig:linear_plane} shows the result when the planar model is scanned in a linear fasion by a statically-mounted rangefinder.
 
 \begin{figure}
 \centering
@@ -334,7 +344,20 @@ Figure \ref{fig:linear_plane} shows the result when the planar model is scanned 
 \label{fig:linear_plane}
 \end{figure}
 
-Figure \ref{fig:plane_object} shows the result of scanning a plane with a square object using a grid, sinusoidal scan and linear scan.
+\begin{table}
+\caption{Surface generation methods.}
+\label{list:ground_types}
+\begin{tabular}{r | l}
+\hline
+1 & Planar. \\
+2 & Continuous non-planar functions \\
+3 & Planar and functional surfaces with geometric objects \\
+4 & Surfaces reconstructed from existing LiDAR \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:plane_object} shows the expected result of scanning a plane with a square object using a grid, sinusoidal scan and linear scan from a nadir-aligned instrument.
 
 \begin{figure}
 \centering
@@ -349,57 +372,69 @@ Figure \ref{fig:plane_object} shows the result of scanning a plane with a square
 \end{figure}
 
 
-Any rangefinder configuration
+Trajectory-extraction methods are listed in figure \ref{list:traj_methods}. The absolute offset trajectory is used as a control of sorts because, under this regime, the vehicle will behave as if it had a nadir-aligned rangefinder and the ability to react instantaneously to fluctuations in the surface elevation, an event that would create discontinuities in the power curve or cause collisions with steep slopes. The ground classification methods  (figure \ref{list:class_methods}) also feature a control in the form of non-classified point stream. In the case of \cite{Alqahtani2018}, for example, this is expected, however it will be interesting to record whether ground point classification and outlier filtration have any meaningful effect on the trajectories.
 
-of these can be simulated by reading an existing real-world or generated point cloud, applying parametric noise and densification, and streaming the points into the navigation system as if they were being produced at flight time by a rangefinder. If a real-world point cloud is used, the measurement error inherent in the original product may be maintained or increased, and it may be densified using the documented nominal uncertainty for the campaign. A modeled terrain, such as a simple plane or three-dimensional polynomial surface, with or without objstructions, can be sampled at an arbitrary density and the samples perturbed using Brownian or Gaussian noise.
+\begin{table}
+\caption{Trajectory-finding methods.}
+\label{list:traj_methods}
+\begin{tabular}{r | l | c}
+\hline
+1 & Absolute offset (control) & \\
+2 & Gaussian smoothing & \cite{Alqahtani2018} \\
+3 & Hermite spline &  \cite{Silvan-Cardenas2006} \\
+4 & Thin-plate spline & \cite{Hudak2012} \\
+\hline
+\end{tabular}
+\end{table}
 
-Simulate a variety of terrain conditions: Flat, sloped, undulating, etc. with and without obstacles
-
-Generate simulated point clouds as if from a rangefinder or scanner, single or multibeam.
-
-Add parameterized noise to the simulated measurements to simulate real-world noisy measurements.
-
-Generate noisy vehicle position inputs, etc.
-
-LIDAR ACCURACY \cite{May2007}
-
-
-
-
-\subsection{Control}
-
-Control Loops
-
-
-
-
-
-
-
-
-** Most (all?) current applications use a nadir laser and reactive paradigm. I want to create a smoothed trajectory with configurable limits (for safety) based on a predictive regime. a) from facing forward, and b) from computing trends based on past measurements.
-
-** Kalman filter. Can be used to compute a trajectory from the vehicle’s current state and inputs from instruments, and flight plan. 
+\begin{table}
+\caption{Ground point classifiers.}
+\label{list:class_methods}
+\begin{tabular}{r | l | c}
+\hline
+1 & None (control) & \\
+2 & Quantile filtering & \\
+3 & Slope-based & \cite{Vosselman2000} \\
+4 & Progressive morphological filter & \cite{Zhang2003} \\
+\hline
+\end{tabular}
+\end{table}
 
 
+The point pattern of any of these instruments can be generated at any density with a variety of error characteristics using a simple program. The code in listing \ref{fig:scan_code}, for example, generates a sinusoidal scan along a plane with a scan frequency of $2\si{\Hz}$ and pulse frequency of $200\si{\Hz}$ and a configurable error term for each dimension. Knowing that the elevation of the plane is a constant, zero, one can reverse-engineer the error characteristics of the virtual instrument used to generate this scan. Simulated terrains may also be generated from existing LiDAR scans of real-world environments and re-scanned using the virtual scanners. 
 
-Photogrammetry
-Still a possibility
+\begin{figure}
+\begin{lstlisting}
+theta = 0     # scan angle
+time = 0      # current time step
+x_range = 50  # scan width in x
+y_speed = 0.1 # speed in y per time step
+while True:
+	x = sin(theta) * x_range + error(0.05)
+	y = time * y_speed + error(0.05)
+	z = error(0.1)
+	theta += PI / 2 / 100
+	time += 1
+	sleep(5)
+\end{lstlisting}
+\caption{Simple script for generating sinusoidal scan. Error function returns a Gaussian with the given standard deviation.}
+\label{fig:scan_code}
+\end{figure}
 
-Makers:
-Velodyne (solid state lidar coming)
-Quanergy (S3)
-AEye
-Leddar (range sucks; 20m @ 18% grey)
+The steps for each simulation trial are listed in figure \ref{fig:traj_sim}. The final step, assessing the quality of the trajectory, must respect some specific constraints. First, it should follow as nearly as possible the modelled surface. This can be measured using the sum of least squares of differences between the trajectory and the surface. The fact that the trajectory follows the surface closely does not mean that the vehicle will be able to follow the trajectory, nor that if it does so successfully, it will do it efficiently. Since the trajectory is modelled as a sequence of line segments, the physics of a vehicle may be approximately modelled given the state (i.e. velocity vector) of the vehicle at the start of the segment and the slope of the current segment. Given this information it will be possible to model the thrust required for the vehicle to follow the trajectory. If the thrust is within the vehicles nominal limits, the traversal will be considered successful. Given that vehicle power consumption is proportional to its thrust, it will be possible to model the power consumption of the vehicle by minimizing the integral of its thrust curve over the length of the trajectory. Since the trajectory is represented as a line string, rather than a continuous function, for practical reasons, it will suffice to calculate the power consumption by summing the area under each segment of the power curve.
 
-Purpose: Build a system that:
+\begin{enumerate}
+\item Configure surface model.
+\item Generate point cloud from modelled surface using pre-determined error parameters.
+\item Classify ground points (optional).
+\item Classify non-ground points (optional).
+\item Select points for trajectory computation.
+\item Compute trajectory.
+\item Assess trajectory quality.
+\label{fig:traj_sim}
+\end{enumerate}
 
-\begin{itemize}
-\item Ascertains the vehicle's state using GPS and INS inputs and the Kalman filter.
-\item Ascertains the elevation some fixed distance in front of the vehicle using a forward-facing rangefinder; multi- or single-beam TBD; ground classification requirements TBD.
-\item Adjusts the 2D trajectory using the vehicle's state and future changes in elevation using some smoothing method (possibly Kalman) as well as insight gleaned from other terrain following methods.
-\item Controls the vehicle so that it will follow the trajectory.
-\end{itemize}
+Ultimately, each step in the simlation (figure \ref{fig:traj_sim}) will be represented by such a program. Chained together, they will produce a numerical assessment of the quality of the instrument and algorithm selection with respect to data quality and power consumption.
 
 
 \bibliographystyle{plain}
