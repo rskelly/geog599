@@ -9,32 +9,57 @@
 
 int main(int argc, char** argv) {
 	
+	cv::namedWindow("Display1", cv::WINDOW_AUTOSIZE);
+	//cv::namedWindow("Display2", cv::WINDOW_AUTOSIZE);
+
 	cv::String path(argv[1]);
-	std::cout << "c\n";
 	cv::VideoCapture vid(path);
 	cv::Mat frame;
 
-	cv::namedWindow("Display1", cv::WINDOW_AUTOSIZE);
-	cv::namedWindow("Display2", cv::WINDOW_AUTOSIZE);
-	std::cout << "d\n";
 	vid >> frame;
 	if(frame.empty())
 		return -1;
 
-	cv::Mat last(frame.rows, frame.cols, frame.type());
-	cv::Mat flow(frame.rows, frame.cols, CV_32FC2);
-	cv::Mat flow0(frame.rows, frame.cols, CV_32F);
+	cv::Mat mono(frame.rows, frame.cols, CV_8U);
+	cv::Mat last(mono.rows, mono.cols, mono.type());
+	cv::Mat lines(mono.rows, mono.cols, frame.type());
+
+	std::vector<cv::Mat> channels(3);
+	cv::split(frame, channels);
+	channels[0].convertTo(mono, CV_8U);
+
+	cv::Mat err;
+	std::vector<uchar> found;
+	std::vector<cv::Point2f> next;
+	std::vector<cv::Point2f> current;
+	std::vector<cv::Point2f> previous;
+
+	cv::goodFeaturesToTrack(mono, current, 256, 0.01, 30);
+
 	while(true) {
-		frame.copyTo(last);
+		previous.assign(current.begin(), current.end());
+		mono.copyTo(last);
 		vid >> frame;
 		if(frame.empty())
 			break;
-		cv::optflow::calcOpticalFlowSparseToDense(last, frame, flow);
-		std::cout << flow.channels() << "\n";
-		std::vector<cv::Mat> channels(2);
-		cv::split(flow, channels);
-		cv::imshow("Display1", frame);
-		cv::imshow("Display2", channels[1]);
+
+		std::vector<cv::Mat> channels(3);
+		cv::split(frame, channels);
+		channels[0].convertTo(mono, CV_8U);
+
+		cv::goodFeaturesToTrack(mono, current, 256, 0.01, 64);
+		cv::calcOpticalFlowPyrLK(last, mono, previous, next, found, err);
+
+		frame.copyTo(lines);
+
+		for(size_t i = 0; i < next.size(); ++i) {
+			if(found[i])
+				cv::line(lines, previous[i], next[i], cv::Scalar(0, 0, 255), 2);
+		}
+
+		cv::imshow("Display1", lines);
+		//cv::imshow("Display2", lines);
+
 		cv::waitKey(20);
 	}
 
