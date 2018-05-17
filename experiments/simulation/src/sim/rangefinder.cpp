@@ -34,10 +34,6 @@ SimRangefinder::SimRangefinder() :
 	m_scanFreq(1), m_pulseFreq(1),
 	m_demds(nullptr), m_demband(1),
 	m_nextTime(0) {
-
-	std::poisson_distribution<int>::param_type m(10);
-	m_generator.seed(1.0);
-	m_distribution.param(m);
 }
 
 void SimRangefinder::setDEM(const std::string& filename, int band) {
@@ -49,8 +45,6 @@ void SimRangefinder::setDEM(const std::string& filename, int band) {
 
 void SimRangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
-	std::poisson_distribution<int>::param_type m(m_pulseFreq);
-	m_distribution.param(m);
 }
 
 void SimRangefinder::setScanFrequency(double freq) {
@@ -109,8 +103,7 @@ Range* SimRangefinder::range() {
 		double range = computeRange(angle);
 		result = new SimRange(range, t);
 	}
-	int p = m_distribution(m_generator);
-	m_nextTime = t + (0.1 * p) * m_pulseFreq;
+	m_nextTime = t + m_poisson.next(m_pulseFreq);
 	return result;
 }
 

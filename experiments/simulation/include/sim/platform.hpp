@@ -8,6 +8,7 @@
 #ifndef INCLUDE_SIM_PLATFORM_HPP_
 #define INCLUDE_SIM_PLATFORM_HPP_
 
+#include "util.hpp"
 #include "../platform.hpp"
 
 /**
@@ -19,7 +20,9 @@ private:
 	Eigen::Matrix3d m_orientation;
 	Eigen::Vector3d m_position;
 
+	Poisson m_posPoisson;
 	double m_forwardVelocity;
+	double m_lastTime;
 
 public:
 

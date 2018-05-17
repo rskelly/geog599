@@ -9,12 +9,12 @@
 #define INCLUDE_SIM_RANGEFINDER_HPP_
 
 #include <string>
-#include <random>
 
 #include <Eigen/Core>
 #include <gdal_priv.h>
 
 #include "../rangefinder.hpp"
+#include "../util.hpp"
 
 /**
  * SimRangefinder is a simulated range finder that emits ranges as if
@@ -41,8 +41,7 @@ private:
 	GDALDataset* m_demds;
 	int m_demband;
 
-	std::default_random_engine m_generator;
-	std::poisson_distribution<int> m_distribution;
+	Poisson m_poisson;
 	double m_nextTime;
 
 	Eigen::Matrix3d m_orientation;
