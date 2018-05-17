@@ -53,34 +53,34 @@ public:
 	virtual Range* range() = 0;
 
 	/**
-	 * Set the orientation of the instrument relative to the frame
+	 * Set the orientation of the instrument relative to the inertial frame
 	 * of the platform.
 	 *
-	 * @param mtx A 3-element vector.
+	 * @param mtx A 3x3 matrix.
 	 */
-	virtual void setOrientation(const Eigen::Vector3d& mtx) = 0;
+	virtual void setOrientation(const Eigen::Matrix3d& mtx) = 0;
 
 	/**
-	 * Get the orientation of the instrument relative to the frame
+	 * Get the orientation of the instrument relative to the inertial frame
 	 * of the platform.
 	 *
-	 * @return A 3-element vector.
+	 * @return A 3x3 matrix.
 	 */
-	virtual const Eigen::Vector3d& orientation() const = 0;
+	virtual const Eigen::Matrix3d& orientation() const = 0;
 
 	/**
-	 * Set the position of the instrument relative to the frame
+	 * Set the position of the instrument relative to the inertial frame
 	 * of the platform.
 	 *
-	 * @param mtx A 3-element vector.
+	 * @param mtx A 3x1 matrix.
 	 */
 	virtual void setPosition(const Eigen::Vector3d& mtx) = 0;
 
 	/**
-	 * Get the position of the instrument relative to the frame
+	 * Get the position of the instrument relative to the inertial frame
 	 * of the platform.
 	 *
-	 * @return A 3-element vector.
+	 * @return A 3x1 matrix.
 	 */
 	virtual const Eigen::Vector3d& position() const = 0;
 

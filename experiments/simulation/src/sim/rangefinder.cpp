@@ -51,7 +51,7 @@ void SimRangefinder::setScanFrequency(double freq) {
 	m_scanFreq = freq;
 }
 
-void SimRangefinder::setPlatformOrientation(const Eigen::Vector3d& mtx) {
+void SimRangefinder::setPlatformOrientation(const Eigen::Matrix3d& mtx) {
 	m_platformOrientation = mtx;
 }
 
@@ -59,7 +59,7 @@ void SimRangefinder::setPlatformPosition(const Eigen::Vector3d& mtx) {
 	m_platformPosition = mtx;
 }
 
-void SimRangefinder::setOrientation(const Eigen::Vector3d& mtx) {
+void SimRangefinder::setOrientation(const Eigen::Matrix3d& mtx) {
 	m_orientation = mtx;
 }
 
@@ -67,7 +67,7 @@ void SimRangefinder::setPosition(const Eigen::Vector3d& mtx) {
 	m_position = mtx;
 }
 
-const Eigen::Vector3d& SimRangefinder::orientation() const {
+const Eigen::Matrix3d& SimRangefinder::orientation() const {
 	return m_orientation;
 }
 

@@ -17,7 +17,7 @@
  */
 class SimPlatform : public Platform {
 private:
-	Eigen::Vector3d m_orientation;
+	Eigen::Matrix3d m_orientation;
 	Eigen::Vector3d m_position;
 
 	Poisson m_posPoisson;
@@ -38,7 +38,7 @@ public:
 	void update(double time);
 
 
-	const Eigen::Vector3d& orientation() const;
+	const Eigen::Matrix3d& orientation() const;
 
 	const Eigen::Vector3d& position() const;
 

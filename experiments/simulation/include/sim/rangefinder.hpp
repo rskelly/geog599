@@ -44,10 +44,10 @@ private:
 	Poisson m_poisson;
 	double m_nextTime;
 
-	Eigen::Vector3d m_orientation;
+	Eigen::Matrix3d m_orientation;
 	Eigen::Vector3d m_position;
 
-	Eigen::Vector3d m_platformOrientation;
+	Eigen::Matrix3d m_platformOrientation;
 	Eigen::Vector3d m_platformPosition;
 
 	/**
@@ -97,17 +97,13 @@ public:
 	 * Set the platform orientation. Used to calculate the simulated
 	 * range. Not used in a real situation where the scanner doesn't
 	 * have to know this.
-	 *
-	 * @param mtx A 3-element vector.
 	 */
-	void setPlatformOrientation(const Eigen::Vector3d& mtx);
+	void setPlatformOrientation(const Eigen::Matrix3d& mtx);
 
 	/**
 	 * Set the platform position. Used to calculate the simulated
 	 * range. Not used in a real situation where the scanner doesn't
 	 * have to know this.
-	 *
-	 * @param mtx A 3-element vector.
 	 */
 	void setPlatformPosition(const Eigen::Vector3d& mtx);
 
@@ -116,9 +112,9 @@ public:
 	 */
 	void setScanType(ScanType type, double param1 = 0, double param2 = 0);
 
-	void setOrientation(const Eigen::Vector3d& mtx);
+	void setOrientation(const Eigen::Matrix3d& mtx);
 
-	const Eigen::Vector3d& orientation() const;
+	const Eigen::Matrix3d& orientation() const;
 
 	void setPosition(const Eigen::Vector3d& mtx);
 

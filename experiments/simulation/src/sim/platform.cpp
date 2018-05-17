@@ -27,7 +27,7 @@ void SimPlatform::update(double time) {
 	std::cerr << "position: " << m_position[0] << ", " << m_position[1] << ", " << m_position[2] << "\n";
 }
 
-const Eigen::Vector3d& SimPlatform::orientation() const {
+const Eigen::Matrix3d& SimPlatform::orientation() const {
 	return m_orientation;
 }
 
