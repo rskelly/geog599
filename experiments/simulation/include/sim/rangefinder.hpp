@@ -38,12 +38,18 @@ private:
 	double m_scanFreq;
 	double m_pulseFreq;
 
-	GDALDataset m_demds;
+	GDALDataset* m_demds;
 	int m_demband;
 
 	std::default_random_engine m_generator;
-	std::poisson_distribution<double> m_distribution;
+	std::poisson_distribution<int> m_distribution;
 	double m_nextTime;
+
+	Eigen::Matrix3d m_orientation;
+	Eigen::Vector3d m_position;
+
+	Eigen::Matrix3d m_platformOrientation;
+	Eigen::Vector3d m_platformPosition;
 
 	/**
 	 * Compute the scan angle given the time.
@@ -63,7 +69,6 @@ private:
 	double computeRange(double angle) const;
 
 public:
-
 
 	/**
 	 * Create the rangefinder.
@@ -90,28 +95,35 @@ public:
 	void setDEM(const std::string& filename, int band = 1);
 
 	/**
-	 * Set the orientation. This happens repeatedly in real-time,
-	 * every time a position update becomes available. This is the body or frame
-	 * orientation relative to the inertial frame, plus the instrument orientation
-	 * relative to the frame. Note that the range received is in no way corrected.
-	 * The caller must still use the orientation to transform the range into a
-	 * coordinate as it would with a real instrument.
+	 * Set the platform orientation. Used to calculate the simulated
+	 * range. Not used in a real situation where the scanner doesn't
+	 * have to know this.
 	 */
-	void setOrientation(const Eigen::Matrix3d& mtx);
+	void setPlatformOrientation(const Eigen::Matrix3d& mtx);
 
 	/**
-	 * This is the position. Includes forward, lateral and vertical position.
+	 * Set the platform position. Used to calculate the simulated
+	 * range. Not used in a real situation where the scanner doesn't
+	 * have to know this.
 	 */
-	void setPosition(const Eigen::Matrix3d& mtx);
+	void setPlatformPosition(const Eigen::Vector3d& mtx);
 
 	/**
 	 * Set the scan type.
 	 */
 	void setScanType(ScanType type, double param1 = 0, double param2 = 0);
 
-	Range* range() const;
+	void setOrientation(const Eigen::Matrix3d& mtx);
 
-	~SimRangefinder() {}
+	const Eigen::Matrix3d& orientation() const;
+
+	void setPosition(const Eigen::Vector3d& mtx);
+
+	const Eigen::Vector3d& position() const;
+
+	Range* range();
+
+	~SimRangefinder();
 };
 
 

@@ -6,10 +6,12 @@
  */
 
 #include <time.h>
+#include <gdal_priv.h>
 
 #include "sim/rangefinder.hpp"
 
 class SimRange : public Range {
+friend SimRangefinder;
 private:
 	double m_range;
 	double m_time;
@@ -33,12 +35,12 @@ SimRangefinder::SimRangefinder() :
 	m_demds(nullptr), m_demband(1),
 	m_nextTime(0) {
 
-	std::poisson_distribution<double>::param_type m(m_pulseFreq);
+	std::poisson_distribution<int>::param_type m(10);
 	m_generator.seed(1.0);
 	m_distribution.param(m);
 }
 
-void SimRangefinder::setDEM(const std::string& filename, int band = 1) {
+void SimRangefinder::setDEM(const std::string& filename, int band) {
 	m_demds = (GDALDataset*) GDALOpen(filename.c_str(), GA_ReadOnly);
 	if(!m_demds)
 		throw std::invalid_argument("Failed to open " + filename);
@@ -47,7 +49,7 @@ void SimRangefinder::setDEM(const std::string& filename, int band = 1) {
 
 void SimRangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
-	std::poisson_distribution<double>::param_type m(m_pulseFreq);
+	std::poisson_distribution<int>::param_type m(m_pulseFreq);
 	m_distribution.param(m);
 }
 
@@ -55,15 +57,31 @@ void SimRangefinder::setScanFrequency(double freq) {
 	m_scanFreq = freq;
 }
 
+void SimRangefinder::setPlatformOrientation(const Eigen::Matrix3d& mtx) {
+	m_platformOrientation = mtx;
+}
+
+void SimRangefinder::setPlatformPosition(const Eigen::Vector3d& mtx) {
+	m_platformPosition = mtx;
+}
+
 void SimRangefinder::setOrientation(const Eigen::Matrix3d& mtx) {
-
+	m_orientation = mtx;
 }
 
-void SimRangefinder::setPosition(const Eigen::Matrix3d& mtx) {
-
+void SimRangefinder::setPosition(const Eigen::Vector3d& mtx) {
+	m_position = mtx;
 }
 
-void SimRangefinder::setScanType(ScanType type, double param1 = 0, double param2 = 0) {
+const Eigen::Matrix3d& SimRangefinder::orientation() const {
+	return m_orientation;
+}
+
+const Eigen::Vector3d& SimRangefinder::position() const {
+	return m_position;
+}
+
+void SimRangefinder::setScanType(ScanType type, double param1, double param2) {
 	m_scanType = type;
 	m_scanParam1 = param1;
 	m_scanParam2 = param2;
@@ -76,10 +94,10 @@ double SimRangefinder::computeScanAngle(double time) const {
 }
 
 double SimRangefinder::computeRange(double angle) const {
-
+	return 0;
 }
 
-Range* SimRangefinder::range() const {
+Range* SimRangefinder::range() {
 	Range* result = nullptr;
 
 	timeval time;
@@ -91,7 +109,8 @@ Range* SimRangefinder::range() const {
 		double range = computeRange(angle);
 		result = new SimRange(range, t);
 	}
-	m_nextTime = t + m_distribution(m_generator);
+	int p = m_distribution(m_generator);
+	m_nextTime = t + (0.1 * p) * m_pulseFreq;
 	return result;
 }
 

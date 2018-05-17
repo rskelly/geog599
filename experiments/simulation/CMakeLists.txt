@@ -30,7 +30,7 @@ set (THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package (Threads REQUIRED)
 #find_package (Boost 1.58 COMPONENTS system filesystem date_time thread REQUIRED)
-#find_package (GDAL 2.2 REQUIRED)
+find_package (GDAL 2.2 REQUIRED)
 #find_package (CGAL REQUIRED COMPONENTS Core)
 #find_package (PCL 1.8 REQUIRED)
 #find_package (OpenCV REQUIRED)
@@ -52,5 +52,5 @@ link_directories(. ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
 # Build support libraries ################################################################################
 
-add_executable (sim1 src/sim1.cpp)
-#target_link_libraries (sim1 ${OpenCV_LIBS})
+add_executable (sim1 src/sim1.cpp src/sim/platform.cpp src/sim/rangefinder.cpp)
+target_link_libraries (sim1 ${GDAL_LIBRARY})

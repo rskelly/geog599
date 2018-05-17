@@ -50,9 +50,41 @@ public:
 	 *
 	 * @return A pointer to a Range object or nullptr.
 	 */
-	virtual Range* range() const = 0;
+	virtual Range* range() = 0;
 
-	virtual ~Rangefinder() = 0;
+	/**
+	 * Set the orientation of the instrument relative to the inertial frame
+	 * of the platform.
+	 *
+	 * @param mtx A 3x3 matrix.
+	 */
+	virtual void setOrientation(const Eigen::Matrix3d& mtx) = 0;
+
+	/**
+	 * Get the orientation of the instrument relative to the inertial frame
+	 * of the platform.
+	 *
+	 * @return A 3x3 matrix.
+	 */
+	virtual const Eigen::Matrix3d& orientation() const = 0;
+
+	/**
+	 * Set the position of the instrument relative to the inertial frame
+	 * of the platform.
+	 *
+	 * @param mtx A 3x1 matrix.
+	 */
+	virtual void setPosition(const Eigen::Vector3d& mtx) = 0;
+
+	/**
+	 * Get the position of the instrument relative to the inertial frame
+	 * of the platform.
+	 *
+	 * @return A 3x1 matrix.
+	 */
+	virtual const Eigen::Vector3d& position() const = 0;
+
+	virtual ~Rangefinder() {}
 
 };
 

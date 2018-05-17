@@ -20,14 +20,17 @@ class Platform {
 public:
 
 	/**
-	 * Get the current state of rotation of the platform. (Is this relative?)
+	 * Get the current state of orientation of the platform. Relative
+	 * to the inertial frame.
 	 */
-	const Eigen::Matrix3d& rotation() const;
+	virtual const Eigen::Matrix3d& orientation() const = 0;
 
 	/**
 	 * Get the current position of the platform. (Is this geographic or relative?)
 	 */
-	const Eigen::Matrix3d& position() const;
+	virtual const Eigen::Vector3d& position() const = 0;
+
+	virtual ~Platform() {}
 
 };
 
