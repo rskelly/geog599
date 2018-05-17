@@ -22,11 +22,15 @@ public:
 	/**
 	 * Get the current state of orientation of the platform. Relative
 	 * to the inertial frame.
+	 *
+	 * @return A Vector3d containing the orientation.
 	 */
-	virtual const Eigen::Matrix3d& orientation() const = 0;
+	virtual const Eigen::Vector3d& orientation() const = 0;
 
 	/**
-	 * Get the current position of the platform. (Is this geographic or relative?)
+	 * Get the current position of the platform. Relative to the inertial frame.
+	 *
+	 * @return A Vector3d containing the position.
 	 */
 	virtual const Eigen::Vector3d& position() const = 0;
 
