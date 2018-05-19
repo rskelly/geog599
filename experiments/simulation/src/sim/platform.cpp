@@ -23,12 +23,12 @@ void SimPlatform::update(double time) {
 	m_position[0] += t * m_posPoisson.next(m_forwardVelocity);
 	m_position[1] += m_posPoisson.nextCentred();
 	m_position[2] += m_posPoisson.nextCentred();
-	// TODO: Add some noisy movement to the orientation and position.
+	// TODO: Add some noisy movement to the rotation and position.
 	std::cerr << "position: " << m_position[0] << ", " << m_position[1] << ", " << m_position[2] << "\n";
 }
 
-const Eigen::Matrix3d& SimPlatform::orientation() const {
-	return m_orientation;
+const Eigen::Matrix3d& SimPlatform::rotation() const {
+	return m_rotation;
 }
 
 const Eigen::Vector3d& SimPlatform::position() const {

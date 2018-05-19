@@ -20,7 +20,7 @@
  * SimRangefinder is a simulated range finder that emits ranges as if
  * they were read from a given elevation model. Though the definition of
  * Rangefinder forbids the emission of any information other than range
- * and time, the simulator must have information about the orientation of the
+ * and time, the simulator must have information about the rotation of the
  * platform in order to correctly calibrate the ranges. A real-world Rangefinder
  * implementation would not require this.
  */
@@ -44,10 +44,10 @@ private:
 	Poisson m_poisson;
 	double m_nextTime;
 
-	Eigen::Matrix3d m_orientation;
+	Eigen::Matrix3d m_rotation;
 	Eigen::Vector3d m_position;
 
-	Eigen::Matrix3d m_platformOrientation;
+	Eigen::Matrix3d m_platformRotation;
 	Eigen::Vector3d m_platformPosition;
 
 	/**
@@ -60,7 +60,7 @@ private:
 
 	/**
 	 * Compute the measured range when the scanner is at the given angle
-	 * at the current position and orientation.
+	 * at the current position and rotation.
 	 *
 	 * @param angle The scan angle in radians.
 	 * @return The range in metres.
@@ -94,11 +94,11 @@ public:
 	void setDEM(const std::string& filename, int band = 1);
 
 	/**
-	 * Set the platform orientation. Used to calculate the simulated
+	 * Set the platform rotation. Used to calculate the simulated
 	 * range. Not used in a real situation where the scanner doesn't
 	 * have to know this.
 	 */
-	void setPlatformOrientation(const Eigen::Matrix3d& mtx);
+	void setPlatformRotation(const Eigen::Matrix3d& mtx);
 
 	/**
 	 * Set the platform position. Used to calculate the simulated
@@ -112,9 +112,9 @@ public:
 	 */
 	void setScanType(ScanType type, double param1 = 0, double param2 = 0);
 
-	void setOrientation(const Eigen::Matrix3d& mtx);
+	void setRotation(const Eigen::Matrix3d& mtx);
 
-	const Eigen::Matrix3d& orientation() const;
+	const Eigen::Matrix3d& rotation() const;
 
 	void setPosition(const Eigen::Vector3d& mtx);
 

@@ -35,7 +35,7 @@ public:
  * This interface represents an object that emits information about the
  * state of a range finder. The current understanding of this device
  * is that it knows the return distance and time of each pulse, and nothing else.
- * Any information about the orientation of the instrument, the position of the
+ * Any information about the rotation of the instrument, the position of the
  * platform or the transformation of space is external.
  */
 class Rangefinder {
@@ -53,23 +53,23 @@ public:
 	virtual Range* range() = 0;
 
 	/**
-	 * Set the orientation of the instrument relative to the inertial frame
+	 * Set the rotation of the instrument relative to the frame
 	 * of the platform.
 	 *
 	 * @param mtx A 3x3 matrix.
 	 */
-	virtual void setOrientation(const Eigen::Matrix3d& mtx) = 0;
+	virtual void setRotation(const Eigen::Matrix3d& mtx) = 0;
 
 	/**
-	 * Get the orientation of the instrument relative to the inertial frame
+	 * Get the rotation of the instrument relative to the frame
 	 * of the platform.
 	 *
 	 * @return A 3x3 matrix.
 	 */
-	virtual const Eigen::Matrix3d& orientation() const = 0;
+	virtual const Eigen::Matrix3d& rotation() const = 0;
 
 	/**
-	 * Set the position of the instrument relative to the inertial frame
+	 * Set the position of the instrument relative to the frame
 	 * of the platform.
 	 *
 	 * @param mtx A 3x1 matrix.
@@ -77,7 +77,7 @@ public:
 	virtual void setPosition(const Eigen::Vector3d& mtx) = 0;
 
 	/**
-	 * Get the position of the instrument relative to the inertial frame
+	 * Get the position of the instrument relative to the frame
 	 * of the platform.
 	 *
 	 * @return A 3x1 matrix.
