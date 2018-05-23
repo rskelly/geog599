@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
 	//testMath();
 
-	SimPlatform p;
+	Platform p;
 
 	std::cerr << std::setprecision(12);
 

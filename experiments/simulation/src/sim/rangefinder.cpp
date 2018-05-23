@@ -10,20 +10,16 @@
 
 #include "sim/rangefinder.hpp"
 
-using namespace uav;
-using namespace uav::sim;
+namespace uav {
+namespace sim {
 
-double SimRangeBridge::getRange() {
-	return 0;
-}
-
-class SimRange : public Range {
-friend SimRangefinder;
+class Range : public uav::Range {
+friend Rangefinder;
 private:
 	double m_range;
 	double m_time;
 protected:
-	SimRange(double range, double time) :
+	Range(double range, double time) :
 		m_range(range), m_time(time) {
 	}
 public:
@@ -35,20 +31,30 @@ public:
 	}
 };
 
-SimRangefinder::SimRangefinder() :
+} // sim
+} // uav
+
+
+using namespace uav::sim;
+
+double RangeBridge::getRange() {
+	return 0;
+}
+
+Rangefinder::Rangefinder() :
 	m_scanFreq(1), m_pulseFreq(1),
 	m_nextTime(0) {
 }
 
-void SimRangefinder::setPulseFrequency(double freq) {
+void Rangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
 }
 
-void SimRangefinder::setScanFrequency(double freq) {
+void Rangefinder::setScanFrequency(double freq) {
 	m_scanFreq = freq;
 }
 
-Range* SimRangefinder::range() {
+uav::Range* Rangefinder::range() {
 	Range* result = nullptr;
 
 	timeval time;
@@ -56,11 +62,11 @@ Range* SimRangefinder::range() {
 	double t = (double) time.tv_sec + ((double) time.tv_usec / 1000000);
 
 	if(t >= m_nextTime)
-		result = new SimRange(SimRangeBridge::getRange(), t);
+		result = new Range(RangeBridge::getRange(), t);
 
 	m_nextTime = t + m_poisson.next(m_pulseFreq);
 	return result;
 }
 
-SimRangefinder::~SimRangefinder() {
+Rangefinder::~Rangefinder() {
 }

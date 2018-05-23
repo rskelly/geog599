@@ -16,8 +16,6 @@
 #include "../rangefinder.hpp"
 #include "../util.hpp"
 
-using namespace uav::util;
-
 namespace uav {
 namespace sim {
 
@@ -25,7 +23,7 @@ namespace sim {
  * Used by the simulator to calculate the range read from a DEM
  * so that it can be emitted by the rangefinder.
  */
-class SimRangeBridge {
+class RangeBridge {
 public:
 	/**
 	 * Return the distance from the laser to the DEM surface,
@@ -37,21 +35,21 @@ public:
 };
 
 /**
- * SimRangefinder is a simulated range finder that emits ranges as if
+ * Rangefinder is a simulated range finder that emits ranges as if
  * they were read from a given elevation model. Though the definition of
  * Rangefinder forbids the emission of any information other than range
  * and time, the simulator must have information about the position and
  * rotation of the laser to read a DEM, so the rangefinder gets the
- * calculated range from the SimRangeBridge class which is a
+ * calculated range from the RangeBridge class which is a
  * singleton.
  */
-class SimRangefinder : public Rangefinder {
+class Rangefinder : public uav::Rangefinder {
 private:
 
 	double m_scanFreq;
 	double m_pulseFreq;
 
-	Poisson m_poisson;
+	uav::util::Poisson m_poisson;
 	double m_nextTime;
 
 	/**
@@ -68,7 +66,7 @@ public:
 	/**
 	 * Create the rangefinder.
 	 */
-	SimRangefinder();
+	Rangefinder();
 
 	/**
 	 * Set the measurement frequency. This should have noise added.
@@ -86,7 +84,7 @@ public:
 
 	Range* range();
 
-	~SimRangefinder();
+	~Rangefinder();
 };
 
 } // sim

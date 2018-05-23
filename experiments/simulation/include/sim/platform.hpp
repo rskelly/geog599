@@ -11,8 +11,6 @@
 #include "util.hpp"
 #include "../platform.hpp"
 
-using namespace uav;
-
 namespace uav {
 namespace sim {
 
@@ -20,18 +18,18 @@ namespace sim {
  * A platform simulation. The platform is roughly autonomous, so everything
  * about its state originates here, other than the instruction to update.
  */
-class SimPlatform : public Platform {
+class Platform : public uav::Platform {
 private:
 	Eigen::Matrix3d m_rotation;
 	Eigen::Vector3d m_position;
 
-	Poisson m_posPoisson;
+	uav::util::Poisson m_posPoisson;
 	double m_forwardVelocity;
 	double m_lastTime;
 
 public:
 
-	SimPlatform();
+	Platform();
 
 	/**
 	 * Update the state of the platform. This is the "tick" that
@@ -47,7 +45,7 @@ public:
 
 	const Eigen::Vector3d& position() const;
 
-	~SimPlatform();
+	~Platform();
 
 };
 

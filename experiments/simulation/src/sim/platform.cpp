@@ -12,13 +12,13 @@
 
 using namespace uav::sim;
 
-SimPlatform::SimPlatform() :
+Platform::Platform() :
 	m_forwardVelocity(10),
 	m_lastTime(0) {
 	m_posPoisson.setMean(1000);
 }
 
-void SimPlatform::update(double time) {
+void Platform::update(double time) {
 	double t = time - m_lastTime;
 	m_lastTime = time;
 
@@ -29,12 +29,12 @@ void SimPlatform::update(double time) {
 	std::cerr << "position: " << m_position[0] << ", " << m_position[1] << ", " << m_position[2] << "\n";
 }
 
-const Eigen::Matrix3d& SimPlatform::rotation() const {
+const Eigen::Matrix3d& Platform::rotation() const {
 	return m_rotation;
 }
 
-const Eigen::Vector3d& SimPlatform::position() const {
+const Eigen::Vector3d& Platform::position() const {
 	return m_position;
 }
 
-SimPlatform::~SimPlatform() {}
+Platform::~Platform() {}
