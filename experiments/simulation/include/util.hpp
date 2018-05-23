@@ -9,6 +9,7 @@
 #define INCLUDE_UTIL_HPP_
 
 #include <random>
+#include <Eigen/Core>
 
 /**
  * Provides a simple method for retrieving a poisson-distributed
@@ -34,6 +35,23 @@ public:
 
 };
 
+class MatrixUtil {
+public:
 
+	/**
+	 * Returns a rotation matrix for the rotation around the given axis vector by the
+	 * given angle (in radians). The axis i
+	 *
+	 * @param vec The axis of rotation. Will be normalized.
+	 * @param angle The rotation angle in radians.
+	 * @return A rotation matrix.
+	 */
+	static Eigen::Matrix3d rotFromAxisAngle(const Eigen::Vector3d& vec, double angle);
+
+	static double toRad(double deg);
+
+	static double toDeg(double rad);
+
+};
 
 #endif /* INCLUDE_UTIL_HPP_ */

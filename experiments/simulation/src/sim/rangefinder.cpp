@@ -6,9 +6,13 @@
  */
 
 #include <time.h>
-#include <gdal_priv.h>
+#include <sys/time.h>
 
 #include "sim/rangefinder.hpp"
+
+double SimRangeBridge::getRange() {
+	return 0;
+}
 
 class SimRange : public Range {
 friend SimRangefinder;
@@ -29,18 +33,8 @@ public:
 };
 
 SimRangefinder::SimRangefinder() :
-	m_scanType(ScanType::None),
-	m_scanParam1(0), m_scanParam2(0),
 	m_scanFreq(1), m_pulseFreq(1),
-	m_demds(nullptr), m_demband(1),
 	m_nextTime(0) {
-}
-
-void SimRangefinder::setDEM(const std::string& filename, int band) {
-	m_demds = (GDALDataset*) GDALOpen(filename.c_str(), GA_ReadOnly);
-	if(!m_demds)
-		throw std::invalid_argument("Failed to open " + filename);
-	m_demband = band;
 }
 
 void SimRangefinder::setPulseFrequency(double freq) {
@@ -51,46 +45,6 @@ void SimRangefinder::setScanFrequency(double freq) {
 	m_scanFreq = freq;
 }
 
-void SimRangefinder::setPlatformRotation(const Eigen::Matrix3d& mtx) {
-	m_platformRotation = mtx;
-}
-
-void SimRangefinder::setPlatformPosition(const Eigen::Vector3d& mtx) {
-	m_platformPosition = mtx;
-}
-
-void SimRangefinder::setRotation(const Eigen::Matrix3d& mtx) {
-	m_rotation = mtx;
-}
-
-void SimRangefinder::setPosition(const Eigen::Vector3d& mtx) {
-	m_position = mtx;
-}
-
-const Eigen::Matrix3d& SimRangefinder::rotation() const {
-	return m_rotation;
-}
-
-const Eigen::Vector3d& SimRangefinder::position() const {
-	return m_position;
-}
-
-void SimRangefinder::setScanType(ScanType type, double param1, double param2) {
-	m_scanType = type;
-	m_scanParam1 = param1;
-	m_scanParam2 = param2;
-}
-
-#include <sys/time.h>
-
-double SimRangefinder::computeScanAngle(double time) const {
-	return std::sin(time / m_scanFreq);
-}
-
-double SimRangefinder::computeRange(double angle) const {
-	return 0;
-}
-
 Range* SimRangefinder::range() {
 	Range* result = nullptr;
 
@@ -98,16 +52,12 @@ Range* SimRangefinder::range() {
 	gettimeofday(&time, NULL);
 	double t = (double) time.tv_sec + ((double) time.tv_usec / 1000000);
 
-	if(t >= m_nextTime) {
-		double angle = computeScanAngle(t);
-		double range = computeRange(angle);
-		result = new SimRange(range, t);
-	}
+	if(t >= m_nextTime)
+		result = new SimRange(SimRangeBridge::getRange(), t);
+
 	m_nextTime = t + m_poisson.next(m_pulseFreq);
 	return result;
 }
 
 SimRangefinder::~SimRangefinder() {
-	if(m_demds)
-		GDALClose((void*) m_demds);
 }

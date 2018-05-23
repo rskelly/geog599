@@ -52,37 +52,6 @@ public:
 	 */
 	virtual Range* range() = 0;
 
-	/**
-	 * Set the rotation of the instrument relative to the frame
-	 * of the platform.
-	 *
-	 * @param mtx A 3x3 matrix.
-	 */
-	virtual void setRotation(const Eigen::Matrix3d& mtx) = 0;
-
-	/**
-	 * Get the rotation of the instrument relative to the frame
-	 * of the platform.
-	 *
-	 * @return A 3x3 matrix.
-	 */
-	virtual const Eigen::Matrix3d& rotation() const = 0;
-
-	/**
-	 * Set the position of the instrument relative to the frame
-	 * of the platform.
-	 *
-	 * @param mtx A 3x1 matrix.
-	 */
-	virtual void setPosition(const Eigen::Vector3d& mtx) = 0;
-
-	/**
-	 * Get the position of the instrument relative to the frame
-	 * of the platform.
-	 *
-	 * @return A 3x1 matrix.
-	 */
-	virtual const Eigen::Vector3d& position() const = 0;
 
 	virtual ~Rangefinder() {}
 

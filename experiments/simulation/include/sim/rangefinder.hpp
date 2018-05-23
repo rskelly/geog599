@@ -17,46 +17,37 @@
 #include "../util.hpp"
 
 /**
+ * Used by the simulator to calculate the range read from a DEM
+ * so that it can be emitted by the rangefinder.
+ */
+class SimRangeBridge {
+public:
+	/**
+	 * Return the distance from the laser to the DEM surface,
+	 * given the transformation parameters of the system.
+	 *
+	 * @return The distance from laser to target.
+	 */
+	static double getRange();
+};
+
+/**
  * SimRangefinder is a simulated range finder that emits ranges as if
  * they were read from a given elevation model. Though the definition of
  * Rangefinder forbids the emission of any information other than range
- * and time, the simulator must have information about the rotation of the
- * platform in order to correctly calibrate the ranges. A real-world Rangefinder
- * implementation would not require this.
+ * and time, the simulator must have information about the position and
+ * rotation of the laser to read a DEM, so the rangefinder gets the
+ * calculated range from the SimRangeBridge class which is a
+ * singleton.
  */
 class SimRangefinder : public Rangefinder {
-public:
-	enum ScanType {
-		None,
-		Scan // Requires params for scan angle and frequency.
-	};
 private:
-	ScanType m_scanType;
-	double m_scanParam1;
-	double m_scanParam2;
 
 	double m_scanFreq;
 	double m_pulseFreq;
 
-	GDALDataset* m_demds;
-	int m_demband;
-
 	Poisson m_poisson;
 	double m_nextTime;
-
-	Eigen::Matrix3d m_rotation;
-	Eigen::Vector3d m_position;
-
-	Eigen::Matrix3d m_platformRotation;
-	Eigen::Vector3d m_platformPosition;
-
-	/**
-	 * Compute the scan angle given the time.
-	 *
-	 * @param time The time in seconds.
-	 * @return The scan angle in radians.
-	 */
-	double computeScanAngle(double time) const;
 
 	/**
 	 * Compute the measured range when the scanner is at the given angle
@@ -87,38 +78,6 @@ public:
 	 * @param The frequency as oscillations per second.
 	 */
 	void setScanFrequency(double freq);
-
-	/**
-	 * Set the filename of the DEM to be used for simulating ranges.
-	 */
-	void setDEM(const std::string& filename, int band = 1);
-
-	/**
-	 * Set the platform rotation. Used to calculate the simulated
-	 * range. Not used in a real situation where the scanner doesn't
-	 * have to know this.
-	 */
-	void setPlatformRotation(const Eigen::Matrix3d& mtx);
-
-	/**
-	 * Set the platform position. Used to calculate the simulated
-	 * range. Not used in a real situation where the scanner doesn't
-	 * have to know this.
-	 */
-	void setPlatformPosition(const Eigen::Vector3d& mtx);
-
-	/**
-	 * Set the scan type.
-	 */
-	void setScanType(ScanType type, double param1 = 0, double param2 = 0);
-
-	void setRotation(const Eigen::Matrix3d& mtx);
-
-	const Eigen::Matrix3d& rotation() const;
-
-	void setPosition(const Eigen::Vector3d& mtx);
-
-	const Eigen::Vector3d& position() const;
 
 	Range* range();
 

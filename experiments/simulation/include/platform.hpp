@@ -20,13 +20,18 @@ class Platform {
 public:
 
 	/**
-	 * Get the current state of rotation of the platform. Relative
-	 * to the inertial frame.
+	 * Get the current state of rotation of the platform. This is the rotation
+	 * of the platform around its center of mass. Relative to the inertial frame.
+	 *
+	 * @return The platform's rotation.
 	 */
 	virtual const Eigen::Matrix3d& rotation() const = 0;
 
 	/**
-	 * Get the current position of the platform. (Is this geographic or relative?)
+	 * Get the current position of the platform. This is the position of the
+	 * platform's center of mass relative to the inertial frame.
+	 *
+	 * @return The platform's position.
 	 */
 	virtual const Eigen::Vector3d& position() const = 0;
 
