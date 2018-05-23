@@ -7,6 +7,7 @@
 
 #include "util.hpp"
 
+using namespace uav::util;
 
 Poisson::Poisson() : Poisson(10) {}
 
@@ -35,7 +36,7 @@ double Poisson::nextCentred(double freq) {
 static double r2d = PI / 180.0;
 static double d2r = 180.0 / PI;
 
-Eigen::Matrix3d MatrixUtil::rotFromAxisAngle(const Eigen::Vector3d& vec, double angle) {
+Eigen::Matrix3d uav::util::rotFromAxisAngle(const Eigen::Vector3d& vec, double angle) {
 	Eigen::Vector3d norm(vec);
 	norm.normalize();
 
@@ -53,10 +54,10 @@ Eigen::Matrix3d MatrixUtil::rotFromAxisAngle(const Eigen::Vector3d& vec, double 
 	return out;
 }
 
-double MatrixUtil::toRad(double deg) {
+double uav::util::toRad(double deg) {
 	return deg / d2r;
 }
 
-double MatrixUtil::toDeg(double rad) {
+double uav::util::toDeg(double rad) {
 	return rad / r2d;
 }

@@ -8,6 +8,8 @@
 #ifndef INCLUDE_RANGEFINDER_HPP_
 #define INCLUDE_RANGEFINDER_HPP_
 
+namespace uav {
+
 /**
  * This interface represents a range object. It may contain only
  * the distance from the range finder to the target, and the time
@@ -57,5 +59,6 @@ public:
 
 };
 
+} // uav
 
 #endif /* INCLUDE_RANGEFINDER_HPP_ */

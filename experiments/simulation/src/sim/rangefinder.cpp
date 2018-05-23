@@ -10,6 +10,9 @@
 
 #include "sim/rangefinder.hpp"
 
+using namespace uav;
+using namespace uav::sim;
+
 double SimRangeBridge::getRange() {
 	return 0;
 }

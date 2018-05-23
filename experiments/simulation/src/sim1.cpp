@@ -12,6 +12,9 @@
 #include <Eigen/Core>
 #include "util.hpp"
 
+using namespace uav::util;
+using namespace uav::sim;
+
 double time() {
 	timeval time;
 	gettimeofday(&time, NULL);
@@ -20,10 +23,10 @@ double time() {
 
 
 void testMath() {
-	double a = MatrixUtil::toRad(45);
+	double a = toRad(45);
 	Eigen::Vector3d vec(1, 0, 0);
 	std::cerr << vec[0] << ", " << vec[1] << ", " << vec[2] << "\n";
-	Eigen::Matrix3d mtx = MatrixUtil::rotFromAxisAngle(vec, a);
+	Eigen::Matrix3d mtx = rotFromAxisAngle(vec, a);
 	std::cerr << mtx(0, 0) << ", " << mtx(0, 1) << ", " << mtx(0, 2) << "\n";
 	std::cerr << mtx(1, 0) << ", " << mtx(1, 1) << ", " << mtx(1, 2) << "\n";
 	std::cerr << mtx(2, 0) << ", " << mtx(2, 1) << ", " << mtx(2, 2) << "\n";

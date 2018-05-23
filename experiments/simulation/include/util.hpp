@@ -11,6 +11,9 @@
 #include <random>
 #include <Eigen/Core>
 
+namespace uav {
+namespace util {
+
 /**
  * Provides a simple method for retrieving a poisson-distributed
  * value given a mean and a frequency.
@@ -35,23 +38,32 @@ public:
 
 };
 
-class MatrixUtil {
-public:
+/**
+ * Returns a rotation matrix for the rotation around the given axis vector by the
+ * given angle (in radians). The axis i
+ *
+ * @param vec The axis of rotation. Will be normalized.
+ * @param angle The rotation angle in radians.
+ * @return A rotation matrix.
+ */
+Eigen::Matrix3d rotFromAxisAngle(const Eigen::Vector3d& vec, double angle);
 
-	/**
-	 * Returns a rotation matrix for the rotation around the given axis vector by the
-	 * given angle (in radians). The axis i
-	 *
-	 * @param vec The axis of rotation. Will be normalized.
-	 * @param angle The rotation angle in radians.
-	 * @return A rotation matrix.
-	 */
-	static Eigen::Matrix3d rotFromAxisAngle(const Eigen::Vector3d& vec, double angle);
+/**
+ * Returns the angle in radians.
+ *
+ * @return The angle in radians.
+ */
+double toRad(double deg);
 
-	static double toRad(double deg);
+/**
+ * Returns the angle in degrees.
+ *
+ * @return The angle in degrees.
+ */
+double toDeg(double rad);
 
-	static double toDeg(double rad);
 
-};
+} // util
+} // uav
 
 #endif /* INCLUDE_UTIL_HPP_ */

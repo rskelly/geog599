@@ -16,6 +16,11 @@
 #include "../rangefinder.hpp"
 #include "../util.hpp"
 
+using namespace uav::util;
+
+namespace uav {
+namespace sim {
+
 /**
  * Used by the simulator to calculate the range read from a DEM
  * so that it can be emitted by the rangefinder.
@@ -84,5 +89,7 @@ public:
 	~SimRangefinder();
 };
 
+} // sim
+} // uav
 
 #endif /* INCLUDE_SIM_RANGEFINDER_HPP_ */
