@@ -6,7 +6,7 @@ set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_EXTENSIONS OFF)
 set (CMAKE_POSITION_INDEPENDENT_CODE ON)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas -Wall -D_GLIBCXX_PARALLEL")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lpthread -fopenmp -Wno-unknown-pragmas -Wall -D_GLIBCXX_PARALLEL")
 
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -31,7 +31,7 @@ set (THREADS_PREFER_PTHREAD_FLAG ON)
 find_package (Threads REQUIRED)
 #find_package (Boost 1.58 COMPONENTS system filesystem date_time thread REQUIRED)
 find_package (GDAL 2.2 REQUIRED)
-#find_package (CGAL REQUIRED COMPONENTS Core)
+find_package (CGAL REQUIRED COMPONENTS Core)
 #find_package (PCL 1.8 REQUIRED)
 #find_package (OpenCV REQUIRED)
 
@@ -40,6 +40,7 @@ find_package (GDAL 2.2 REQUIRED)
 #find_library (CRYPTO_LIBRARY crypto libcrypto PATHS ${CRYPTO_LIBRARYDIR})
 #find_library (GEOS_LIBRARY geos PATHS ${GEOS_LIBRARYDIR})
 #find_library (PROJ_LIBRARY proj)
+find_library (GMP_LIBRARY gmp)
 
 project (test)
 
@@ -52,5 +53,5 @@ link_directories(. ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
 # Build support libraries ################################################################################
 
-add_executable (sim1 src/sim1.cpp src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp)
-target_link_libraries (sim1 ${GDAL_LIBRARY})
+add_executable (sim1 src/sim1.cpp src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp)
+target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY})

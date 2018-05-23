@@ -6,11 +6,13 @@
 #include <sys/time.h>
 #include <iomanip>
 
+#include <Eigen/Core>
+
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
-
-#include <Eigen/Core>
+#include "sim/terrain.hpp"
 #include "util.hpp"
+
 
 using namespace uav::util;
 using namespace uav::sim;
@@ -36,10 +38,16 @@ void testMath() {
 	std::cerr << out[0] << ", " << out[1] << ", " << out[2] << "\n";
 }
 
+void loadTerrain() {
+	Terrain t("/home/rob/Documents/gis/geocat/srtm/n40_w082_1arc_v3.tif");
+}
+
 int main(int argc, char** argv) {
 
 	//testMath();
+	loadTerrain();
 
+	/*
 	Platform p;
 
 	std::cerr << std::setprecision(12);
@@ -53,5 +61,5 @@ int main(int argc, char** argv) {
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
-
+	*/
 }

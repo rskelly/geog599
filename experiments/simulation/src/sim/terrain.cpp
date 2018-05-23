@@ -16,6 +16,7 @@ using namespace uav::sim;
 
 Terrain::Terrain(const std::string& demfile) {
 
+	GDALAllRegister();
 	GDALDataset* ds = (GDALDataset*) GDALOpen(demfile.c_str(), GA_ReadOnly);
 	int cols = ds->GetRasterXSize();
 	int rows = ds->GetRasterYSize();
@@ -24,7 +25,10 @@ Terrain::Terrain(const std::string& demfile) {
 	GDALRasterBand* band = ds->GetRasterBand(1);
 
 	std::vector<float> data(cols * rows);
-	band->RasterIO(GF_Read, 0, 0, cols, rows, data.data(), cols, rows, GDT_Float32, 0, 0, 0);
+	if(CE_None != band->RasterIO(GF_Read, 0, 0, cols, rows, data.data(), cols, rows, GDT_Float32, 0, 0, 0))
+		throw std::runtime_error("Failed to load raster.");
+
+	cols = 100;
 
 	std::vector<std::pair<Point, size_t> > pts;
 	size_t i = 0;
