@@ -10,6 +10,8 @@
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 
+using namespace uav::sim;
+
 SimPlatform::SimPlatform() :
 	m_forwardVelocity(10),
 	m_lastTime(0) {

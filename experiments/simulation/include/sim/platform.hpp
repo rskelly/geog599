@@ -11,6 +11,11 @@
 #include "util.hpp"
 #include "../platform.hpp"
 
+using namespace uav;
+
+namespace uav {
+namespace sim {
+
 /**
  * A platform simulation. The platform is roughly autonomous, so everything
  * about its state originates here, other than the instruction to update.
@@ -46,6 +51,7 @@ public:
 
 };
 
-
+} // sim
+} // uav
 
 #endif /* INCLUDE_SIM_PLATFORM_HPP_ */

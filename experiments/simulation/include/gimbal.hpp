@@ -10,6 +10,8 @@
 
 #include <Eigen/Core>
 
+namespace uav {
+
 /**
  * The gimbal is a device upon which another device, such as a rangefinder is mounted.
  * It may have a fixed position, or it may move, either on command or
@@ -74,5 +76,6 @@ public:
 };
 
 
+} // uav
 
 #endif /* INCLUDE_GIMBAL_HPP_ */

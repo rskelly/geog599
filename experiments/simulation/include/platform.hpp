@@ -10,6 +10,8 @@
 
 #include <Eigen/Core>
 
+namespace uav {
+
 /**
  * This interface provides information about the platform in real-time.
  * Information such as the position and rotation, time sync signal
@@ -38,6 +40,8 @@ public:
 	virtual ~Platform() {}
 
 };
+
+} // uav
 
 
 #endif /* INCLUDE_PLATFORM_HPP_ */
