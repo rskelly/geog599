@@ -5,8 +5,13 @@
 #include <chrono>
 #include <sys/time.h>
 #include <iomanip>
+#include <vector>
 
 #include <Eigen/Core>
+
+#include <GL/glew.h>
+#include <GL/glut.h>
+#include <GLFW/glfw3.h>
 
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
@@ -38,14 +43,58 @@ void testMath() {
 	std::cerr << out[0] << ", " << out[1] << ", " << out[2] << "\n";
 }
 
-void loadTerrain() {
-	Terrain t("/home/rob/Documents/gis/geocat/srtm/n40_w082_1arc_v3.tif");
+Terrain* loadTerrain() {
+	return new Terrain("/home/rob/Documents/gis/geocat/srtm/n40_w082_1arc_v3_utm.tif");
+}
+
+GLFWwindow* win;
+
+bool initWindow() {
+
+	if(!glfwInit())
+		return false;
+
+	 win = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+	 if (!win) {
+		 glfwTerminate();
+		 return false;
+	 }
+
+	glfwMakeContextCurrent(win);
+	return true;
+}
+
+void runWindow() {
+
+	while (!glfwWindowShouldClose(win)) {
+		glClear(GL_COLOR_BUFFER_BIT);
+		glfwSwapBuffers(win);
+		glfwPollEvents();
+	}
+
+	glfwTerminate();
+
+}
+
+bool renderTerrain(Terrain* terrain) {
+
+	/*
+	std::vector<double> vertices;
+	terrain->getVertices(vertices);
+
+	unsigned int id;
+	glGenBuffers(1, &id);
+	*/
+	return false;
 }
 
 int main(int argc, char** argv) {
 
 	//testMath();
-	loadTerrain();
+	Terrain* t = loadTerrain();
+	initWindow();
+	renderTerrain(t);
+	runWindow();
 
 	/*
 	Platform p;

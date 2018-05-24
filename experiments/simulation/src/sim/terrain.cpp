@@ -23,6 +23,7 @@ Terrain::Terrain(const std::string& demfile) {
 	double trans[6];
 	ds->GetGeoTransform(trans);
 	GDALRasterBand* band = ds->GetRasterBand(1);
+	double nodata = band->GetNoDataValue();
 
 	std::vector<float> data(cols * rows);
 	if(CE_None != band->RasterIO(GF_Read, 0, 0, cols, rows, data.data(), cols, rows, GDT_Float32, 0, 0, 0))
@@ -34,9 +35,11 @@ Terrain::Terrain(const std::string& demfile) {
 	size_t i = 0;
 	for(int r = 0; r < rows; ++r) {
 		for(int c = 0; c < cols; ++c) {
-			double x = trans[0] + c * trans[1];
-			double y = trans[3] + r * trans[5];
+			double x = ((double) c / cols) * 2.0 - 1.0;
+			double y = (double) r / rows;
 			double z = data[r * cols + c];
+			if(z == nodata)
+				continue;
 			pts.emplace_back(Point(x, y, z), i);
 			++i;
 		}
@@ -44,6 +47,18 @@ Terrain::Terrain(const std::string& demfile) {
 
 	m_tri.reset(new Delaunay(pts.begin(), pts.end()));
 
+}
+
+void Terrain::getVertices(std::vector<double>& vertices) {
+	Delaunay::Finite_facets_iterator it;
+	for(it = m_tri->finite_facets_begin(); it != m_tri->finite_facets_end(); ++it){
+		Delaunay::Triangle t = m_tri->triangle(*it);
+		Delaunay::Vertex v = t.vertex(0);
+		Delaunay::Vertex::Point p = v.point();
+		vertices.push_back((double) p.x());
+		vertices.push_back((double) p.y());
+		vertices.push_back((double) p.z());
+	}
 }
 
 double Terrain::sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {

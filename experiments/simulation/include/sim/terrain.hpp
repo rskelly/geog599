@@ -54,6 +54,13 @@ public:
 	double sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction);
 
 	/**
+	 * Add the 3D vertices of the triangulation to the vector.
+	 *
+	 * @param vertices A vector to contain the vertices in x, y, z order.
+	 */
+	void getVertices(std::vector<double>& vertices);
+
+	/**
 	 * Compute the length of the vector starting at origin and
 	 * coincident with direction.
 	 *

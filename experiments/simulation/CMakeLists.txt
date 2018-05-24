@@ -41,6 +41,9 @@ find_package (CGAL REQUIRED COMPONENTS Core)
 #find_library (GEOS_LIBRARY geos PATHS ${GEOS_LIBRARYDIR})
 #find_library (PROJ_LIBRARY proj)
 find_library (GMP_LIBRARY gmp)
+find_library (GLFW_LIBRARY glfw)
+find_library (GL_LIBRARY GL)
+find_library (GLEW_LIBRARY GLEW)
 
 project (test)
 
@@ -54,4 +57,4 @@ link_directories(. ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 # Build support libraries ################################################################################
 
 add_executable (sim1 src/sim1.cpp src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp)
-target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY})
+target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} ${GL_LIBRARY} ${GLFW_LIBRARY} ${GLEW_LIBRARY})
