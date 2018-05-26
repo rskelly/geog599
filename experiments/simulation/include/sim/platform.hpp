@@ -20,12 +20,16 @@ namespace sim {
  */
 class Platform : public uav::Platform {
 private:
-	Eigen::Matrix3d m_rotation;
-	Eigen::Vector3d m_position;
+	Eigen::Vector3d m_orientation;   ///<! The orientation matrix. Euler angles.
+	Eigen::Vector3d m_position;      ///<! The position. Coordinates in whatever Cartesian space.
 
-	uav::util::Poisson m_posPoisson;
-	double m_forwardVelocity;
-	double m_lastTime;
+	uav::util::Poisson m_posPoisson; ///<! Generator for Poisson values.
+	uav::util::Poisson m_rotPoisson; ///<! Generator for Poisson values.
+	double m_forwardVelocity;        ///<! The current forward velocity.
+	double m_lastTime;               ///<! The last update time.
+
+	Gimbal* m_gimbal;
+	Rangefinder* m_rangefinder;
 
 public:
 
@@ -41,7 +45,11 @@ public:
 	void update(double time);
 
 
-	const Eigen::Matrix3d& rotation() const;
+	const uav::Gimbal* gimbal() const;
+
+	const uav::Rangefinder* rangefinder() const;
+
+	const Eigen::Vector3d& orientation() const;
 
 	const Eigen::Vector3d& position() const;
 

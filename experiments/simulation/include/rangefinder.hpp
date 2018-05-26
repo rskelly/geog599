@@ -37,7 +37,7 @@ public:
  * This interface represents an object that emits information about the
  * state of a range finder. The current understanding of this device
  * is that it knows the return distance and time of each pulse, and nothing else.
- * Any information about the rotation of the instrument, the position of the
+ * Any information about the orientation of the instrument, the position of the
  * platform or the transformation of space is external.
  */
 class Rangefinder {

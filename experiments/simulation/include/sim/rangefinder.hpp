@@ -39,7 +39,7 @@ public:
  * they were read from a given elevation model. Though the definition of
  * Rangefinder forbids the emission of any information other than range
  * and time, the simulator must have information about the position and
- * rotation of the laser to read a DEM, so the rangefinder gets the
+ * orientation of the laser to read a DEM, so the rangefinder gets the
  * calculated range from the RangeBridge class which is a
  * singleton.
  */
@@ -54,7 +54,7 @@ private:
 
 	/**
 	 * Compute the measured range when the scanner is at the given angle
-	 * at the current position and rotation.
+	 * at the current position and orientation.
 	 *
 	 * @param angle The scan angle in radians.
 	 * @return The range in metres.

@@ -34,17 +34,17 @@ public:
 
 	double next(double freq = 1.0);
 
-	double nextCentred(double freq = 1.0);
+	double nextCentered(double freq = 1.0);
 
 };
 
 /**
- * Returns a rotation matrix for the rotation around the given axis vector by the
+ * Returns a orientation matrix for the orientation around the given axis vector by the
  * given angle (in radians). The axis i
  *
- * @param vec The axis of rotation. Will be normalized.
- * @param angle The rotation angle in radians.
- * @return A rotation matrix.
+ * @param vec The axis of orientation. Will be normalized.
+ * @param angle The orientation angle in radians.
+ * @return A orientation matrix.
  */
 Eigen::Matrix3d rotFromAxisAngle(const Eigen::Vector3d& vec, double angle);
 

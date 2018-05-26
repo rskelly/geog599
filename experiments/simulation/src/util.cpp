@@ -7,6 +7,8 @@
 
 #include "util.hpp"
 
+#define PI 3.141592653589793
+
 using namespace uav::util;
 
 Poisson::Poisson() : Poisson(10) {}
@@ -25,13 +27,11 @@ double Poisson::next(double freq) {
 	return freq * (n / m_mean);
 }
 
-double Poisson::nextCentred(double freq) {
+double Poisson::nextCentered(double freq) {
 	int n = m_distribution(m_generator) - m_mean;
 	return freq * (n / m_mean);
 }
 
-
-#define PI 3.141592653589793
 
 static double r2d = PI / 180.0;
 static double d2r = 180.0 / PI;
