@@ -48,6 +48,8 @@ public:
  */
 Eigen::Matrix3d rotFromAxisAngle(const Eigen::Vector3d& vec, double angle);
 
+Eigen::Matrix3d rotFromEuler(const Eigen::Matrix3d& mtx);
+
 /**
  * Returns the angle in radians.
  *

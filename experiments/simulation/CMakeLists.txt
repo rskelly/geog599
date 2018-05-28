@@ -56,5 +56,5 @@ link_directories(. ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
 # Build support libraries ################################################################################
 
-add_executable (sim1 src/sim1.cpp src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp)
+add_executable (sim1 src/sim1.cpp src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp src/sim/gimbal.cpp)
 target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} ${GL_LIBRARY} ${GLFW_LIBRARY} ${GLEW_LIBRARY})
