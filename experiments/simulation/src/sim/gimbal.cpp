@@ -17,7 +17,7 @@ void updateGimbal(Eigen::Vector3d* orientation) {
 	while(true) {
 		double a = std::sin(t += 0.1) * 0.5;
 		//std::cerr << "gimbal angle: " << a << "\n";
-		(*orientation)[2] = a; // around z-axis (side to side)
+		//(*orientation)[2] = a; // around z-axis (side to side)
 		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(100));
 	}
 }

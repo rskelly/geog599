@@ -36,12 +36,21 @@ private:
 
 public:
 
+	Terrain();
+
 	/**
 	 * Create a terrain from the given raster.
 	 *
 	 * @param demfile A terrain raster.
 	 */
 	Terrain(const std::string& demfile);
+
+	/**
+	 * Load a terrain DEM.
+	 *
+	 * @param demfile A terrain raster.
+	 */
+	void load(const std::string& demfile);
 
 	/**
 	 * Sample the terrain using the ray originating at origin

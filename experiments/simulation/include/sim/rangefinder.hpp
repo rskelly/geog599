@@ -32,6 +32,14 @@ public:
 	 * @return The distance from laser to target.
 	 */
 	static double getRange();
+
+	/**
+	 * Set the range.
+	 *
+	 * @param range The range to be returned by the rangefinder simulator.
+	 */
+	static void setRange(double range);
+
 };
 
 /**

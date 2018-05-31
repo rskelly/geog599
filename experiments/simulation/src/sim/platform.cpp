@@ -10,6 +10,7 @@
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 #include "sim/gimbal.hpp"
+#include "sim/terrain.hpp"
 
 #define PI 3.141592653589793238
 
@@ -103,6 +104,7 @@ void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
 	std::cerr << name << "\n" << mtx << "\n";
 }
 
+uav::sim::Terrain __terrain;
 
 Platform::Platform() :
 	m_forwardVelocity(10),
@@ -111,13 +113,15 @@ Platform::Platform() :
 	m_rangefinder(new Rangefinder()) {
 
 	m_gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
-	m_gimbal->setStaticOrientation(Eigen::Vector3d(0, 30 * PI / 180, 0)); // 30 rad down (around the y axis.)
+	m_gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 2., 0)); // pi/2 rad down (around the y axis.)
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
 
-	m_position << 0, 0, 30; // 30m high
+	m_position << 418627, 6602880.000, 320; // 30m high
 	m_orientation << 0, 0, 0; // straight level
+
+	__terrain.load("/home/rob/Documents/git/msc/experiments/simulation/build/srtm_30m_clip.tif");
 }
 
 
@@ -125,7 +129,7 @@ void Platform::update(double time) {
 	double t = time - m_lastTime;
 	m_lastTime = time;
 
-	m_position[0] += 0; //t * m_posPoisson.next(m_forwardVelocity);
+	m_position[0] += 1; //t * m_posPoisson.next(m_forwardVelocity);
 	m_position[1] += 0; //m_posPoisson.nextCentered();
 	m_position[2] += 0; //m_posPoisson.nextCentered();
 
@@ -165,10 +169,25 @@ void Platform::update(double time) {
 
 	Eigen::Vector3d laserVector = matrixToEuler(God + Gos + Po);
 
-	std::cerr << "Pp " << Pp << "\n";
-	std::cerr << "Po " << Po << "\n";
+	laserVector[2] = 1;
+	laserVector[1] = 0;
+
+	//std::cerr << "Pp " << Pp << "\n";
+	//std::cerr << "Po " << Po << "\n";
 	std::cerr << "Laser Position " << laserPosition << "\n";
 	std::cerr << "Laser Vector " << laserVector << "\n";
+
+	// 5) Locate the terrain under the laser, and communicate the position of the return to the RangeBridge.
+
+	double r = __terrain.range(laserPosition, laserVector);
+	RangeBridge::setRange(r);
+
+	Range* range = m_rangefinder->range();
+
+	std::cerr << "Range " << range->range() << ", " << range->time() << "\n";
+
+	delete range;
+
 }
 
 const uav::Gimbal* Platform::gimbal() const {

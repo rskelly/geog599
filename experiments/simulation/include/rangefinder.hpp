@@ -23,14 +23,16 @@ public:
 	 *
 	 * @return The range (in m), or distance from instrument to target.
 	 */
-	double range() const;
+	virtual double range() const = 0;
 
 	/**
 	 * Return the time at which the range measurement was taken.
 	 *
 	 * @return The time at which the range measurement was taken.
 	 */
-	double time() const;
+	virtual double time() const = 0;
+
+	virtual ~Range() {}
 };
 
 /**

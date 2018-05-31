@@ -37,8 +37,14 @@ public:
 
 using namespace uav::sim;
 
+double __range;
+
 double RangeBridge::getRange() {
-	return 0;
+	return __range;
+}
+
+void RangeBridge::setRange(double range) {
+	__range = range;
 }
 
 Rangefinder::Rangefinder() :

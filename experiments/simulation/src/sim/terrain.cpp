@@ -9,13 +9,22 @@
 
 #include <gdal_priv.h>
 
-#include "sim/terrain.hpp"
+#include <CGAL/Line_3.h>
+#include <CGAL/Point_3.h>
+#include <CGAL/Vector_3.h>
+#include <CGAL/Object.h>
 
+#include "sim/terrain.hpp"
 
 using namespace uav::sim;
 
-Terrain::Terrain(const std::string& demfile) {
+Terrain::Terrain() {}
 
+Terrain::Terrain(const std::string& demfile) {
+	load(demfile);
+}
+
+void Terrain::load(const std::string& demfile) {
 	GDALAllRegister();
 	GDALDataset* ds = (GDALDataset*) GDALOpen(demfile.c_str(), GA_ReadOnly);
 	int cols = ds->GetRasterXSize();
@@ -61,10 +70,44 @@ void Terrain::getVertices(std::vector<double>& vertices) {
 	}
 }
 
+typedef CGAL::Point_3<K> Point_3;
+typedef CGAL::Vector_3<K> Vector_3;
+typedef CGAL::Ray_3<K> Ray_3;
+
 double Terrain::sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {
-	return 0;
+	Point_3 pt(origin[0], origin[1], origin[2]);
+	Vector_3 vec(direction[0], direction[1], direction[2]);
+	Ray_3 line(pt, vec);
+	Delaunay::Finite_facets_iterator it;
+	for(it = m_tri->finite_facets_begin(); it != m_tri->finite_facets_end(); ++it){
+		Delaunay::Triangle t = m_tri->triangle(*it);
+		if(CGAL::do_intersect(line, t)) {
+			const CGAL::Object result = CGAL::intersection(line, t);
+			const Point_3* p = CGAL::object_cast<Point_3>(&result);
+			if(p)
+				return p->z();
+		}
+	}
+	return std::numeric_limits<double>::quiet_NaN();
 }
 
-double range(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {
-	return 0;
+inline double __dist3(const Point_3& a, const Point_3& b) {
+	return std::sqrt(std::pow(a.x() - b.x(), 2) + std::pow(a.y() - b.y(), 2) + std::pow(a.z() - b.z(), 2));
+}
+
+double Terrain::range(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {
+	Point_3 pt(origin[0], origin[1], origin[2]);
+	Vector_3 vec(direction[0], direction[1], direction[2]);
+	Ray_3 line(pt, vec);
+	Delaunay::Finite_facets_iterator it;
+	for(it = m_tri->finite_facets_begin(); it != m_tri->finite_facets_end(); ++it){
+		Delaunay::Triangle t = m_tri->triangle(*it);
+		if(CGAL::do_intersect(line, t)) {
+			const CGAL::Object result = CGAL::intersection(line, t);
+			const Point_3* p = CGAL::object_cast<Point_3>(&result);
+			if(p)
+				return __dist3(*p, pt);
+		}
+	}
+	return std::numeric_limits<double>::quiet_NaN();
 }
