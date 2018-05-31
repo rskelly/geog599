@@ -79,6 +79,26 @@ Eigen::Matrix3d eulerToMatrix(const Eigen::Vector3d& vec) {
 	return rotMatrix(vec[0], vec[1], vec[2]);
 }
 
+Eigen::Vector3d matrixToEuler(const Eigen::Matrix3d& mtx) {
+	Eigen::Vector3d vec;
+	if(mtx(1, 0) > 0.999) {
+		// North singularity, point straight up.
+		vec[0] = 0;
+		vec[1] = PI / 2;
+		vec[2] = std::atan2(mtx(0, 2), mtx(2, 2));
+	} else if(mtx(1, 0) < -0.999) {
+		// South singularity, point straight down.
+		vec[0] = 0;
+		vec[1] = -PI / 2;
+		vec[2] = std::atan2(mtx(0, 2), mtx(2, 2));
+	} else {
+		vec[0] = std::atan2(-mtx(1, 2), mtx(1, 1));
+		vec[1] = std::asin(mtx(1, 0));
+		vec[2] = std::atan2(-mtx(2, 0), mtx(0, 0));
+	}
+	return vec;
+}
+
 void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
 	std::cerr << name << "\n" << mtx << "\n";
 }
@@ -113,54 +133,42 @@ void Platform::update(double time) {
 	m_orientation[1] += 0; //m_rotPoisson.nextCentered();
 	m_orientation[2] += 0; //m_rotPoisson.nextCentered();
 
-	// TODO: Add some noisy movement to the orientation and position.
-	//std::cerr << "position: " << m_position[0] << ", " << m_position[1] << ", " << m_position[2] << "\n";
-	//std::cerr << "orientation: " << m_orientation[0] << ", " << m_orientation[1] << ", " << m_orientation[2] << "\n";
+	// 1) Translate the laser into the gimbal's frame and rotate it using the gimbal's dynamic orientation. (The laser has no position info of its own).
 
-	// Need the laser pulse vector relative to the inertial frame.
-	// 1) The laster pulse coordinate system is relative to the gimbal, offset by
-    //    a static offset (Pl), rotated by a dynamic rotation (Rl).
-	// 2) The gimbal coordinate system is relative to the platform frame
-	//    offset by a static offset (Pg) and rotation (Rg).
-	// 3) The platform frame is relative to the inertial frame, offset
-	//    by a dynamic offset (Pp), rotated by a dynamic rotation (Rp).
-	// To find the gimbal coordinate system relative to intertial frame:
-	//     A = Pp + Pg * Rp
-	// To find the laser coordinate system relative to the inertial frame:
-	//     B = A + Pl * Rg
-	// The pulse vector (C) rotates within its coordinate system by the
-	// matrix Rl.
+	Eigen::Vector3d Gpd(m_gimbal->position());
+	Eigen::Matrix3d God = eulerToMatrix(m_gimbal->orientation());
+	Eigen::Vector3d A = God * Gpd;
 
-	Eigen::Vector3d Pp(m_position);
-	Eigen::Vector3d Pgs(m_gimbal->staticPosition());
-	Eigen::Matrix3d Rp = eulerToMatrix(m_orientation);
+	//std::cerr << "Gpd " << Gpd << "\n";
+	//std::cerr << "God " << God << "\n";
+	//std::cerr << "A " << A << "\n";
 
-	//printMatrix("platform position", Pp);
-	//printMatrix("gimbal static position", Pgs);
-	//printMatrix("platform rotation", Rp);
+	// 2) Rotate the laser by the gimbal's static orientation and translate it into the platform's frame.
 
-	Eigen::Vector3d A = Pp + Rp * Pgs;
+	Eigen::Vector3d Gps(m_gimbal->staticPosition());
+	Eigen::Matrix3d Gos = eulerToMatrix(m_gimbal->staticOrientation());
 
-	//printMatrix("A", A);
+	Eigen::Vector3d B = Gos * A + Gps;
 
-	Eigen::Vector3d Pgd(m_gimbal->position());
-	Eigen::Matrix3d Rg = eulerToMatrix(m_gimbal->staticOrientation());
+	//std::cerr << "Gps " << Gps << "\n";
+	//std::cerr << "Gos " << Gos << "\n";
+	//std::cerr << "B " << B << "\n";
 
-	//printMatrix("gimbal dynamic position", Pgd);
-	//printMatrix("gimbal static rotation", Rg);
+	// 3) Rotate the platform then translate into the inertial frame.
 
-	Eigen::Vector3d B = A + Rg * Pgd;
+	Eigen::Vector3d Pp(position());
+	Eigen::Matrix3d Po = eulerToMatrix(orientation());
 
-	//printMatrix("B", B);
+	Eigen::Vector3d laserPosition = Po * B + Pp;
 
-	Eigen::Matrix3d Rgd = eulerToMatrix(m_gimbal->orientation());
+	// 4) Compute the laser orientation by adding the orientations. It passes through the laserPosition.
 
-	//printMatrix("gimbal dynamic rotation", Rgd);
+	Eigen::Vector3d laserVector = matrixToEuler(God + Gos + Po);
 
-	Eigen::Vector3d C = Rgd * B;
-
-	std::cerr << "C: " << C[0] << ", " << C[1] << ", " << C[2] << "\n";
-	//printMatrix("C", C);
+	std::cerr << "Pp " << Pp << "\n";
+	std::cerr << "Po " << Po << "\n";
+	std::cerr << "Laser Position " << laserPosition << "\n";
+	std::cerr << "Laser Vector " << laserVector << "\n";
 }
 
 const uav::Gimbal* Platform::gimbal() const {

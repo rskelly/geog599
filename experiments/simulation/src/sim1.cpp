@@ -9,15 +9,16 @@
 
 #include <Eigen/Core>
 
+/*
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <GLFW/glfw3.h>
+*/
 
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 #include "sim/terrain.hpp"
 #include "util.hpp"
-
 
 using namespace uav::util;
 using namespace uav::sim;
@@ -47,6 +48,7 @@ Terrain* loadTerrain() {
 	return new Terrain("/home/rob/Documents/gis/geocat/srtm/n40_w082_1arc_v3_utm.tif");
 }
 
+/*
 GLFWwindow* win;
 
 bool initWindow() {
@@ -78,15 +80,14 @@ void runWindow() {
 
 bool renderTerrain(Terrain* terrain) {
 
-	/*
 	std::vector<double> vertices;
 	terrain->getVertices(vertices);
 
 	unsigned int id;
 	glGenBuffers(1, &id);
-	*/
 	return false;
 }
+*/
 
 int main(int argc, char** argv) {
 
