@@ -10,15 +10,17 @@
 
 #include "sim/gimbal.hpp"
 
+#define PI 3.141592653589793238
+
 using namespace uav::sim;
 
 void updateGimbal(Eigen::Vector3d* orientation) {
 	double t = 0;
 	while(true) {
-		double a = std::sin(t += 0.1) * 0.5;
+		double a = -(PI / 4) + std::sin(t += 0.1) + (PI / 2);
 		//std::cerr << "gimbal angle: " << a << "\n";
-		//(*orientation)[2] = a; // around z-axis (side to side)
-		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(100));
+		(*orientation)[2] = a; // around z-axis (side to side)
+		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(10));
 	}
 }
 

@@ -44,17 +44,13 @@ public:
 
 /**
  * Rangefinder is a simulated range finder that emits ranges as if
- * they were read from a given elevation model. Though the definition of
- * Rangefinder forbids the emission of any information other than range
- * and time, the simulator must have information about the position and
- * orientation of the laser to read a DEM, so the rangefinder gets the
- * calculated range from the RangeBridge class which is a
- * singleton.
+ * they were read from a given elevation model. The simulated
+ * rangefinder gets the calculated range from the RangeBridge class which
+ * is a singleton.
  */
 class Rangefinder : public uav::Rangefinder {
 private:
 
-	double m_scanFreq;
 	double m_pulseFreq;
 
 	uav::util::Poisson m_poisson;
@@ -82,13 +78,6 @@ public:
 	 * @param The frequency as measurements per second.
 	 */
 	void setPulseFrequency(double freq);
-
-	/**
-	 * Set the scan frequency. This should have noise added.
-	 *
-	 * @param The frequency as oscillations per second.
-	 */
-	void setScanFrequency(double freq);
 
 	Range* range();
 

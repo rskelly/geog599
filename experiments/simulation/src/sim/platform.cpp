@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include <Eigen/Geometry>
+
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 #include "sim/gimbal.hpp"
@@ -81,23 +83,19 @@ Eigen::Matrix3d eulerToMatrix(const Eigen::Vector3d& vec) {
 }
 
 Eigen::Vector3d matrixToEuler(const Eigen::Matrix3d& mtx) {
+	// TODO: Singularities
 	Eigen::Vector3d vec;
-	if(mtx(1, 0) > 0.999) {
-		// North singularity, point straight up.
-		vec[0] = 0;
-		vec[1] = PI / 2;
-		vec[2] = std::atan2(mtx(0, 2), mtx(2, 2));
-	} else if(mtx(1, 0) < -0.999) {
-		// South singularity, point straight down.
-		vec[0] = 0;
-		vec[1] = -PI / 2;
-		vec[2] = std::atan2(mtx(0, 2), mtx(2, 2));
-	} else {
-		vec[0] = std::atan2(-mtx(1, 2), mtx(1, 1));
-		vec[1] = std::asin(mtx(1, 0));
-		vec[2] = std::atan2(-mtx(2, 0), mtx(0, 0));
-	}
+	vec[0] = std::atan2(mtx(2, 1), mtx(2, 2));
+	vec[1] = std::atan2(-mtx(2, 0), std::sqrt(std::pow(mtx(2,1), 2) + std::pow(mtx(2, 2), 2)));
+	vec[2] = std::atan2(mtx(1, 0), mtx(0, 0));
+	//std::cerr << "euler " << vec << "\n";
 	return vec;
+}
+
+Eigen::Vector3d eulerToVector(const Eigen::Vector3d& euler) {
+	Eigen::Matrix3d mtx = eulerToMatrix(euler);
+	Eigen::Vector3d v(1, 0, 0);
+	return mtx * v;
 }
 
 void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
@@ -113,15 +111,16 @@ Platform::Platform() :
 	m_rangefinder(new Rangefinder()) {
 
 	m_gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
-	m_gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 2., 0)); // pi/2 rad down (around the y axis.)
+	// TODO: This seems to be upside-down...
+	m_gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 4., 0)); // 45deg down (around the y axis.)
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
 
-	m_position << 418627, 6602880.000, 320; // 30m high
+	m_position << 411502, 6618774, 320; // 30m high
 	m_orientation << 0, 0, 0; // straight level
 
-	__terrain.load("/home/rob/Documents/git/msc/experiments/simulation/build/srtm_30m_clip.tif");
+	__terrain.load("/home/rob/Documents/git/msc/experiments/simulation/build/srtm_30m_clip2.tif");
 }
 
 
@@ -129,9 +128,9 @@ void Platform::update(double time) {
 	double t = time - m_lastTime;
 	m_lastTime = time;
 
-	m_position[0] += 1; //t * m_posPoisson.next(m_forwardVelocity);
-	m_position[1] += 0; //m_posPoisson.nextCentered();
-	m_position[2] += 0; //m_posPoisson.nextCentered();
+	m_position[0] += t * m_posPoisson.next(m_forwardVelocity);
+	m_position[1] += m_posPoisson.nextCentered();
+	m_position[2] += m_posPoisson.nextCentered();
 
 	m_orientation[0] += 0; //m_rotPoisson.nextCentered();
 	m_orientation[1] += 0; //m_rotPoisson.nextCentered();
@@ -163,19 +162,19 @@ void Platform::update(double time) {
 	Eigen::Vector3d Pp(position());
 	Eigen::Matrix3d Po = eulerToMatrix(orientation());
 
+	//std::cerr << "Pp " << Pp << "\n";
+	//std::cerr << "Po " << Po << "\n";
+
 	Eigen::Vector3d laserPosition = Po * B + Pp;
 
 	// 4) Compute the laser orientation by adding the orientations. It passes through the laserPosition.
 
-	Eigen::Vector3d laserVector = matrixToEuler(God + Gos + Po);
+	//std::cerr << "laser orientation " << God * Gos * Po << "\n";
 
-	laserVector[2] = 1;
-	laserVector[1] = 0;
+	Eigen::Vector3d laserVector = eulerToVector(matrixToEuler(God * Gos * Po));
 
-	//std::cerr << "Pp " << Pp << "\n";
-	//std::cerr << "Po " << Po << "\n";
-	std::cerr << "Laser Position " << laserPosition << "\n";
-	std::cerr << "Laser Vector " << laserVector << "\n";
+	//std::cerr << "Laser Position " << laserPosition << "\n";
+	//std::cerr << "Laser Vector " << laserVector << "\n";
 
 	// 5) Locate the terrain under the laser, and communicate the position of the return to the RangeBridge.
 
@@ -184,9 +183,11 @@ void Platform::update(double time) {
 
 	Range* range = m_rangefinder->range();
 
-	std::cerr << "Range " << range->range() << ", " << range->time() << "\n";
-
-	delete range;
+	if(range) {
+		std::cerr << "Range " << range->range() << ", " << range->time() << "\n";
+		std::cerr << "Position " << m_position[0] << ", " << m_position[1] << "\n";
+		delete range;
+	}
 
 }
 

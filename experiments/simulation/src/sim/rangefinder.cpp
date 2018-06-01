@@ -48,16 +48,12 @@ void RangeBridge::setRange(double range) {
 }
 
 Rangefinder::Rangefinder() :
-	m_scanFreq(1), m_pulseFreq(1),
+	m_pulseFreq(1. / 866.),
 	m_nextTime(0) {
 }
 
 void Rangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
-}
-
-void Rangefinder::setScanFrequency(double freq) {
-	m_scanFreq = freq;
 }
 
 uav::Range* Rangefinder::range() {
@@ -67,10 +63,11 @@ uav::Range* Rangefinder::range() {
 	gettimeofday(&time, NULL);
 	double t = (double) time.tv_sec + ((double) time.tv_usec / 1000000);
 
-	if(t >= m_nextTime)
+	if(t >= m_nextTime) {
 		result = new Range(RangeBridge::getRange(), t);
+		m_nextTime = t + m_poisson.next(m_pulseFreq);
+	}
 
-	m_nextTime = t + m_poisson.next(m_pulseFreq);
 	return result;
 }
 

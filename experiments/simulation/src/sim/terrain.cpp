@@ -44,8 +44,8 @@ void Terrain::load(const std::string& demfile) {
 	size_t i = 0;
 	for(int r = 0; r < rows; ++r) {
 		for(int c = 0; c < cols; ++c) {
-			double x = ((double) c / cols) * 2.0 - 1.0;
-			double y = (double) r / rows;
+			double x = trans[0] + c * trans[1];
+			double y = trans[3] + r * trans[5];
 			double z = data[r * cols + c];
 			if(z == nodata)
 				continue;
@@ -76,8 +76,8 @@ typedef CGAL::Ray_3<K> Ray_3;
 
 double Terrain::sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {
 	Point_3 pt(origin[0], origin[1], origin[2]);
-	Vector_3 vec(direction[0], direction[1], direction[2]);
-	Ray_3 line(pt, vec);
+	Vector_3 dir(direction[0], direction[1], direction[2]);
+	Ray_3 line(pt, dir);
 	Delaunay::Finite_facets_iterator it;
 	for(it = m_tri->finite_facets_begin(); it != m_tri->finite_facets_end(); ++it){
 		Delaunay::Triangle t = m_tri->triangle(*it);
@@ -97,8 +97,9 @@ inline double __dist3(const Point_3& a, const Point_3& b) {
 
 double Terrain::range(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {
 	Point_3 pt(origin[0], origin[1], origin[2]);
-	Vector_3 vec(direction[0], direction[1], direction[2]);
-	Ray_3 line(pt, vec);
+	Vector_3 dir(direction[0], direction[1], direction[2]);
+	Ray_3 line(pt, dir);
+	//std::cerr << "ray: " << line << "\n";
 	Delaunay::Finite_facets_iterator it;
 	for(it = m_tri->finite_facets_begin(); it != m_tri->finite_facets_end(); ++it){
 		Delaunay::Triangle t = m_tri->triangle(*it);
