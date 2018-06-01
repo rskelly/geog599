@@ -82,5 +82,59 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>txtTerrainFile</sender>
+   <signal>textEdited(QString)</signal>
+   <receiver>Sim1Viewer</receiver>
+   <slot>terrainFileChanged(QString)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>595</x>
+     <y>452</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>112</x>
+     <y>478</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btnTerrainFile</sender>
+   <signal>clicked()</signal>
+   <receiver>Sim1Viewer</receiver>
+   <slot>btnTerrainFileClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>742</x>
+     <y>453</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>529</x>
+     <y>486</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>btnClose</sender>
+   <signal>clicked()</signal>
+   <receiver>Sim1Viewer</receiver>
+   <slot>btnCloseFormClicked()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>687</x>
+     <y>500</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>610</x>
+     <y>493</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+ <slots>
+  <slot>btnTerrainFileClicked()</slot>
+  <slot>terrainFileChanged(QString)</slot>
+  <slot>btnCloseFormClicked()</slot>
+ </slots>
 </ui>

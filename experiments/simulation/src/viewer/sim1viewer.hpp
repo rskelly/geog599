@@ -8,6 +8,8 @@
 #ifndef SRC_VIEWER_SIM1VIEWER_HPP_
 #define SRC_VIEWER_SIM1VIEWER_HPP_
 
+#include <string>
+
 #include <QtWidgets/QDialog>
 
 #include "ui_sim1viewer.h"
@@ -18,11 +20,19 @@ namespace viewer {
 class Sim1Viewer : public Ui::Sim1Viewer {
 private:
 	QDialog* m_form;
+	std::string m_terrainFile;
 
 public:
 	Sim1Viewer();
 	void showForm();
-	~Sim1Viewer();
+	virtual ~Sim1Viewer();
+
+	const std::string& terrainFile() const;
+
+public slots:
+	void terrainFileChanged(QString file);
+	void btnTerrainFileClicked();
+	void closeFormClicked();
 };
 
 
