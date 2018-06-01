@@ -7,6 +7,12 @@
 #include <iomanip>
 #include <vector>
 
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QMessageBox>
+#include <QtCore/QObject>
+#include <QtCore/QEvent>
+#include <QtCore/QString>
+
 #include <Eigen/Core>
 
 /*
@@ -18,6 +24,8 @@
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 #include "sim/terrain.hpp"
+#include "viewer/sim1viewer.hpp"
+
 #include "util.hpp"
 
 using namespace uav::util;
@@ -89,6 +97,35 @@ bool renderTerrain(Terrain* terrain) {
 }
 */
 
+int runWithGui(int argc, char **argv) {
+#ifdef WITH_GUI
+
+	class Sim1Application : public QApplication {
+	public:
+		Sim1Application(int &argc, char **argv) : QApplication(argc, argv) {}
+		bool notify(QObject *receiver, QEvent *e) {
+			try {
+				return QApplication::notify(receiver, e);
+			} catch(const std::exception &ex) {
+				QMessageBox err;
+				err.setText("Error");
+				err.setInformativeText(QString(ex.what()));
+				err.exec();
+				return false;
+			}
+		}
+	};
+
+	Sim1Application q(argc, argv);
+	uav::viewer::Sim1Viewer v;
+	v.showForm();
+	return q.exec();
+#else
+	std::cerr << "GUI not enabled." << std::endl;
+	return 1;
+#endif
+}
+
 int main(int argc, char** argv) {
 
 	//testMath();
@@ -97,6 +134,7 @@ int main(int argc, char** argv) {
 	//renderTerrain(t);
 	//runWindow();
 
+	/*
 	Platform p;
 
 	std::cerr << std::setprecision(12);
@@ -110,5 +148,7 @@ int main(int argc, char** argv) {
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
+	*/
 
+	runWithGui(argc, argv);
 }
