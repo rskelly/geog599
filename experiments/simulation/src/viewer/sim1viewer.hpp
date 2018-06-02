@@ -9,6 +9,7 @@
 #define SRC_VIEWER_SIM1VIEWER_HPP_
 
 #include <string>
+#include <unordered_map>
 
 #include <QtWidgets/QDialog>
 
@@ -17,22 +18,23 @@
 namespace uav {
 namespace viewer {
 
-class Sim1Viewer : public Ui::Sim1Viewer {
+class Sim1Viewer : public QDialog, public Ui::Sim1Viewer {
+	Q_OBJECT
 private:
 	QDialog* m_form;
-	std::string m_terrainFile;
+	std::unordered_map<std::string, std::string> m_settings;
 
 public:
 	Sim1Viewer();
 	void showForm();
+	void setupUi(QDialog *Sim1Viewer);
+	std::string terrainFile() const;
 	virtual ~Sim1Viewer();
-
-	const std::string& terrainFile() const;
 
 public slots:
 	void terrainFileChanged(QString file);
 	void btnTerrainFileClicked();
-	void closeFormClicked();
+	void btnCloseFormClicked();
 };
 
 
