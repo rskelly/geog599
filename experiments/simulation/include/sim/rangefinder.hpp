@@ -15,6 +15,7 @@
 
 #include "../rangefinder.hpp"
 #include "../util.hpp"
+#include "terrain.hpp"
 
 namespace uav {
 namespace sim {
@@ -24,7 +25,14 @@ namespace sim {
  * so that it can be emitted by the rangefinder.
  */
 class RangeBridge {
+private:
+	Terrain m_terrain;
+	Eigen::Vector3d m_position;
+	Eigen::Vector3d m_direction;
+
 public:
+	RangeBridge();
+
 	/**
 	 * Return the distance from the laser to the DEM surface,
 	 * given the transformation parameters of the system.
@@ -34,11 +42,19 @@ public:
 	static double getRange();
 
 	/**
-	 * Set the range.
+	 * Set the laser position and direction for the next range retrieval.
 	 *
-	 * @param range The range to be returned by the rangefinder simulator.
+	 * @param position The laser position.
+	 * @param direction The laser beam direction.
 	 */
-	static void setRange(double range);
+	static void setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction);
+
+	/**
+	 * The terrain DEM file.
+	 *
+	 * @param file The terrain DEM file.
+	 */
+	static void setTerrainFile(const std::string& file);
 
 };
 

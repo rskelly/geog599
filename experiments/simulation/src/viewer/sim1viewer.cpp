@@ -16,6 +16,7 @@
 using namespace uav::viewer;
 
 Sim1Viewer::Sim1Viewer() :
+		m_sim(nullptr),
 		m_form(nullptr) {
 	QSettings settings("sim1", "dijital.ca");
 	m_settings[K_TERRAIN_FILE] = settings.value(K_TERRAIN_FILE, "").toString().toStdString();
@@ -29,6 +30,12 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 	connect(txtTerrainFile, SIGNAL(textEdited(QString)), this, SLOT(terrainFileChanged(QString)));
     connect(btnTerrainFile, SIGNAL(clicked()), this, SLOT(btnTerrainFileClicked()));
     connect(btnClose, SIGNAL(clicked()), this, SLOT(btnCloseFormClicked()));
+    connect(btnStart, SIGNAL(clicked()), this, SLOT(btnStartClicked()));
+    connect(btnStop, SIGNAL(clicked()), this, SLOT(btnStopClicked()));
+}
+
+void Sim1Viewer::setSimulator(Simulator& sim) {
+	m_sim = &sim;
 }
 
 void Sim1Viewer::showForm() {
@@ -46,6 +53,22 @@ std::string Sim1Viewer::terrainFile() const {
 
 void Sim1Viewer::terrainFileChanged(QString file) {
 	m_settings[K_TERRAIN_FILE] = file.toStdString();
+}
+
+void Sim1Viewer::btnStartClicked() {
+	if(!m_sim)
+		throw std::runtime_error("Simulator not set.");
+	m_sim->start();
+	btnStart->setEnabled(false);
+	btnStop->setEnabled(true);
+}
+
+void Sim1Viewer::btnStopClicked() {
+	if(m_sim) {
+		m_sim->stop();
+		btnStart->setEnabled(true);
+		btnStop->setEnabled(false);
+	}
 }
 
 void Sim1Viewer::btnTerrainFileClicked() {

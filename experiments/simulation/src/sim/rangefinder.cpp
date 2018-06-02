@@ -37,15 +37,23 @@ public:
 
 using namespace uav::sim;
 
-double __range;
+RangeBridge __rb;
+
+RangeBridge::RangeBridge() {}
 
 double RangeBridge::getRange() {
-	return __range;
+	return __rb.m_terrain.range(__rb.m_position, __rb.m_direction);
 }
 
-void RangeBridge::setRange(double range) {
-	__range = range;
+void RangeBridge::setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction) {
+	__rb.m_position = position;
+	__rb.m_direction = direction;
 }
+
+void RangeBridge::setTerrainFile(const std::string& file) {
+	__rb.m_terrain.load(file);
+}
+
 
 Rangefinder::Rangefinder() :
 	m_pulseFreq(1. / 866.),

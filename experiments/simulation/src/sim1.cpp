@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include <iomanip>
 #include <vector>
+#include <memory>
 
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QMessageBox>
@@ -27,6 +28,7 @@
 #include "viewer/sim1viewer.hpp"
 
 #include "util.hpp"
+#include "sim/simulator.hpp"
 
 using namespace uav::util;
 using namespace uav::sim;
@@ -38,71 +40,47 @@ double time() {
 }
 
 
-void testMath() {
-	double a = toRad(45);
-	Eigen::Vector3d vec(1, 0, 0);
-	std::cerr << vec[0] << ", " << vec[1] << ", " << vec[2] << "\n";
-	Eigen::Matrix3d mtx = rotFromAxisAngle(vec, a);
-	std::cerr << mtx(0, 0) << ", " << mtx(0, 1) << ", " << mtx(0, 2) << "\n";
-	std::cerr << mtx(1, 0) << ", " << mtx(1, 1) << ", " << mtx(1, 2) << "\n";
-	std::cerr << mtx(2, 0) << ", " << mtx(2, 1) << ", " << mtx(2, 2) << "\n";
-	Eigen::Vector3d input(2, 1, 3);
-	std::cerr << input[0] << ", " << input[1] << ", " << input[2] << "\n";
-	Eigen::Vector3d out = mtx * input;
-	std::cerr << out[0] << ", " << out[1] << ", " << out[2] << "\n";
+
+void doRun(Simulator* sim) {
+	sim->run();
 }
 
-Terrain* loadTerrain() {
-	return new Terrain("/home/rob/Documents/gis/geocat/srtm/n40_w082_1arc_v3_utm.tif");
+Simulator::Simulator() : m_running(false) {}
+
+void Simulator::start() {
+	m_running = true;
+	m_thread.reset(new std::thread(doRun, this));
 }
 
-/*
-GLFWwindow* win;
-
-bool initWindow() {
-
-	if(!glfwInit())
-		return false;
-
-	 win = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-	 if (!win) {
-		 glfwTerminate();
-		 return false;
-	 }
-
-	glfwMakeContextCurrent(win);
-	return true;
+void Simulator::stop() {
+	m_running = false;
+	m_thread->join();
 }
 
-void runWindow() {
+void Simulator::setTerrainFile(const std::string& file) {
+	RangeBridge::setTerrainFile(file);
+}
 
-	while (!glfwWindowShouldClose(win)) {
-		glClear(GL_COLOR_BUFFER_BIT);
-		glfwSwapBuffers(win);
-		glfwPollEvents();
+void Simulator::run() {
+	std::cerr << std::setprecision(12);
+	double start = time();
+	while(m_running) {
+		double current = time() - start;
+		m_platform.update(current);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
-
-	glfwTerminate();
-
 }
 
-bool renderTerrain(Terrain* terrain) {
-
-	std::vector<double> vertices;
-	terrain->getVertices(vertices);
-
-	unsigned int id;
-	glGenBuffers(1, &id);
-	return false;
-}
-*/
 
 int runWithGui(int argc, char **argv) {
 #ifdef WITH_GUI
 
 	class Sim1Application : public QApplication {
 	public:
-		Sim1Application(int &argc, char **argv) : QApplication(argc, argv) {}
+		Sim1Application(int &argc, char **argv) : QApplication(argc, argv) {
+
+		}
+
 		bool notify(QObject *receiver, QEvent *e) {
 			try {
 				return QApplication::notify(receiver, e);
@@ -118,6 +96,9 @@ int runWithGui(int argc, char **argv) {
 
 	Sim1Application q(argc, argv);
 	uav::viewer::Sim1Viewer v;
+	Simulator sim;
+	sim.setTerrainFile("/home/rob/Documents/git/msc/experiments/simulation/data/pad_clip.tif");
+	v.setSimulator(sim);
 	v.showForm();
 	return q.exec();
 #else

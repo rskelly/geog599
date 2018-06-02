@@ -102,8 +102,6 @@ void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
 	std::cerr << name << "\n" << mtx << "\n";
 }
 
-uav::sim::Terrain __terrain;
-
 Platform::Platform() :
 	m_forwardVelocity(10),
 	m_lastTime(0),
@@ -117,10 +115,9 @@ Platform::Platform() :
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
 
-	m_position << 411502, 6618774, 320; // 30m high
+	m_position << 489103, 6502712, 320; // 30m high
 	m_orientation << 0, 0, 0; // straight level
 
-	__terrain.load("/home/rob/Documents/git/msc/experiments/simulation/build/srtm_30m_clip2.tif");
 }
 
 
@@ -176,10 +173,7 @@ void Platform::update(double time) {
 	//std::cerr << "Laser Position " << laserPosition << "\n";
 	//std::cerr << "Laser Vector " << laserVector << "\n";
 
-	// 5) Locate the terrain under the laser, and communicate the position of the return to the RangeBridge.
-
-	double r = __terrain.range(laserPosition, laserVector);
-	RangeBridge::setRange(r);
+	RangeBridge::setLaser(laserPosition, laserVector);
 
 	Range* range = m_rangefinder->range();
 

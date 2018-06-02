@@ -15,12 +15,15 @@
 
 #include "ui_sim1viewer.h"
 
+#include "sim/simulator.hpp"
+
 namespace uav {
 namespace viewer {
 
 class Sim1Viewer : public QDialog, public Ui::Sim1Viewer {
 	Q_OBJECT
 private:
+	Simulator* m_sim;
 	QDialog* m_form;
 	std::unordered_map<std::string, std::string> m_settings;
 
@@ -29,12 +32,15 @@ public:
 	void showForm();
 	void setupUi(QDialog *Sim1Viewer);
 	std::string terrainFile() const;
+	void setSimulator(uav::sim::Simulator& sim);
 	virtual ~Sim1Viewer();
 
 public slots:
 	void terrainFileChanged(QString file);
 	void btnTerrainFileClicked();
 	void btnCloseFormClicked();
+	void btnStopClicked();
+	void btnStartClicked();
 };
 
 
