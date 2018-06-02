@@ -20,7 +20,7 @@
 namespace uav {
 namespace viewer {
 
-class Sim1Viewer : public QDialog, public Ui::Sim1Viewer {
+class Sim1Viewer : public QDialog, public Ui::Sim1Viewer, public SimulatorObserver {
 	Q_OBJECT
 private:
 	Simulator* m_sim;
@@ -31,8 +31,9 @@ public:
 	Sim1Viewer();
 	void showForm();
 	void setupUi(QDialog *Sim1Viewer);
-	std::string terrainFile() const;
+	//std::string terrainFile() const;
 	void setSimulator(uav::sim::Simulator& sim);
+	void simUpdate(uav::sim::Simulator& sim);
 	virtual ~Sim1Viewer();
 
 public slots:

@@ -19,11 +19,20 @@ using namespace uav::sim;
 namespace uav {
 namespace sim {
 
+class Simulator;
+
+class SimulatorObserver {
+public:
+	virtual void simUpdate(Simulator& sim) = 0;
+	virtual ~SimulatorObserver() {}
+};
+
 class Simulator {
 private:
 	bool m_running;
 	Platform m_platform;
 	std::unique_ptr<std::thread> m_thread;
+	std::vector<SimulatorObserver*> m_obs;
 
 public:
 	Simulator();
@@ -31,6 +40,8 @@ public:
 	void start();
 	void stop();
 	void setTerrainFile(const std::string& file);
+	void addObserver(SimulatorObserver* obs);
+	~Simulator();
 };
 
 } // sim

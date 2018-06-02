@@ -78,7 +78,7 @@ if(${WITH_GUI})
 	set (CMAKE_AUTOUIC ON)
 	set (CMAKE_AUTOMOC ON)
 	set (CMAKE_INCLUDE_CURRENT_DIR ON)
-	set (CMAKE_AUTOMOC_OPTIONS "-Iinclude/viewer -Isrc/viewer")
+	set (CMAKE_AUTOMOC_OPTIONS "-Isrc/viewer")
 endif()
 
 # Build support libraries ################################################################################

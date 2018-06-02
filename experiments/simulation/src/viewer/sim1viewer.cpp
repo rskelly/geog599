@@ -5,15 +5,32 @@
  *      Author: rob
  */
 
+#include <iostream>
+
 #include <QtWidgets/QFileDialog>
 #include <QtCore/QString>
 #include <QtCore/QSettings>
 
 #include "sim1viewer.hpp"
+#include "renderwidget.hpp"
 
 #define K_TERRAIN_FILE "terrainFile"
 
 using namespace uav::viewer;
+
+RenderWidget::RenderWidget(QWidget* parent) :
+	QOpenGLWidget(parent) {
+}
+
+void RenderWidget::resizeGL(int w, int h) {
+
+}
+void RenderWidget::paintGL() {
+
+}
+void RenderWidget::initializeGL() {
+
+}
 
 Sim1Viewer::Sim1Viewer() :
 		m_sim(nullptr),
@@ -36,6 +53,11 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 
 void Sim1Viewer::setSimulator(Simulator& sim) {
 	m_sim = &sim;
+	m_sim->addObserver(this);
+}
+
+void Sim1Viewer::simUpdate(Simulator& sim) {
+	std::cerr << "simupdate\n";
 }
 
 void Sim1Viewer::showForm() {
@@ -43,10 +65,6 @@ void Sim1Viewer::showForm() {
 		m_form = new QDialog();
 	this->setupUi(m_form);
 	m_form->show();
-}
-
-std::string Sim1Viewer::terrainFile() const {
-	return m_settings.find(K_TERRAIN_FILE)->second;
 }
 
 // slots
@@ -58,6 +76,8 @@ void Sim1Viewer::terrainFileChanged(QString file) {
 void Sim1Viewer::btnStartClicked() {
 	if(!m_sim)
 		throw std::runtime_error("Simulator not set.");
+	m_sim->setTerrainFile(m_settings[K_TERRAIN_FILE]);
+	m_sim->addObserver(this);
 	m_sim->start();
 	btnStart->setEnabled(false);
 	btnStop->setEnabled(true);

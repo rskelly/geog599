@@ -61,16 +61,23 @@ void Simulator::setTerrainFile(const std::string& file) {
 	RangeBridge::setTerrainFile(file);
 }
 
+void Simulator::addObserver(SimulatorObserver* obs) {
+	m_obs.push_back(obs);
+}
+
 void Simulator::run() {
 	std::cerr << std::setprecision(12);
 	double start = time();
 	while(m_running) {
 		double current = time() - start;
 		m_platform.update(current);
+		for(SimulatorObserver* obs : m_obs)
+			obs->simUpdate(*this);
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 
+Simulator::~Simulator() {}
 
 int runWithGui(int argc, char **argv) {
 #ifdef WITH_GUI
@@ -97,7 +104,6 @@ int runWithGui(int argc, char **argv) {
 	Sim1Application q(argc, argv);
 	uav::viewer::Sim1Viewer v;
 	Simulator sim;
-	sim.setTerrainFile("/home/rob/Documents/git/msc/experiments/simulation/data/pad_clip.tif");
 	v.setSimulator(sim);
 	v.showForm();
 	return q.exec();

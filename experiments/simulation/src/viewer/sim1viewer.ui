@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QOpenGLWidget" name="glPanel">
+    <widget class="uav::viewer::RenderWidget" name="glPanel">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
        <horstretch>0</horstretch>
@@ -98,6 +98,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>uav::viewer::RenderWidget</class>
+   <extends>QOpenGLWidget</extends>
+   <header>src/viewer/renderwidget.hpp</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
  <slots>
