@@ -1,0 +1,62 @@
+<html>
+<head>
+<script>
+	var cos = Math.cos;
+	var sin = Math.sin;
+	class Joint {
+		constructor(x, y, fixed = false) {
+			this.x = x;
+			this.y = y;
+			this.fixed = fixed;
+			this.input = null;
+			this.output = null;
+		}
+	}
+	class Link {
+		constructor(x, y, l, r) {
+			this.x = x;
+			this.y = y;
+			this.r = r;
+			this.l = l;
+			this.children = [];
+		}
+		render(ctx, r1) {
+			var r0 = this.r, l = this.l;
+			var x0 = this.x, y0 = this.y;
+			var x1 = x0 + cos(r0) * l, y1 = y0 + sin(r0) * l;
+			ctx.moveTo(x0, y0);
+			ctx.lineTo(x1, y1);
+			ctx.stroke();
+			this.children.forEach(bone => {
+				bone.x = x1;
+				bone.y = y1;
+			});
+		}
+		connect(bone) {
+			this.children.push(bone);
+		}
+	}
+
+	var ctx = null;
+	var root;
+	var w = 800, h = 800;
+	var r = 0;
+	function init() {
+		ctx = document.querySelector('#canv').getContext('2d');
+		root = new Bone(100, 100, 50, 0);
+		setInterval(render, 1000 / 60);
+	}
+	function render() {
+		ctx.clearRect(0, 0, w, h);
+		ctx.beginPath();
+		r += 0.1;
+		root.r = r;
+		root.render(ctx);
+		ctx.closePath();
+	}
+</script>
+</head>
+<body onload="init();">
+<canvas width="800" height="800" id="canv"></canvas>
+</body>
+</html>

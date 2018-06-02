@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>UAV Management</title>
+<script>
+	let ws;
+	let wsOpen = false;
+	
+	function onOpen(evt) {
+		wsOpen = true;
+		showMessage('opened');
+	}
+	
+	function onClose(evt) {
+		showMessage('closed');
+	};
+	
+	function onMessage(evt) {
+		const obj = JSON.parse(evt.data);
+		showMessage(JSON.stringify(obj));
+	}
+	
+	function setText(node, txt) {
+		while(node.firstChild)
+			node.removeChild(node.firstChild);
+		node.appendChild(document.createTextNode(txt));
+	}
+	
+	function showMessage(txt) {
+		const node = document.querySelector('#message');
+		setText(node, txt);
+	}
+	
+	function sendMessage(evt) {
+		evt.preventDefault();
+		const txt = document.querySelector('#text').value;
+		ws.send(JSON.stringify({'message': txt}));
+	}
+	
+	function sendUpdate() {
+		ws.send(JSON.stringify({'message': new Date().getTime().toString()}));	
+	}
+	
+	function open() {
+		ws = new WebSocket('ws://localhost:8001');
+		ws.addEventListener('open', evt => { onOpen(evt); });
+		ws.addEventListener('close', evt => { wsOpen = false; onClose(evt); });
+		ws.addEventListener('message', evt => { onMessage(evt); });
+		setInterval(sendUpdate, 50);
+	}
+	
+	function close() {
+		wsOpen = false;
+		ws.close();
+	}
+</script>
+</head>
+<body onload="open();">
+
+	<div>
+		<div>Send <input id="text" /> <button onclick="sendMessage(event);">Send</button></div>
+		<div id="message">Waiting...</div>
+	</div>
+</body>
+</html>
