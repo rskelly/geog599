@@ -64,7 +64,7 @@ project (test)
 
 # Configure directories###################################################################################
 
-include_directories(BEFORE SYSTEM ./include 
+include_directories(BEFORE SYSTEM ./include ./src
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR})
 	

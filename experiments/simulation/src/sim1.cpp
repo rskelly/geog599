@@ -39,8 +39,6 @@ double time() {
 	return (double) time.tv_sec + ((double) time.tv_usec / 1000000);
 }
 
-
-
 void doRun(Simulator* sim) {
 	sim->run();
 }
@@ -58,7 +56,16 @@ void Simulator::stop() {
 }
 
 void Simulator::setTerrainFile(const std::string& file) {
-	RangeBridge::setTerrainFile(file);
+	m_terrain.load(file);
+	RangeBridge::setTerrain(&m_terrain);
+}
+
+uav::sim::Terrain& Simulator::terrain() {
+	return m_terrain;
+}
+
+uav::sim::Platform& Simulator::platform() {
+	return m_platform;
 }
 
 void Simulator::addObserver(SimulatorObserver* obs) {

@@ -83,11 +83,32 @@ public:
 	 */
 	const double* transform() const;
 
+	/**
+	 * Return the geographic width of the terrain in map units.
+	 *
+	 * @return The geographic width of the terrain in map units.
+	 */
 	double width() const;
 
+	/**
+	 * Return the geographic height of the terrain in map units.
+	 *
+	 * @return The geographic height of the terrain in map units.
+	 */
 	double height() const;
 
+	/**
+	 * Return the minimum elevation of the terrain.
+	 *
+	 * @return The minimum elevation of the terrain.
+	 */
 	double minz() const;
+
+	/**
+	 * Return the minimum elevation of the terrain.
+	 *
+	 * @return The minimum elevation of the terrain.
+	 */
 	double maxz() const;
 
 };

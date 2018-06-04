@@ -26,7 +26,7 @@ namespace sim {
  */
 class RangeBridge {
 private:
-	Terrain m_terrain;
+	Terrain* m_terrain;
 	Eigen::Vector3d m_position;
 	Eigen::Vector3d m_direction;
 
@@ -50,11 +50,11 @@ public:
 	static void setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction);
 
 	/**
-	 * The terrain DEM file.
+	 * Set the terrain.
 	 *
-	 * @param file The terrain DEM file.
+	 * @param terrain The terrain.
 	 */
-	static void setTerrainFile(const std::string& file);
+	static void setTerrain(uav::sim::Terrain* terrain);
 
 	/**
 	 * Return a pointer to the terrain.

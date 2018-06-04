@@ -39,10 +39,12 @@ using namespace uav::sim;
 
 RangeBridge __rb;
 
-RangeBridge::RangeBridge() {}
+RangeBridge::RangeBridge() :
+	m_terrain(nullptr) {
+}
 
 double RangeBridge::getRange() {
-	return __rb.m_terrain.range(__rb.m_position, __rb.m_direction);
+	return __rb.m_terrain->range(__rb.m_position, __rb.m_direction);
 }
 
 void RangeBridge::setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction) {
@@ -50,12 +52,12 @@ void RangeBridge::setLaser(const Eigen::Vector3d& position, const Eigen::Vector3
 	__rb.m_direction = direction;
 }
 
-void RangeBridge::setTerrainFile(const std::string& file) {
-	__rb.m_terrain.load(file);
+void RangeBridge::setTerrain(Terrain* terrain) {
+	__rb.m_terrain = terrain;
 }
 
 Terrain* RangeBridge::terrain() {
-	return &(__rb.m_terrain);
+	return __rb.m_terrain;
 }
 
 Rangefinder::Rangefinder() :
