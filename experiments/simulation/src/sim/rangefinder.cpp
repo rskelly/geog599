@@ -54,6 +54,9 @@ void RangeBridge::setTerrainFile(const std::string& file) {
 	__rb.m_terrain.load(file);
 }
 
+Terrain* RangeBridge::terrain() {
+	return &(__rb.m_terrain);
+}
 
 Rangefinder::Rangefinder() :
 	m_pulseFreq(1. / 866.),

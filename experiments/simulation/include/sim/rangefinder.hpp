@@ -56,6 +56,13 @@ public:
 	 */
 	static void setTerrainFile(const std::string& file);
 
+	/**
+	 * Return a pointer to the terrain.
+	 *
+	 * @return A pointer to the terrain.
+	 */
+	static Terrain* terrain();
+
 };
 
 /**

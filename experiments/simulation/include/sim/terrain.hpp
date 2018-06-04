@@ -13,15 +13,7 @@
 
 #include <Eigen/Core>
 
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Delaunay_triangulation_3.h>
-#include <CGAL/Triangulation_vertex_base_with_info_3.h>
-
-typedef CGAL::Exact_predicates_inexact_constructions_kernel         K;
-typedef CGAL::Triangulation_vertex_base_with_info_3<size_t, K>    	Vb;
-typedef CGAL::Triangulation_data_structure_3<Vb>                    Tds;
-typedef CGAL::Delaunay_triangulation_3<K, Tds, CGAL::Fast_location> Delaunay;
-typedef Delaunay::Point                                             Point;
+#include "sim/geometry.hpp"
 
 namespace uav {
 namespace sim {
@@ -33,6 +25,11 @@ namespace sim {
 class Terrain {
 private:
 	std::unique_ptr<Delaunay> m_tri;
+	double m_trans[6];
+	double m_width;
+	double m_height;
+	double m_minz;
+	double m_maxz;
 
 public:
 
@@ -78,6 +75,21 @@ public:
 	 * @return The elevation of the terrain where it is intersected by the ray.
 	 */
 	double range(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction);
+
+	/**
+	 * Returns the affine transform of the terrain image (GDAL).
+	 *
+	 * @return The affine transform of the terrain image (GDAL).
+	 */
+	const double* transform() const;
+
+	double width() const;
+
+	double height() const;
+
+	double minz() const;
+	double maxz() const;
+
 };
 
 } // sim
