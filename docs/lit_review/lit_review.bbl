@@ -1,0 +1,103 @@
+\begin{thebibliography}{10}
+
+\bibitem{Avery2007}
+Thomas~Eugene Avery and Graydon~Lennis Berlin.
+\newblock {\em {Fundamentals of Remote Sensing and Airphoto Interpretation}}.
+\newblock 6th edition, 2007.
+
+\bibitem{Bovio2006}
+E.~Bovio, D.~Cecchi, and F.~Baralli.
+\newblock {Autonomous underwater vehicles for scientific and naval operations}.
+\newblock {\em Annual Reviews in Control}, 30(2):117--130, 2006.
+
+\bibitem{Saxena}
+M.~Chidambaram and Nikita Saxena.
+\newblock {\em {Relay Tuning of PID Controllers}}.
+\newblock Advances in Industrial Control. Springer Singapore, Singapore, 2018.
+
+\bibitem{FeijunSong}
+{Feijun Song} and S.M. Smith.
+\newblock {Design of sliding mode fuzzy controllers for an autonomous
+  underwater vehicle without system model}.
+\newblock {\em OCEANS 2000 MTS/IEEE Conference and Exhibition. Conference
+  Proceedings (Cat. No.00CH37158)}, 2:835--840.
+
+\bibitem{Goheen1990}
+Kevin~R. Goheen and E.~Richard Jefferys.
+\newblock {Multivariable Self-Tuning Autopilots for Autonomous and Remotely
+  Operated Underwater Vehicles}.
+\newblock {\em IEEE Journal of Oceanic Engineering}, 15(3):144--151, 1990.
+
+\bibitem{Jalving1994}
+Bj{\o}rn Jalving.
+\newblock {The NDRE-AUV Flight Control System}.
+\newblock {\em IEEE Journal of Oceanic Engineering}, 19(4):497--501, 1994.
+
+\bibitem{Juul1994}
+Douglas~L Juul, Mak~E Mcdermott, Eric~L Nelson, Dave~M Barnett, and Glen~N
+  Williams.
+\newblock {Submersible Control Using the Linear uadratic Gaussian with Loop
+  Transfer ecovery Metha}.
+\newblock 1994.
+
+\bibitem{Kim2004}
+S.~K. Kim and D.~M. Tilbury.
+\newblock {Mathematical modeling and experimental identification of an unmanned
+  helicopter robot with flybar dynamics}.
+\newblock {\em Journal of Robotic Systems}, 21(3):95--116, 2004.
+
+\bibitem{Rogass2014}
+Christian Rogass, Christian Mielke, Daniel Scheffler, Nina~K. Boesche, Angela
+  Lausch, Christin Lubitz, Maximilian Brell, Daniel Spengler, Andreas Eisele,
+  Karl Segl, and Luis Guanter.
+\newblock {Reduction of uncorrelated striping noise-applications for
+  hyperspectral pushbroom acquisitions}.
+\newblock {\em Remote Sensing}, 6(11):11082--11106, 2014.
+
+\bibitem{Samar2011}
+Raza Samar and Abdur Rehman.
+\newblock {Autonomous terrain-following for unmanned air vehicles}.
+\newblock {\em Mechatronics}, 21(5):844--860, aug 2011.
+
+\bibitem{Sanchez2012}
+Jos{\'{e}} S{\'{a}}nchez, Antonio Visioli, and Sebastian Dormido.
+\newblock {\em {PID Control in the third millenium}}.
+\newblock 2012.
+
+\bibitem{Soediono1989}
+Budi Soediono and Antonio Visioli.
+\newblock {\em {Practical PID Control}}, volume~53 of {\em Advances in
+  Industrial Control}.
+\newblock Springer London, Cambridge, 2006.
+
+\bibitem{Twigg2003}
+Shannon Twigg, Anthony Calise, and Eric Johnson.
+\newblock {On-Line Trajectory Optimization for Autonomous Air Vehicles}.
+\newblock In {\em AIAA Guidance, Navigation, and Control Conference and
+  Exhibit}, number August, pages 1--9, Reston, Virigina, aug 2003. American
+  Institute of Aeronautics and Astronautics.
+
+\bibitem{Valavanis2007}
+Kimon~P. Valavanis, editor.
+\newblock {\em {Advances in Unmanned Aerial Vehicles}}.
+\newblock Intelligent Systems, Control and Automation: Science and Engineering.
+  Springer Netherlands, Dordrecht, 2007.
+
+\bibitem{Valavanis2015j}
+Kimon~P. Valavanis and George~J. Vachtsevanos.
+\newblock {\em {Handbook of unmanned aerial vehicles}}.
+\newblock 2015.
+
+\bibitem{Waldock1995}
+M.I. Waldock.
+\newblock {Terrain following control of an unmanned underwater vehicle using
+  artificial neural networks}.
+\newblock In {\em IEE Colloquium on `Control and Guidance of Remotely Operated
+  Vehicles'}, volume 1995, pages 4--4. IEE, 1995.
+
+\bibitem{Waltzer}
+Michael Waltzer.
+\newblock {\em {Just and Unjust Wars}}.
+\newblock Basic Books, New York, NY, 2010.
+
+\end{thebibliography}

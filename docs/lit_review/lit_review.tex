@@ -1,0 +1,256 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{gensymb}
+\usepackage{siunitx}
+\usepackage{setspace}	% for line spacing
+\usepackage{calc}		% for figure scaling
+\usepackage{svg}		% for graphics
+\usepackage{graphicx}	% for graphics
+\usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
+\usepackage{listings}
+
+% Images are build by calling images/generate.sh <images> <output> where
+% output is the "build" directory used by Texmaker.
+\graphicspath{{./build/images/}}
+\DeclareUnicodeCharacter{2010}{ }
+
+\author{Rob Skelly}
+\title{Literature Review}
+
+\lstset{%
+  basicstyle=\small\ttfamily,
+  language=Python
+}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Unmanned aerial vehicles (UAVs) are small aircraft, controlled by a human operator or (semi-)autonomously, which are presently the subject of an explosion in engineering, scientific, military and commercial interest. UAVs can range in size from insect-scale to full-sized military aircraft. The emergence of an entrepreneurial just-build-it technological culture and the ability of firms to design and produce highly sophisticated, miniaturized components and high-capacity, lightweight batteries, has enabled basement tinkerers, commercial startups and academics alike exploit the capabilities offered by UAVs, rapidly and at little cost. In the remote-sensing field, where the planning and execution of a mission could entail hundreds of thousands of dollars in funding for instrumentation, pilots and aircraft, the advent of UAVs provides researchers with the opportunity to conduct airborne surveys at low cost with little turnaround time. 
+
+Naturally, there are compromises to be made between a traditional aerial remote-sensing campaign, using RGB, multi- or hyper-spectrography or LiDAR, and a UAV campaign. UAVs tend to be limited to low elevations and small site sizes and the instrumentation to support these missions has only recently achieved a quality and form factor -- that is, size and weight -- that would enable their inclusion on a UAV. Additionally, many of these instruments are designed for uses other than remote sensing, in particular LiDAR devices, which are often designed for the automotive market. With the drawbacks come advantages, however. The level of detail attainable with a low-elevation UAV survey would be impossible with a traditional aerial campaign.
+
+The low elevation introduces an interesting 
+
+Because this research touches on so many topics in remote sensing, engineering and geometry, it is broken up into several sections.
+
+
+
+Unfortunately, few of these pioneers can be expected to publish their findings in the traditional way.
+
+However, some researchers and authors have made valiant attempts to collect and collate this information in the form of books and papers, and in any case, all of the fundamental principles in play (physics, chemistry, computational geometry, etc.) are already part of an academic canon. What remains is to synthesize a set of justifying and explanatory principles around technologies which, in many cases, are already in use.
+
+This review will summarize research into a variety of disparate fields, insofar as they contribute to the development of the terrain-following system. This will include academic research into the topics previously discussed, as well as books and more informal sources of insight, where available.
+
+
+\section{Ethics}
+
+Clearly, a project that seeks to wrest control from an autonomous aerial platform, with the potiential to harm humans and animals and damage property, must conform to a set of ethical imperatives. The Handbook of Unmanned Aerial Vehicles \cite{Valavanis2015} contains several chapters by different authors on the subject of ethics and autonomous, or semi-autonomous, machines. These are discussed mostly in the context of warfare, using the ethical frameworks developed by scholars of war.
+
+The chapter, "Ethics and UAVs" begins by addressing the employment of UAVs (often pejoratively called "drones" in this context, to distinguish them from more neutral scientific uses) as weapons. So long as UAVs continue to be controlled, remotely, by a human operator, the ethical landscape remains more-or-less unchanged (versus more hands-on methods of wagin warg), with several exceptions relating to the feasibility of missions that would not be otherwise possible if an on-site human operator were required. This includes targeted assasinations, which entail the risk of mis-identifying civilians as targets (a possible war crime) and of conducting missions in regions which are not theaters of war. In addition, the accessibility of this technology enables non-state actors (private companies, individuals and militias) to engage in remote warfare \cite[p.2867]{Valavanis2015j}. 
+
+The inevitable advent of total autonomy muddies the water further: when a killing machine commits what would otherwise be considered a war crime, who is accountable? Some authors have made the argument that no crime can have been committed since machines can't commit crimes \cite[p.2868]{Valavanis2015j}. This leads to an argument about how accountability is enforced in the public and private sectors, but also -- importantly for this research -- what role engineers themselves play in the development of technology whose stated purpose may be to circumvent war crimes.
+
+The chapter becomes a long philosophical digressesion into the ethics of autonomous machines but resolves with a meditation on the ethical responsibility of engineers \cite[p.2873]{Valavanis2015j} revolving around Michael Waltzer's notion of "double intention" \cite{Waltzer}. Under this rubric, originally intended to articulate the ethical responsibilities of soldiers, an engineer has the responsibility not only to \emph{intend} to do no harm, but to exercise \emph{due care} -- to take all reasonable steps necessary to ensure that no harm occurs. The chapter ends with an admonishment to engineers to become aware of and center their ethical responsibilities \cite[p.2974]{Valavanis2015j}.
+
+\section{Kinematics and Dynamics}
+
+\subsubsection{Vehicle Dynamics}
+
+\cite{Valavanis2007}
+
+Part II Modelling and Control Fundamentals
+Chapter 3: Airplane Basic Equations of Motion and Open-Loop Dynamics
+
+Mostly dedicated to fixed-wing aircraft.
+This is a superficial review, though still much beyond the scope of the current project (and way too mathy anyway).
+Discussion of position and orientation of platform w/r/t frames (inertial, body, etc.), degrees of freedom, application of Newton’s laws.
+Linear approximations of non-linear functions (aerodynamic forces, equations of motion, etc.) in order to make solutions tractable.
+Body-fixed reference frame. C is the centre of mass, axis Cx is forward, Cz is down. Right-handed cartesian coordinate system.
+Linear velocity components U, V, W, aligned with Cx, Cy and Cz.
+Angular velocity components P, Q, R arounc Cx, Cy and Cz.
+External aerodynamic forces X, Y, Z along axes. External aerodynamic moments as L, M, N.
+Discussion of Euler angles for rotating the body frame relative to its fixed frame. (Twist around the z axis, rotate around y, rotate around z).
+Important note that rotation order is important and not commutative.
+
+
+This is a discussion of the relationships between the coordinate system of the platform and the inertial frame. There is a useful introduction to the way vector addition is used to calculate the displacement of objects relative to each other in three dimensions, and to the way that forces are calculated and transformed between frames. 
+For this research, some basic kinematic equations are necessary for calculating the orientation of the rangefinder beam in real-time relative to the inertial frame (i.e. the Earth), given its position relative to the gimbal that creates the scan pattern, and the gimbal’s position relative the the platform and hence the inertial frame. 
+The classical mechanics covered here will be necessary to calculate the forces acting on the platform in response to adjustments in the throttle to achieve an optimal (let alone possible) vertical trajectory, for calculating the thrust requirements and hence the power and power consumption.
+Small Disturbance Theory - justification for the linearization of non-linear dynamic equations: when 
+
+Chapter 4: Control Fundamentals of Small / Miniature Helicopters - A Survey
+
+Discussion of the reduction in complexity of dynamic/control models to accommodate limited processing power. 
+a) Attempt to model dynamics using parameters that represent physical forces; b) Use a reactive “black box” methodology where the parameters don’t model physical properties at all; c) Hybrid between a and b.
+Assume “non-aggressive” flight, presumably to avoid control input singularities and exceeding the flight envelope.
+Newton/Euler; Quaternions; Energy-oriented approach eg. the Lagrange formulation.
+
+\cite{Kim2004}
+Kim, S. K., \& Tilbury, D. M. (2004). Mathematical modeling and experimental identification of an unmanned helicopter robot with flybar dynamics. Journal of Robotic Systems, 21(3), 95–116. https://doi.org/10.1002/rob.20002
+
+Helicopter kinematics using Euler angles. They justify their tolerance of singularities in this model because the vehicle will never point straight up or down. Singularity occurs at theta=+-pi/2
+Position of vehicle w/r/t inertial frame defined by a position vector and Euler angles.
+Velocities w/r/t inertial frame and body frame.
+Rigid body equations - mass/inertia matrix.
+Note: I think this project should ignore all aspects of vehicle dynamics except for symplified system which considers thrust, mass and inertia in order to create a simplified model of power over a trajectory. A model involving wind, etc. would be nice but let’s be serious here.
+
+
+\section{Computational Geometry}
+
+\section{Remote Sensing}
+
+\subsection{Data Quality}
+
+The impetus for this research is the preservation of the quality of remotely sensed data over the course of an aerial survey. But what is quality in the context of remotely-sensed data? The question can be addressed through philosophical, statistical and geometric arguments.
+
+TODO: Address variation as the integral of the curve representing variations in various measures.
+Hyperspectral
+
+\cite{Rogass2014}
+Rogass, C., Mielke, C., Scheffler, D., Boesche, N. K., Lausch, A., Lubitz, C., … Guanter, L. (2014). Reduction of uncorrelated striping noise-applications for hyperspectral pushbroom acquisitions. Remote Sensing, 6(11), 11082–11106. https://doi.org/10.3390/rs61111082
+
+Pushbroom scanner - flight velocity -> optimal integration time -> lower S/N
+EO-1 Pushbroom scanner (AISA).
+IFOV 0.624deg wide - 7.5km swath, 705km altitude, etc.
+
+
+\subsubsection{Geometry}
+
+Quality in the geometric sense is determined by a series of identities relating to the characteristics of a sensor, its orientation, motion, distance from the target and the characteristics of the medium between the sensor and the target.
+
+\cite{Avery2007}
+Avery, T. E., \& Berlin, G. L. (2007). Fundamentals of Remote Sensing and Airphoto Interpretation (6th ed.).
+
+Camera viewing angles.
+Ground distance
+
+\section{Terrain Following}
+
+Unmanned underwater vehicles
+Artificial Neural Networks
+Sensors pointed fore and aft, and one pointed down.
+
+Though there is relatively little research on the present problem -- predictive trajectory estimation based on forward-looking terrain modeling for UAV applications -- there is plenty of research on terrain avoidance for both autonomous underwater vehicles (AUVs) and ballistic missiles, as far back as the 1950s. 
+AUVs
+[Maybe note that underwater vehicles are a good path for study because they are larger and can carry a lot of hardware, have military significance and support, etc]
+
+\cite{Samar2011}
+Samar, R., \& Rehman, A. (2011). Autonomous terrain-following for unmanned air vehicles. Mechatronics, 21(5), 844–860. https://doi.org/10.1016/j.mechatronics.2010.09.010
+
+Requires a pre-generated DEM
+To develop a “reference trajectory in the vertical plane” that the vehicle will follow, within the constraints of the flight envelope.
+Constraints on climb and descent rate [n.b. Impacts battery consumption, data quality]
+Definition of trajectory error w/r/t terrain elevation.
+Discusses INS drift and the role this plays in extracting accurate elevation data from DEM -- “corridor of uncertainty.”
+Max elevation within a circle of uncertainty is used as the reference elevation.
+Two algorithms, “Stair Algorithm” and “Spline Algorithm”.
+Stair algorithm goes some way to solving the ‘valley’ problem, where a gap in surface is encountered that we don’t want to go into.
+Cubic splines.
+“The spline trajectory is smooth as expected and is optimal in the sense of minimizing the objective function.”
+“Convergence issues” with spline.
+Quality index: “the integral over range of the difference between the actual terrain and the trajectory generated by the algorithm, i.e., R edR (note that e is constrained to be positive semidefinite). “
+Stair algorithm produces instantaneous changes in trajectory which:
+Result in large throttle inputs (battery wasteage, etc.)
+Failure to track (overshooting the corners on descent)
+Tracking controller design - plant model.
+Flight control hardware, software, testing, etc.
+
+\cite{Twigg2003}
+Twigg, S., Calise, A., \& Johnson, E. (2003). On-Line Trajectory Optimization for Autonomous Air Vehicles. In AIAA Guidance, Navigation, and Control Conference and Exhibit (pp. 1–9). Reston, Virigina: American Institute of Aeronautics and Astronautics. https://doi.org/10.2514/6.2003-5522
+
+Constant-energy vs. constant velocity constraint for vertical trajectory.
+Lagrangian and Hamiltonian stuff
+
+\cite{Waldock1995}
+Waldock, M. I. (1995). Terrain following control of an unmanned underwater vehicle using artificial neural networks. In IEE Colloquium on `Control and Guidance of Remotely Operated Vehicles’ (Vol. 1995, pp. 4–4). IEE. https://doi.org/10.1049/ic:19950800
+
+\cite{Bovio2006}
+Bovio, E., Cecchi, D., \& Baralli, F. (2006). Autonomous underwater vehicles for scientific and naval operations. Annual Reviews in Control, 30(2), 117–130. https://doi.org/10.1016/j.arcontrol.2006.08.003
+
+Military AUVs - control system requirements: course-keeping, constant depth, constant altitude, noise and disturbance rejection. All relevant to UAVs.
+Rejection of high-frequency noise (that is, terrain variations) in this case due, for example, to plants -- Poseidonia oceanica -- Mediterranean sea grass, leaves up to 1.5m long.
+Model-dependent vs. model-independent control systems -- the former depend on accurate modeling of the physical parameters of the platform and are subject to changes. The latter is robust to platform changes but more complex to implement [or was at the time this was published…]
+Control loop:
+
+Suggest INS for best navigation system.
+Kalman filter error estimation.
+Instrumentation:
+IMU
+Speed sensor (doppler velocity log)
+Depth/pressure
+Independent position sensor (GPS) for initialization and error resets.
+
+\cite{Jalving1994}
+Jalving, B. (1994). The NDRE-AUV Flight Control System. IEEE Journal of Oceanic Engineering, 19(4), 497–501. https://doi.org/10.1109/48.338385
+
+AUV using PID control with equations, etc.
+Used for constant elevation (not terrain following)
+
+NO CITE
+A.J. Healey, \& Lienard, D. (1993). Multivariable sliding mode control for autonomous diving and steering of unmanned underwater vehicles. Oceanic Engineering, IEEE Journal Of, 18(3), 327–339. https://doi.org/10.1109/JOE.1993.236372
+
+Sliding mode control, dynamic equations, etc.
+
+\cite{Juul1994}
+Juul, D. L., Mcdermott, M. E., Nelson, E. L., Barnett, D. M., \& Williams, G. N. (1994). Submersible Control Using the Linear uadratic Gaussian with Loop Transfer ecovery Metha.
+
+\cite{FeijunSong}
+Feijun Song, \& Smith, S. M. (n.d.). Design of sliding mode fuzzy controllers for an autonomous underwater vehicle without system model. OCEANS 2000 MTS/IEEE Conference and Exhibition. Conference Proceedings (Cat. No.00CH37158), 2, 835–840. https://doi.org/10.1109/OCEANS.2000.881362
+
+\cite{Goheen1990}
+Goheen, K. R., \& Jefferys, E. R. (1990). Multivariable Self-Tuning Autopilots for Autonomous and Remotely Operated Underwater Vehicles. IEEE Journal of Oceanic Engineering, 15(3), 144–151. https://doi.org/10.1109/48.107142
+
+\section{Surface Reconstruction}
+
+Geometric vs. statistical surface reconstruction
+
+Berger, M., Tagliasacchi, A., Seversky, L. M., Alliez, P., Guennebaud, G., Levine, J. A., … Silva, C. T. (2017). A Survey of Surface Reconstruction from Point Clouds. Computer Graphics Forum, 36(1), 301–329. https://doi.org/10.1111/cgf.12802
+
+Priors - the assumptions that one uses to focus the reconstruction of the surface:
+“Our survey presents surface reconstruction algorithms from the perspective of priors: assumptions made by algorithms in order to combat imperfections in the point cloud and to eventually focus what information about the shape is reconstructed. Without prior assumptions, the reconstruction problem is ill-posed; an infinite number of surfaces can pass through (or near) a given set of data points”
+Some priors involve low-level data characteristics. Some involve higher-level structural factors.
+Constrain expectations, prioritize desireables
+Eg. Dense, uniform point cloud -> smoothness prior
+Studies a variety of reconstruction methods, priors and issues. 
+Fairly technical.
+
+\section{Control Systems}
+
+There are two primary fields of control system development, model-based and reactive. Model-based systems attempt to re-create the physical forces and control inputs acting upon a vehicle in order to calculate the control inputs required to maintain a stable state. Reactive controls, on the other hand, use sensor inputs to determine the amount of error between the desired and actual states, and compute the control inputs required to reduce the error.
+
+\subsubsection{PID Controllers}
+
+[discuss actuator saturation and control input singularity for hard-angled trajectories, etc.]
+
+
+The \emph{proportional-integral-derivative} controller (PID) is widely used in industry \cite{Soediono1989} to maintain the stability of, for example, chemical processes by measuring process outputs, calculating the error with regards to a target metric and feeding the measurements back into the controller which adjusts the input actuators. This paradigm has the advantage that it doesn’t necessarily require a comprehensive physical model of the process to succeed, only a desired outcome and the possibility of achieving that outcome by adjusting the available inputs (a closed-loop system) \cite{Soediono1989}. A significant advantage of PID controllers are often self-training and can be considered a form of primitive artificial intelligence.
+
+PID controllers are ideally suited to the complex state-management tasks that face a multi-rotor UAV. In fact, controlling such an inherently-unstable vehicle would be nearly impossible without the assistance of some sort of reactive controller, even if the main controller were model based. However, it is not always possible, given changing payloads, environmental conditions, terrains and flight plans -- not to mention the availability of comprehensive models and computing power -- to accurately model a vehicle’s dynamics.
+
+
+General PID for Industrial Processes:
+\cite{Saxena}
+Chidambaram, M., \& Saxena, N. (2018). Relay Tuning of PID Controllers. Singapore: Springer Singapore. https://doi.org/10.1007/978-981-10-7727-2
+
+Ref’ed: Handbook of PI and  PID controller tuning rules; PID control in the third millennium; Practical PID control
+Plenty of different loop tuning methods.
+
+\cite{Sanchez2012}
+Sánchez, J., Visioli, A., \& Dormido, S. (2012). PID Control in the third millenium. PID Control in the Third Millennium. https://doi.org/10.1007/978-1-4471-2425-2
+
+\cite{Soediono1989}
+Soediono, B., \& Visioli, A. (2006). Practical PID Control. (Intergovernmental Panel on Climate Change, Ed.), Climate Change 2013 - The Physical Science Basis (Vol. 53). Cambridge: Springer London. https://doi.org/10.1007/1-84628-586-0
+
+
+\newpage
+\bibliographystyle{plain}
+\bibliography{/home/rob/Documents/bibtex/library.bib}
+
+\end{document}
