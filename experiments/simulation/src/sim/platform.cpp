@@ -162,19 +162,20 @@ void Platform::update(double time) {
 	//std::cerr << "Pp " << Pp << "\n";
 	//std::cerr << "Po " << Po << "\n";
 
-	Eigen::Vector3d laserPosition = Po * B + Pp;
+	m_laserPosition = Po * B + Pp;
 
 	// 4) Compute the laser orientation by adding the orientations. It passes through the laserPosition.
 
 	//std::cerr << "laser orientation " << God * Gos * Po << "\n";
 
-	Eigen::Vector3d laserVector = eulerToVector(matrixToEuler(God * Gos * Po));
+	m_laserDirection = eulerToVector(matrixToEuler(God * Gos * Po));
 
-	//std::cerr << "Laser Position " << laserPosition << "\n";
-	//std::cerr << "Laser Vector " << laserVector << "\n";
+	//std::cerr << "Laser Position " << m_laserPosition << "\n";
+	//std::cerr << "Laser Direction " << m_laserDirection << "\n";
 
-	RangeBridge::setLaser(laserPosition, laserVector);
+	RangeBridge::setLaser(m_laserPosition, m_laserDirection);
 
+	/*
 	Range* range = m_rangefinder->range();
 
 	if(range) {
@@ -182,7 +183,19 @@ void Platform::update(double time) {
 		std::cerr << "Position " << m_position[0] << ", " << m_position[1] << "\n";
 		delete range;
 	}
+	*/
+}
 
+uav::Range* Platform::range() const {
+	return m_rangefinder->range();
+}
+
+const Eigen::Vector3d Platform::laserPosition() const {
+	return m_laserPosition;
+}
+
+const Eigen::Vector3d Platform::laserDirection() const {
+	return m_laserDirection;
 }
 
 const uav::Gimbal* Platform::gimbal() const {

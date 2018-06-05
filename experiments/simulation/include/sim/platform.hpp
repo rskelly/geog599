@@ -23,6 +23,9 @@ private:
 	Eigen::Vector3d m_orientation;   ///<! The orientation matrix. Euler angles.
 	Eigen::Vector3d m_position;      ///<! The position. Coordinates in whatever Cartesian space.
 
+	Eigen::Vector3d m_laserPosition;    ///<! The computerd position of the laser. Only available after update.
+	Eigen::Vector3d m_laserDirection;   ///<! The computerd direction of the laser. Only available after update.
+
 	uav::util::Poisson m_posPoisson; ///<! Generator for Poisson values.
 	uav::util::Poisson m_rotPoisson; ///<! Generator for Poisson values.
 	double m_forwardVelocity;        ///<! The current forward velocity.
@@ -44,6 +47,26 @@ public:
 	 */
 	void update(double time);
 
+	/**
+	 * Return the current range or nullptr if none has been sensed.
+	 *
+	 * @return The current range or nullptr if none has been sensed.
+	 */
+	Range* range() const;
+
+	/**
+	 * Return the caculated laser position. Only available after an update.
+	 *
+	 * @return The caculated laser position. Only available after an update.
+	 */
+	const Eigen::Vector3d laserPosition() const;
+
+	/**
+	 * Return the caculated laser direction. Only available after an update.
+	 *
+	 * @return The caculated laser direction. Only available after an update.
+	 */
+	const Eigen::Vector3d laserDirection() const;
 
 	const uav::Gimbal* gimbal() const;
 
