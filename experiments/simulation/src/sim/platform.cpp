@@ -105,19 +105,14 @@ void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
 Platform::Platform() :
 	m_forwardVelocity(10),
 	m_lastTime(0),
-	m_gimbal(new Gimbal()),
-	m_rangefinder(new Rangefinder()) {
-
-	m_gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
-	// TODO: This seems to be upside-down...
-	m_gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 4., 0)); // 45deg down (around the y axis.)
+	m_gimbal(nullptr),
+	m_rangefinder(nullptr) {
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
 
 	m_position << 489103, 6502712, 320; // 30m high
 	m_orientation << 0, 0, 0; // straight level
-
 }
 
 
@@ -196,6 +191,14 @@ const Eigen::Vector3d Platform::laserPosition() const {
 
 const Eigen::Vector3d Platform::laserDirection() const {
 	return m_laserDirection;
+}
+
+void Platform::setGimbal(uav::Gimbal* gimbal) {
+	m_gimbal = gimbal;
+}
+
+void Platform::setRangefinder(uav::Rangefinder* rangefinder) {
+	m_rangefinder = rangefinder;
 }
 
 const uav::Gimbal* Platform::gimbal() const {

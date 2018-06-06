@@ -18,8 +18,8 @@
 #include "viewer/sim1viewer.hpp"
 #include "viewer/renderwidget.hpp"
 #include "sim/geometry.hpp"
-#include "sim/rangefinder.hpp"
-#include "sim/platform.hpp"
+#include "rangefinder.hpp"
+#include "platform.hpp"
 
 #define K_TERRAIN_FILE "terrainFile"
 
@@ -68,19 +68,6 @@ void RenderWidget::paintGL() {
 	glMaterialfv(GL_FRONT, GL_SPECULAR, terrain_specular);
 	glMaterialf(GL_FRONT, GL_SHININESS, 50); //The shininess parameter
 
-	/*
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-
-	//glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
-	//glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shininess);
-
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, terrain_shininess);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, terrain_color);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, terrain_specular);
-	*/
-
 	renderTerrain();
 
 	glEnable(GL_COLOR_MATERIAL);
@@ -90,9 +77,6 @@ void RenderWidget::paintGL() {
 	renderLaser();
 }
 
-
-GLfloat lmodel_ambient[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lmodel_twoside[1] = {GL_FALSE};
 
 void RenderWidget::initializeGL() {
 	initializeOpenGLFunctions();
@@ -219,7 +203,7 @@ void RenderWidget::setTerrain(uav::sim::Terrain* terrain) {
 	m_terrain = terrain;
 }
 
-void RenderWidget::setPlatform(uav::sim::Platform* platform) {
+void RenderWidget::setPlatform(uav::Platform* platform) {
 	m_platform = platform;
 }
 
@@ -272,8 +256,8 @@ void Sim1Viewer::btnStartClicked() {
 	m_sim->addObserver(this);
 	m_sim->start();
 
-	glPanel->setTerrain(&(m_sim->terrain()));
-	glPanel->setPlatform(&(m_sim->platform()));
+	glPanel->setTerrain(m_sim->terrain());
+	glPanel->setPlatform(m_sim->platform());
 
 	btnStart->setEnabled(false);
 	btnStop->setEnabled(true);
@@ -288,7 +272,6 @@ void Sim1Viewer::btnStopClicked() {
 }
 
 void Sim1Viewer::btnTerrainFileClicked() {
-	// TODO: Remember last dir.
 	QString file = QFileDialog::getOpenFileName(m_form, "Choose a Terrain File", "", "*.tif");
 	terrainFileChanged(file);
 

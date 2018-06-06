@@ -24,15 +24,35 @@ namespace uav {
  * at the static orientation and aligned with the dynamic position.
  */
 class Gimbal {
+protected:
+
+	Gimbal() {}
+
 public:
 
 	/**
-	 * The dynamic orientation of the object mounted on this gimbal.
+	 * Set the dynamic orientation of the object mounted on this gimbal.
+	 * Euler angles.
+	 *
+	 * @param orientation The dynamic orientation of the object mounted on this gimbal.
+	 */
+	virtual void setOrientation(const Eigen::Vector3d& orientation) = 0;
+
+	/**
+	 * Return the dynamic orientation of the object mounted on this gimbal.
 	 * Euler angles.
 	 *
 	 * @return The dynamic orientation of the object mounted on this gimbal.
 	 */
 	virtual const Eigen::Vector3d& orientation() const = 0;
+
+	/**
+	 * Set the dynamic position of the object mounted on this gimbal.
+	 * Euler angles.
+	 *
+	 * @param position The dynamic position of the object mounted on this gimbal.
+	 */
+	virtual void setPosition(const Eigen::Vector3d& position) = 0;
 
 	/**
 	 * The dynamic position of the object mounted on this gimbal.
@@ -75,7 +95,6 @@ public:
 
 	virtual ~Gimbal() {}
 };
-
 
 } // uav
 

@@ -12,25 +12,47 @@
 
 #include <Eigen/Core>
 
+#include "uav.hpp"
+
 #include "../gimbal.hpp"
 
 namespace uav {
 namespace sim {
 
-class Gimbal : public uav::Gimbal {
+/**
+ * The SinGimbal class carries a rangefinder, sweeping
+ * back and forth to form a sin wave pattern as the vehicle moves
+ * forward.
+ */
+class SinGimbal : public uav::Gimbal {
 private:
 	Eigen::Vector3d m_orientation;
 	Eigen::Vector3d m_position;
 	Eigen::Vector3d m_staticOrientation;
 	Eigen::Vector3d m_staticPosition;
 
-	std::thread* m_thread;
+	std::thread m_thread;					///!< The update thread.
+	bool m_running;
+
+	double m_sweepAngle;
+	double m_sweepFrequency;
 
 public:
 
-	Gimbal();
+	/**
+	 * Construct a SinGimbal instance, optionally with
+	 * a sweep angle and frequency.
+	 *
+	 * @param sweepAngle The angle of sweep in radians. Default pi / 2.
+	 * @param sweepFrequency The freequency of sweep, as the number of full cycles per second.
+	 */
+	SinGimbal(double sweepAngle = PI / 2, double sweepFrequency = 1);
+
+	void setOrientation(const Eigen::Vector3d& orientation);
 
 	const Eigen::Vector3d& orientation() const;
+
+	void setPosition(const Eigen::Vector3d& position);
 
 	const Eigen::Vector3d& position() const;
 
@@ -42,7 +64,7 @@ public:
 
 	const Eigen::Vector3d& staticPosition() const;
 
-	~Gimbal();
+	~SinGimbal();
 };
 
 } // sim
