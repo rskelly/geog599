@@ -11,7 +11,7 @@
 #include <QtWidgets/QOpenGLWidget>
 #include <QtGui/QOpenGLFunctions>
 
-#include "sim/platform.hpp"
+#include "platform.hpp"
 #include "sim/terrain.hpp"
 
 namespace uav {
@@ -21,7 +21,7 @@ class RenderWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 private:
 	bool m_initialized;
 	uav::sim::Terrain* m_terrain;
-	uav::sim::Platform* m_platform;
+	uav::Platform* m_platform;
 	void renderTerrain();
 	void renderPlatform();
 	void renderLaser();
@@ -32,7 +32,7 @@ protected:
 public:
 	RenderWidget(QWidget* parent);
 	void setTerrain(uav::sim::Terrain* terrain);
-	void setPlatform(uav::sim::Platform* platform);
+	void setPlatform(uav::Platform* platform);
 };
 
 } // viewer

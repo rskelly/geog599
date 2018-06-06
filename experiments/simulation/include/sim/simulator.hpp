@@ -12,7 +12,7 @@
 #include <thread>
 #include <string>
 
-#include "sim/platform.hpp"
+#include "platform.hpp"
 #include "sim/terrain.hpp"
 
 namespace uav {
@@ -29,8 +29,9 @@ public:
 class Simulator {
 private:
 	bool m_running;
-	uav::sim::Terrain m_terrain;
-	uav::sim::Platform m_platform;
+	uav::sim::Terrain* m_terrain;
+	uav::Platform* m_platform;
+	uav::Gimbal* m_gimbal;
 	std::unique_ptr<std::thread> m_thread;
 	std::vector<uav::sim::SimulatorObserver*> m_obs;
 
@@ -41,8 +42,9 @@ public:
 	void stop();
 	void setTerrainFile(const std::string& file);
 	void addObserver(SimulatorObserver* obs);
-	uav::sim::Terrain& terrain();
-	uav::sim::Platform& platform();
+	uav::sim::Terrain* terrain();
+	uav::Platform* platform();
+	uav::Gimbal* gimbal();
 	~Simulator();
 };
 

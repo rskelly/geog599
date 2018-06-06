@@ -10,6 +10,7 @@
 
 #include "util.hpp"
 #include "../platform.hpp"
+#include "../rangefinder.hpp"
 
 namespace uav {
 namespace sim {
@@ -31,8 +32,8 @@ private:
 	double m_forwardVelocity;        ///<! The current forward velocity.
 	double m_lastTime;               ///<! The last update time.
 
-	Gimbal* m_gimbal;
-	Rangefinder* m_rangefinder;
+	uav::Gimbal* m_gimbal;
+	uav::Rangefinder* m_rangefinder;
 
 public:
 
@@ -54,21 +55,15 @@ public:
 	 */
 	Range* range() const;
 
-	/**
-	 * Return the caculated laser position. Only available after an update.
-	 *
-	 * @return The caculated laser position. Only available after an update.
-	 */
 	const Eigen::Vector3d laserPosition() const;
 
-	/**
-	 * Return the caculated laser direction. Only available after an update.
-	 *
-	 * @return The caculated laser direction. Only available after an update.
-	 */
 	const Eigen::Vector3d laserDirection() const;
 
+	void setGimbal(uav::Gimbal* gimbal);
+
 	const uav::Gimbal* gimbal() const;
+
+	void setRangefinder(uav::Rangefinder* rangefinder);
 
 	const uav::Rangefinder* rangefinder() const;
 
