@@ -31,12 +31,14 @@ public:
 	Sim1Viewer();
 	void showForm();
 	void setupUi(QDialog *Sim1Viewer);
-	//std::string terrainFile() const;
 	void setSimulator(uav::sim::Simulator& sim);
 	void simUpdate(uav::sim::Simulator& sim);
+	void updateInfo();
 	virtual ~Sim1Viewer();
 
 public slots:
+	void chkShowInfoChanged(bool checked);
+	void chkShowSettingsChanged(bool checked);
 	void terrainFileChanged(QString file);
 	void btnTerrainFileClicked();
 	void btnCloseFormClicked();

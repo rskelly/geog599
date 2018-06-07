@@ -275,6 +275,16 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(btnClose, SIGNAL(clicked()), this, SLOT(btnCloseFormClicked()));
     connect(btnStart, SIGNAL(clicked()), this, SLOT(btnStartClicked()));
     connect(btnStop, SIGNAL(clicked()), this, SLOT(btnStopClicked()));
+    connect(chkShowInfo, SIGNAL(toggled(bool)), SLOT(chkShowInfoChanged(bool)));
+    connect(chkShowSettings, SIGNAL(toggled(bool)), SLOT(chkShowSettingsChanged(bool)));
+}
+
+void Sim1Viewer::chkShowInfoChanged(bool checked) {
+	frmInfo->setVisible(checked);
+}
+
+void Sim1Viewer::chkShowSettingsChanged(bool checked) {
+	frmSettings->setVisible(checked);
 }
 
 void Sim1Viewer::setSimulator(Simulator& sim) {
@@ -284,10 +294,17 @@ void Sim1Viewer::setSimulator(Simulator& sim) {
 
 double __lasttime = 0;
 
+void Sim1Viewer::updateInfo() {
+	QString e = QString::number(m_sim->platform()->elevation(), 'f', 2);
+	txtElevation->setText(e);
+
+}
+
 void Sim1Viewer::simUpdate(Simulator& sim) {
 	double t = uavtime();
 	if(t - __lasttime > 0.05) {
 		glPanel->update();
+		updateInfo();
 		__lasttime = t;
 	}
 }

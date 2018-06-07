@@ -99,7 +99,7 @@ void Platform::update(double time) {
 		m_surface->addPoint(point, range->time());
 	}
 
-	std::cerr << "Elevation: " << elevation() << "\n";
+	///std::cerr << "Elevation: " << elevation() << "\n";
 
 	/*
 	if(range) {
