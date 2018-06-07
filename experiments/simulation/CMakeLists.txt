@@ -85,8 +85,12 @@ endif()
 # Build support libraries ################################################################################
 
 if(${WITH_GUI})
-	add_executable (sim1 src/sim1.cpp src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp src/sim/gimbal.cpp src/viewer/sim1viewer.cpp)
-	target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} ${GL_LIBRARY} ${GLU_LIBRARY} Qt5::Gui Qt5::Core Qt5::Widgets) 
+	add_executable (sim1 src/sim1.cpp 
+		src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp 
+		src/sim/gimbal.cpp src/viewer/sim1viewer.cpp
+		src/surface.cpp)
+	target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} 
+		${GL_LIBRARY} ${GLU_LIBRARY} Qt5::Gui Qt5::Core Qt5::Widgets) 
 else()
 
 endif()

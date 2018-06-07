@@ -9,109 +9,30 @@
 
 #include <Eigen/Geometry>
 
+#include "uav.hpp"
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 #include "sim/gimbal.hpp"
 #include "sim/terrain.hpp"
-
-#define PI 3.141592653589793238
+#include "surface.hpp"
+#include "util.hpp"
 
 using namespace uav::sim;
-
-void rotate(const Eigen::Vector3d& euler, Eigen::Vector3d& orientation) {
-	double xc = std::cos(euler[0]), xs = std::sin(euler[0]);
-	double yc = std::cos(euler[1]), ys = std::sin(euler[1]);
-	double zc = std::cos(euler[2]), zs = std::sin(euler[2]);
-	Eigen::Matrix3d x, y, z;
-	x << 1, 0, 0, 0, xc, -xs, 0, xs, xc;
-	y << yc, 0, ys, 0, 1, 0, -ys, 0, yc;
-	z << zc, -zs, 0, zs, zc, 0, 0, 0, 1;
-	//orientation *= z * y * x;
-}
-
-Eigen::Matrix3d rotateX(double r) {
-	double rc = std::cos(r), rs = std::sin(r);
-	Eigen::Matrix3d mtx;
-	mtx(0, 0) = 1;
-	mtx(0, 1) = 0;
-	mtx(0, 2) = 0;
-	mtx(1, 0) = 0;
-	mtx(1, 1) = rc;
-	mtx(1, 2) =-rs;
-	mtx(2, 0) = 0;
-	mtx(2, 1) = rs;
-	mtx(2, 2) = rc;
-	return mtx;
-}
-
-Eigen::Matrix3d rotateY(double r) {
-	double rc = std::cos(r), rs = std::sin(r);
-	Eigen::Matrix3d mtx;
-	mtx(0, 0) = rc;
-	mtx(0, 1) = 0;
-	mtx(0, 2) = rs;
-	mtx(1, 0) = 0;
-	mtx(1, 1) = 1;
-	mtx(1, 2) = 0;
-	mtx(2, 0) = -rs;
-	mtx(2, 1) = 0;
-	mtx(2, 2) = rc;
-	return mtx;
-}
-
-Eigen::Matrix3d rotateZ(double r) {
-	double rc = std::cos(r), rs = std::sin(r);
-	Eigen::Matrix3d mtx;
-	mtx(0, 0) = rc;
-	mtx(0, 1) = -rs;
-	mtx(0, 2) = 0;
-	mtx(1, 0) = rs;
-	mtx(1, 1) = rc;
-	mtx(1, 2) = 0;
-	mtx(2, 0) = 0;
-	mtx(2, 1) = 0;
-	mtx(2, 2) = 1;
-	return mtx;
-}
-
-Eigen::Matrix3d rotMatrix(double lat, double lon, double twist) {
-	return  rotateZ(lat) * rotateY(lon) * rotateZ(twist);
-}
-
-Eigen::Matrix3d eulerToMatrix(const Eigen::Vector3d& vec) {
-	return rotMatrix(vec[0], vec[1], vec[2]);
-}
-
-Eigen::Vector3d matrixToEuler(const Eigen::Matrix3d& mtx) {
-	// TODO: Singularities
-	Eigen::Vector3d vec;
-	vec[0] = std::atan2(mtx(2, 1), mtx(2, 2));
-	vec[1] = std::atan2(-mtx(2, 0), std::sqrt(std::pow(mtx(2,1), 2) + std::pow(mtx(2, 2), 2)));
-	vec[2] = std::atan2(mtx(1, 0), mtx(0, 0));
-	//std::cerr << "euler " << vec << "\n";
-	return vec;
-}
-
-Eigen::Vector3d eulerToVector(const Eigen::Vector3d& euler) {
-	Eigen::Matrix3d mtx = eulerToMatrix(euler);
-	Eigen::Vector3d v(1, 0, 0);
-	return mtx * v;
-}
-
-void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
-	std::cerr << name << "\n" << mtx << "\n";
-}
+using namespace uav::surface;
+using namespace uav::util;
 
 Platform::Platform() :
 	m_forwardVelocity(10),
 	m_lastTime(0),
 	m_gimbal(nullptr),
-	m_rangefinder(nullptr) {
+	m_rangefinder(nullptr),
+	m_surface(nullptr) {
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
 
-	m_position << 489103, 6502712, 320; // 30m high
+	// TODO: Configure externally.
+	m_position << 489103, 6502712, 260; // 30m high
 	m_orientation << 0, 0, 0; // straight level
 }
 
@@ -170,9 +91,13 @@ void Platform::update(double time) {
 
 	RangeBridge::setLaser(m_laserPosition, m_laserDirection);
 
-	/*
 	Range* range = m_rangefinder->range();
+	if(!std::isnan(range->range())) {
+		Eigen::Vector3d point = (m_laserDirection.normalized() * range->range()) + m_laserPosition;
+		m_surface->addPoint(point, range->time());
+	}
 
+	/*
 	if(range) {
 		std::cerr << "Range " << range->range() << ", " << range->time() << "\n";
 		std::cerr << "Position " << m_position[0] << ", " << m_position[1] << "\n";
@@ -197,16 +122,24 @@ void Platform::setGimbal(uav::Gimbal* gimbal) {
 	m_gimbal = gimbal;
 }
 
+uav::Gimbal* Platform::gimbal() const {
+	return m_gimbal;
+}
+
 void Platform::setRangefinder(uav::Rangefinder* rangefinder) {
 	m_rangefinder = rangefinder;
 }
 
-const uav::Gimbal* Platform::gimbal() const {
-	return m_gimbal;
+uav::Rangefinder* Platform::rangefinder() const {
+	return m_rangefinder;
 }
 
-const uav::Rangefinder* Platform::rangefinder() const {
-	return m_rangefinder;
+void Platform::setSurface(Surface* surface) {
+	m_surface = surface;
+}
+
+Surface* Platform::surface() const {
+	return m_surface;
 }
 
 const Eigen::Vector3d& Platform::orientation() const {

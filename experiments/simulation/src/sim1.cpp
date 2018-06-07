@@ -23,6 +23,7 @@
 */
 
 #include "util.hpp"
+#include "surface.hpp"
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 #include "sim/terrain.hpp"
@@ -32,6 +33,7 @@
 
 using namespace uav::util;
 using namespace uav::sim;
+using namespace uav::surface;
 
 double time() {
 	timeval time;
@@ -46,16 +48,19 @@ void doRun(Simulator* sim) {
 Simulator::Simulator() :
 	m_running(false) {
 
-	m_gimbal = new SinGimbal(1, 1);
-	m_gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
-	m_gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
-	m_gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 4., 0)); // 45deg down (around the y axis.) TODO: This seems to be upside-down...
-
 	m_terrain = new Terrain();
 
+	SinGimbal* gimbal = new SinGimbal(1, 1);
+	gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
+	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
+	gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 8., 0)); // down (around the y axis.) TODO: This seems to be upside-down...
+	DelaunaySurface* surface = new DelaunaySurface();
+	Rangefinder* rangefinder = new Rangefinder();
+
 	m_platform = new Platform();
-	m_platform->setGimbal(m_gimbal);
-	m_platform->setRangefinder(new Rangefinder());
+	m_platform->setGimbal(gimbal);
+	m_platform->setSurface(surface);
+	m_platform->setRangefinder(rangefinder);
 }
 
 void Simulator::start() {
@@ -81,10 +86,6 @@ uav::Platform* Simulator::platform() {
 	return m_platform;
 }
 
-uav::Gimbal* Simulator::gimbal() {
-	return m_gimbal;
-}
-
 void Simulator::addObserver(SimulatorObserver* obs) {
 	m_obs.push_back(obs);
 }
@@ -97,14 +98,13 @@ void Simulator::run() {
 		m_platform->update(current);
 		for(SimulatorObserver* obs : m_obs)
 			obs->simUpdate(*this);
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 }
 
 Simulator::~Simulator() {
 	delete m_terrain;
 	delete m_platform;
-	delete m_gimbal;
 }
 
 int runWithGui(int argc, char **argv) {
@@ -120,6 +120,7 @@ int runWithGui(int argc, char **argv) {
 			try {
 				return QApplication::notify(receiver, e);
 			} catch(const std::exception &ex) {
+				std::cerr << ex.what() << "\n";
 				QMessageBox err;
 				err.setText("Error");
 				err.setInformativeText(QString(ex.what()));

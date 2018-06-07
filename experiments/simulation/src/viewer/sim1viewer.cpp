@@ -17,7 +17,7 @@
 
 #include "viewer/sim1viewer.hpp"
 #include "viewer/renderwidget.hpp"
-#include "sim/geometry.hpp"
+#include "geometry.hpp"
 #include "rangefinder.hpp"
 #include "platform.hpp"
 
@@ -30,7 +30,8 @@ RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
 	m_initialized(false),
 	m_terrain(nullptr),
-	m_platform(nullptr) {
+	m_platform(nullptr),
+	m_surface(nullptr) {
 }
 
 void RenderWidget::resizeGL(int w, int h) {
@@ -38,53 +39,50 @@ void RenderWidget::resizeGL(int w, int h) {
 	glViewport(0,0,w,h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(5, (float) w / h, 0.01, 100.0);
+	gluPerspective(8, (float) w / h, 0.01, 100.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0, -6, 2, 0, 0, 0, 0, 1, 0);
+	gluLookAt(-3, -3, 1, 0, 0, 0, 1, 1, 0);
 }
 
-const GLfloat ambient[] = { 0.2, 0.2, 0.2, 1.0 };
+const GLfloat ambient[] = { 0.5, 0.5, 0.5, 1.0 };
 const GLfloat specular[] = { 1.0, 1.0, 1.0, 1.0 };
 const GLfloat diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-const GLfloat position[] = { 0.0, 0.0, 1.0, 1.0};
+const GLfloat position[] = { -1.0, 0.0, 1.0, 1.0};
 
-const GLfloat terrain_shininess[1] = {60.0f};
-const GLfloat terrain_color[4] = {0.1f, 1.0f, 0.3f, 1.0f};
-const GLfloat terrain_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+const GLfloat terrain_shininess[1] = {10.0f};
+const GLfloat terrain_diffuse[4] = {0.2f, 1.0f, 0.2f, 1.0f};
+const GLfloat terrain_ambient[4] = {0.2f, 1.0f, 0.2f, 1.0f};
+const GLfloat terrain_specular[] = { 0.0, 0.0, 0.0, 1.0 };
 
 void RenderWidget::paintGL() {
 	if(!m_initialized || !m_terrain || !m_platform) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glDisable(GL_COLOR_MATERIAL);
-
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, terrain_color);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, terrain_specular);
-	glMaterialf(GL_FRONT, GL_SHININESS, 50); //The shininess parameter
+	//glDisable(GL_COLOR_MATERIAL);
+	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	//glLightfv(GL_LIGHT0, GL_POSITION, position);
+	glEnable(GL_COLOR_MATERIAL);
 
 	renderTerrain();
 
-	glEnable(GL_COLOR_MATERIAL);
 
 	renderPlatform();
 
 	renderLaser();
-}
 
+	renderSurface();
+}
 
 void RenderWidget::initializeGL() {
 	initializeOpenGLFunctions();
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_NORMALIZE);
+	//glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHT0);
+	//glEnable(GL_NORMALIZE);
 	glShadeModel(GL_SMOOTH);
+
 	m_initialized = true;
 }
 
@@ -170,12 +168,57 @@ void RenderWidget::renderTerrain() {
 
 	glBegin(GL_TRIANGLES);
 
+	//glMaterialfv(GL_FRONT, GL_AMBIENT, terrain_ambient);
+	//glMaterialfv(GL_FRONT, GL_DIFFUSE, terrain_diffuse);
+	//glMaterialfv(GL_FRONT, GL_SPECULAR, terrain_specular);
+	//glMaterialfv(GL_FRONT, GL_SHININESS, terrain_shininess); //The shininess parameter
+
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
 	double width = m_terrain->width();
 	const double* trans = m_terrain->transform();
 	std::vector<double> vertices;
 	m_terrain->getVertices(vertices);
+
+	// TODO: Fix and use normals from terrain.
+
+	double x[3];
+	double y[3];
+	double z[3];
+
+	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
+		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
+		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - 0.5;
+		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
+		if(j % 3 == 2) {
+			//double nx = y[0] * z[1] - z[0] * y[1];
+			//double ny = z[0] * x[1] - x[0] * z[1];
+			//double nz = x[0] * y[1] - y[0] * x[1];
+			//glNormal3f(nx, ny, nz);
+			glColor3f(0.0f, 0.3 + z[0] * 0.5, 0.0f);
+			glVertex3f(x[0], y[0], z[0] / 10 - 0.01); // Lower to make space for surface.
+			glColor3f(0.0f, 0.3 + z[1] * 0.5, 0.0f);
+			glVertex3f(x[1], y[1], z[1] / 10 - 0.01);
+			glColor3f(0.0f, 0.3 + z[2] * 0.5, 0.0f);
+			glVertex3f(x[2], y[2], z[2] / 10 - 0.01);
+		}
+	}
+
+	glEnd();
+}
+
+void RenderWidget::renderSurface() {
+
+	//glDisable(GL_LIGHTING);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glBegin(GL_TRIANGLES);
+
+	double minz = m_terrain->minz();
+	double maxz = m_terrain->maxz();
+	double width = m_terrain->width();
+	const double* trans = m_terrain->transform();
+	std::vector<double> vertices;
+	dynamic_cast<uav::surface::DelaunaySurface*>(m_surface)->getVertices(vertices);
 
 	double x[3];
 	double y[3];
@@ -197,6 +240,8 @@ void RenderWidget::renderTerrain() {
 	}
 
 	glEnd();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//glEnable(GL_LIGHTING);
 }
 
 void RenderWidget::setTerrain(uav::sim::Terrain* terrain) {
@@ -207,6 +252,9 @@ void RenderWidget::setPlatform(uav::Platform* platform) {
 	m_platform = platform;
 }
 
+void RenderWidget::setSurface(uav::surface::Surface* surface) {
+	m_surface = surface;
+}
 
 Sim1Viewer::Sim1Viewer() :
 		m_sim(nullptr),
@@ -258,6 +306,7 @@ void Sim1Viewer::btnStartClicked() {
 
 	glPanel->setTerrain(m_sim->terrain());
 	glPanel->setPlatform(m_sim->platform());
+	glPanel->setSurface(m_sim->platform()->surface());
 
 	btnStart->setEnabled(false);
 	btnStop->setEnabled(true);

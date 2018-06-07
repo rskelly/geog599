@@ -13,7 +13,7 @@
 
 #include <Eigen/Core>
 
-#include "sim/geometry.hpp"
+#include "geometry.hpp"
 
 namespace uav {
 namespace sim {
@@ -65,6 +65,14 @@ public:
 	 * @param vertices A vector to contain the vertices in x, y, z order.
 	 */
 	void getVertices(std::vector<double>& vertices);
+
+	/**
+	 * Add the vertex normal vectors of the triangulation to the vector.
+	 * These are in the same order as the vertices returned by getVertices.
+	 *
+	 * @param normals A vector to contain the normals.
+	 */
+	void getNormals(std::vector<double>& normals);
 
 	/**
 	 * Compute the length of the vector starting at origin and
