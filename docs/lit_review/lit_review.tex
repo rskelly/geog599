@@ -13,6 +13,8 @@
 \usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
 \usepackage{listings}
 
+\linespread{1.5}
+
 % Images are build by calling images/generate.sh <images> <output> where
 % output is the "build" directory used by Texmaker.
 \graphicspath{{./build/images/}}
@@ -30,34 +32,108 @@
 
 \maketitle
 
+\begin{abstract}
+etc...
+\end{abstract}
+
 \section{Introduction}
 
-Unmanned aerial vehicles (UAVs) are small aircraft, controlled by a human operator or (semi-)autonomously, which are presently the subject of an explosion in engineering, scientific, military and commercial interest. UAVs can range in size from insect-scale to full-sized military aircraft. The emergence of an entrepreneurial just-build-it technological culture and the ability of firms to design and produce highly sophisticated, miniaturized components and high-capacity, lightweight batteries, has enabled basement tinkerers, commercial startups and academics alike exploit the capabilities offered by UAVs, rapidly and at little cost. In the remote-sensing field, where the planning and execution of a mission could entail hundreds of thousands of dollars in funding for instrumentation, pilots and aircraft, the advent of UAVs provides researchers with the opportunity to conduct airborne surveys at low cost with little turnaround time. 
+Unmanned aerial vehicles (UAVs) are small reusable aircraft, controlled remotely by a human operator or (semi-)autonomously. they are presently the subject of an explosion in engineering, scientific, military and commercial interest. UAVs can range in size from insect-scale to jet-powered military aircraft. Military interest in UAV research is a given, and indeed drives much of the research into the development of related technologies, but the emergence of an entrepreneurial just-build-it technological culture and the ability of firms to design and produce highly sophisticated, miniaturized components and high-capacity, lightweight batteries, has enabled basement tinkerers, commercial startups and academics alike exploit the capabilities offered by UAVs, rapidly and at little cost.
 
-Naturally, there are compromises to be made between a traditional aerial remote-sensing campaign, using RGB, multi- or hyper-spectrography or LiDAR, and a UAV campaign. UAVs tend to be limited to low elevations and small site sizes and the instrumentation to support these missions has only recently achieved a quality and form factor -- that is, size and weight -- that would enable their inclusion on a UAV. Additionally, many of these instruments are designed for uses other than remote sensing, in particular LiDAR devices, which are often designed for the automotive market. With the drawbacks come advantages, however. The level of detail attainable with a low-elevation UAV survey would be impossible with a traditional aerial campaign.
+In the scientific remote-sensing field, where the execution of an aerial survey could entail hundreds of thousands of dollars in costs for planning, permitting, instrumentation, pilots and aircraft, the advent of UAVs provides researchers with the opportunity to conduct research at much lower cost with little turnaround time. 
 
-The low elevation introduces an interesting 
+Naturally, there are compromises to be made between traditional aerial remote-sensing and the use of UAVs. UAVs tend to be limited to low elevations, short flight times and small site sizes. The instrumentation -- specifically multi- and hyperspectral imagers and LiDAR -- has only recently achieved a level of quality sufficient for research and form factor small and light enough for inclusion on a UAV. Additionally, many of these instruments are designed for uses other than remote sensing, in particular LiDAR devices, which are often designed for the automotive market. However, with the drawbacks come advantages. The level of detail attainable with a low-elevation UAV survey would be impossible with a traditional aerial campaign and the cost, danger and disruption of a traditional campaign could be prohibitive.
 
-Because this research touches on so many topics in remote sensing, engineering and geometry, it is broken up into several sections.
+Traditional aerial surveys have the advantage that, at typical survey elevations of $\SI{250}\m-\SI{1000}\m$, variations in terrain elevation are insignificant, relative to the overall elevation -- except in extreme cases, such as alpine terrain -- with minimal scale distortion in the resulting imagery. Low-elevation UAV surveys, which may take place at $\SI{10}\m-\SI{50}\m$ elevation above the surface, encounter much larger relative variations in terrain elevation and so must follow the terrain, both to maintain the scale and quality of the data they collect, and to avoid colliding with it. In addition, because there are many structures, both natural and manmade, that may project above the elevation of the UAV's trajectory, the vehicle must have the ability to detect and avoid hazards. Manned aircraft, with an alert pilot and high elevation, rarely face such obstacles.
 
+So, in order to use a small, low-elevation UAV for remote sensing, the vehicle must be capable of maintaining a constant elevation of flight above the terrain. Because the pilot cannot be present to monitor the terrain ahead of the vehicle, make desicions about what the terrain \emph{is} (the forest canopy? the ground?) and whether it should be followed, calculate a trajectory and adjust the altitude to follow it, an autonomous terrain-following control system is required.
 
+The justification, design and construction of such a system touches on many different fields in remote-sensing, earth science and engineering. The principle topics covered here are as follows:
 
-Unfortunately, few of these pioneers can be expected to publish their findings in the traditional way.
+\begin{enumerate}
+\item Ethics
+\item Remote Sensing
+\begin{enumerate}
+\item Data Quality
+\end{enumerate}
+\item Trajectory Estimation
+\item Surface Reconstruction
+	\begin{enumerate}
+	\item Computational Geometry
+	\end{enumerate}
+\item Control Systems
+	\begin{enumerate}
+	\item Kinematics and Dynamics
+	\item PID Controllers
+	\end{enumerate}
+\end{enumerate}
 
-However, some researchers and authors have made valiant attempts to collect and collate this information in the form of books and papers, and in any case, all of the fundamental principles in play (physics, chemistry, computational geometry, etc.) are already part of an academic canon. What remains is to synthesize a set of justifying and explanatory principles around technologies which, in many cases, are already in use.
 
 This review will summarize research into a variety of disparate fields, insofar as they contribute to the development of the terrain-following system. This will include academic research into the topics previously discussed, as well as books and more informal sources of insight, where available.
 
 
 \section{Ethics}
 
-Clearly, a project that seeks to wrest control from an autonomous aerial platform, with the potiential to harm humans and animals and damage property, must conform to a set of ethical imperatives. The Handbook of Unmanned Aerial Vehicles \cite{Valavanis2015} contains several chapters by different authors on the subject of ethics and autonomous, or semi-autonomous, machines. These are discussed mostly in the context of warfare, using the ethical frameworks developed by scholars of war.
+Clearly, a project that seeks to wrest control from an autonomous aerial platform, with the potiential to harm humans and animals and damage property, must justifiable on ethical grounds. The ``Handbook of Unmanned Aerial Vehicles'' \cite{Valavanis2015j} contains several chapters by different authors on the subject of ethics and autonomous, or semi-autonomous, machines. These are discussed mostly in the context of warfare, using the ethical frameworks developed by scholars of war.
 
-The chapter, "Ethics and UAVs" begins by addressing the employment of UAVs (often pejoratively called "drones" in this context, to distinguish them from more neutral scientific uses) as weapons. So long as UAVs continue to be controlled, remotely, by a human operator, the ethical landscape remains more-or-less unchanged (versus more hands-on methods of wagin warg), with several exceptions relating to the feasibility of missions that would not be otherwise possible if an on-site human operator were required. This includes targeted assasinations, which entail the risk of mis-identifying civilians as targets (a possible war crime) and of conducting missions in regions which are not theaters of war. In addition, the accessibility of this technology enables non-state actors (private companies, individuals and militias) to engage in remote warfare \cite[p.2867]{Valavanis2015j}. 
+The chapter, ``Ethics and UAVs'' \cite{Valavanis2015bz} begins by addressing the employment of UAVs as weapons. (In this context, UAVs are often pejoratively called ``drones'', to distinguish them from more neutral scientific uses, though the names given to these machines -- ``Predator,'' ``Reaper'' and ``Crusher'' \cite{Lucas2011} -- leave little doubt as to their purpose.) So long as UAVs continue to be controlled, remotely, by a human operator, the ethical landscape remains more-or-less unchanged, versus more hands-on methods of waging war, with several exceptions relating to the feasibility of missions that would not be otherwise possible if an on-site human operator were required. This includes targeted assasinations, which entail the risk of mis-identifying civilians as targets (a possible war crime) and of conducting missions in regions which are not theaters of war. In addition, the accessibility of this technology enables non-state actors (private companies, individuals and militias) to engage in remote warfare \cite[p.2867]{Valavanis2015bz}. 
 
-The inevitable advent of total autonomy muddies the water further: when a killing machine commits what would otherwise be considered a war crime, who is accountable? Some authors have made the argument that no crime can have been committed since machines can't commit crimes \cite[p.2868]{Valavanis2015j}. This leads to an argument about how accountability is enforced in the public and private sectors, but also -- importantly for this research -- what role engineers themselves play in the development of technology whose stated purpose may be to circumvent war crimes.
+The inevitable advent of total autonomy muddies the water further: when a machine commits what would otherwise be considered a war crime, who is accountable? Lucas calls this proposition ``preposterous'', arguing that machines are incapable of forming intentions and are therefore incapable of committing crimes \cite[p.2868]{Valavanis2015bz}. This criticism seems to beg the question, however, as a human being \emph{is} a sort of machine and is clearly capable of having intention. Less controversially, perhaps, humans also routinely invest their prejudices into the machines they build \cite{Greenwald1998,Caliskan2017}. 
 
-The chapter becomes a long philosophical digressesion into the ethics of autonomous machines but resolves with a meditation on the ethical responsibility of engineers \cite[p.2873]{Valavanis2015j} revolving around Michael Waltzer's notion of "double intention" \cite{Waltzer}. Under this rubric, originally intended to articulate the ethical responsibilities of soldiers, an engineer has the responsibility not only to \emph{intend} to do no harm, but to exercise \emph{due care} -- to take all reasonable steps necessary to ensure that no harm occurs. The chapter ends with an admonishment to engineers to become aware of and center their ethical responsibilities \cite[p.2974]{Valavanis2015j}.
+The chapter becomes a philosophical digressesion into the ethics of autonomous machines but resolves with a meditation on the ethical responsibility of engineers \cite[p.2873]{Valavanis2015bz} revolving around Michael Waltzer's notion of ``double intention'' \cite{Waltzer}. Under this rubric, originally intended to articulate the ethical responsibilities of soldiers, an engineer has the duty not only to \emph{intend} to do no harm, but to exercise \emph{due care} \cite{Lucas2011} -- to take all reasonable steps necessary to ensure that no harm occurs. The chapter ends with an admonishment to engineers to become aware of and center their ethical responsibilities \cite[p.2974]{Valavanis2015bz}.
+
+\section{Remote Sensing}
+
+Simply put, remote sensing is the acquisition of information about an object without the necessity of physical contact between the object and the observer. The human eyes, nose and ears are remote sensing instruments, collecting the electro-magnetic, chemical and mechanical signals that comprise sight, smell and hearing, respectively.
+
+In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electro-magnetic or gravitational emissions from the Earth. Electro-magnetic instruments may be further broken down into active instruments, such as light detection and ranging (LiDAR) and radio detection and ranging (RADAR) which emit a pulse of radiation, then measure the temporal delay and intensity of the return; and passive instruments which measure the reflected energy emitted by natural sources such as the sun, or endogenous energy, such as thermal infrared radiation (i.e. heat).
+
+Among the many factors that influence the quality of remotely-sensed data are the position
+
+
+\subsection{Data Quality}
+
+The impetus for this research is the preservation of the quality of remotely sensed data over the course of an aerial survey. But what is quality in the context of remotely-sensed data? The question can be addressed through philosophical, statistical and geometric arguments.
+
+TODO: Address variation as the integral of the curve representing variations in various measures.
+Hyperspectral
+
+\cite{Rogass2014}
+Rogass, C., Mielke, C., Scheffler, D., Boesche, N. K., Lausch, A., Lubitz, C., … Guanter, L. (2014). Reduction of uncorrelated striping noise-applications for hyperspectral pushbroom acquisitions. Remote Sensing, 6(11), 11082–11106. https://doi.org/10.3390/rs61111082
+
+Pushbroom scanner - flight velocity -> optimal integration time -> lower S/N
+EO-1 Pushbroom scanner (AISA).
+IFOV 0.624deg wide - 7.5km swath, 705km altitude, etc.
+
+
+\subsubsection{Geometric Effects on Image Quality}
+
+[Tangent plane assumption of earth geometry -- ignore geodetic distortions]
+
+The book, ``Remote Sensing Geology'' \cite{Gupta2018} provides an extensive survey of the geometric causes of image quality degradation with respect to photography and radiometry. Geometry degradation is grouped into two categories: systematic and non-systematic. Non-systematic distortions are due to variable or unpredictable factors such as airframe perturbation due to wind, while systematic distortions are those caused by fixed or planned effects, such as sensor-craft altitude and relief displacement.
+
+Some variations in the velocity and attitude of the airframe and instruments are induced by forces (e.g. wind) which are stochastic in time and space and so not easily predicted. Others are induced by phenomena which are stochastic in space but constant in time and therefore predictable. Terrain relief is one such phenomenon. Variations in terrain relief induce changes in target distance for a platform and instrument travelling at a constant absolute elevation, which in turn induces geometric distortions. Gupta \cite{Gupta2018} considers these disturbances to be non-systematic, but for the purposes of this research, they will be considered systematic and therefore addressable.
+
+Scale distortions have two important effects on the quality of image data. First, changes in target distance induce changes in image scale and resolution. As the distance increases, the ability of the image to resolve objects of a particular size decreases -- the size of physical objects decreases relative to the size of an image cell. This phenomenon leads to spectral mixing, where radiant intensities of distinct physical objects are mixed within the same image pixel, reducing a researcher's ability to discriminate the phenomena under study.
+
+The most directly addressable non-systematic (or semi-systematic) effect is caused by unwanted changes in platform orientation, specifically pitch. A multi-copter UAV moves horizontally by changing its thrust vector from vertical. Since the rotors are generally fixed to the airframe, the platform itself must assume a non-vertical pose during image acquisition. This is undesireable but unavoidable. However, in order to adjust its altitude or maintain horizontal velocity in the presence head- or tailwinds, the UAV may rotate further, causing geometric distortions in the imagery. 
+
+These distortions have two sources, first, the as the vehicle rotates forward on the y (across-track) axis, the ground speed of the scanner footprint slows down. As the vehicle rotates to the rear, the footprint speeds up. This alters the dwell time of the scanner and leads to over- and under-sampling, respectively \cite{Gupta2018}. When he vehicle rotates either to the fore or the rear, the scanner axis rotates away from nadir, increasing its effective footprint, reducing its spatial resolution \cite{Gupta2018} and increasing the effects of spectral mixing. 
+
+An optimal trajectory would minimize these rotations, but in the attempt to minimize fore-aft platform rotation, it must be remembered that changes in velocity also affect dwell time.
+
+
+
+
+ \cite{Gupta2018}. 
+Quality in the geometric sense is determined by a series of identities relating to the characteristics of a sensor, its orientation, motion, distance from the target and the characteristics of the medium between the sensor and the target.
+
+\cite{Avery2007}
+Avery, T. E., \& Berlin, G. L. (2007). Fundamentals of Remote Sensing and Airphoto Interpretation (6th ed.).
+
+Camera viewing angles.
+Ground distance
+
 
 \section{Kinematics and Dynamics}
 
@@ -104,32 +180,7 @@ Note: I think this project should ignore all aspects of vehicle dynamics except 
 
 \section{Computational Geometry}
 
-\section{Remote Sensing}
 
-\subsection{Data Quality}
-
-The impetus for this research is the preservation of the quality of remotely sensed data over the course of an aerial survey. But what is quality in the context of remotely-sensed data? The question can be addressed through philosophical, statistical and geometric arguments.
-
-TODO: Address variation as the integral of the curve representing variations in various measures.
-Hyperspectral
-
-\cite{Rogass2014}
-Rogass, C., Mielke, C., Scheffler, D., Boesche, N. K., Lausch, A., Lubitz, C., … Guanter, L. (2014). Reduction of uncorrelated striping noise-applications for hyperspectral pushbroom acquisitions. Remote Sensing, 6(11), 11082–11106. https://doi.org/10.3390/rs61111082
-
-Pushbroom scanner - flight velocity -> optimal integration time -> lower S/N
-EO-1 Pushbroom scanner (AISA).
-IFOV 0.624deg wide - 7.5km swath, 705km altitude, etc.
-
-
-\subsubsection{Geometry}
-
-Quality in the geometric sense is determined by a series of identities relating to the characteristics of a sensor, its orientation, motion, distance from the target and the characteristics of the medium between the sensor and the target.
-
-\cite{Avery2007}
-Avery, T. E., \& Berlin, G. L. (2007). Fundamentals of Remote Sensing and Airphoto Interpretation (6th ed.).
-
-Camera viewing angles.
-Ground distance
 
 \section{Terrain Following}
 
@@ -234,7 +285,7 @@ The \emph{proportional-integral-derivative} controller (PID) is widely used in i
 
 PID controllers are ideally suited to the complex state-management tasks that face a multi-rotor UAV. In fact, controlling such an inherently-unstable vehicle would be nearly impossible without the assistance of some sort of reactive controller, even if the main controller were model based. However, it is not always possible, given changing payloads, environmental conditions, terrains and flight plans -- not to mention the availability of comprehensive models and computing power -- to accurately model a vehicle’s dynamics.
 
-There are many books dedicated to the subject of industrial process control using PIDs which offer a grounding in the fundamental operating principles. "Practical PID Control" \cite{Soediono1989}, 
+There are many books dedicated to the subject of industrial process control using PIDs which offer a grounding in the fundamental operating principles. ``ractical PID Control'' \cite{Soediono1989}, 
 
 \begin{itemize}
 \item the proportional control action;
