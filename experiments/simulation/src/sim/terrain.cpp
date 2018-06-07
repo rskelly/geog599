@@ -10,7 +10,7 @@
 #include <gdal_priv.h>
 
 #include "sim/terrain.hpp"
-#include "sim/geometry.hpp"
+#include "geometry.hpp"
 
 using namespace uav::sim;
 
@@ -36,31 +36,6 @@ void Terrain::load(const std::string& demfile) {
 	std::vector<float> data(cols * rows);
 	if(CE_None != band->RasterIO(GF_Read, 0, 0, cols, rows, data.data(), cols, rows, GDT_Float32, 0, 0, 0))
 		throw std::runtime_error("Failed to load raster.");
-
-	/*
-	double minz = 99999;
-	double maxz = -99999;
-	for(int r = 0; r < rows; ++r) {
-		for(int c = 0; c < cols; ++c) {
-			double z = data[r * cols + c];
-			if(z < minz) minz = z;
-			if(z > maxz) maxz = z;
-		}
-	}
-
-	std::vector<Point> pts;
-	size_t i = 0;
-	for(int r = 0; r < rows; ++r) {
-		for(int c = 0; c < cols; ++c) {
-			double x = (double) c / cols;
-			double y = (double) r / rows;
-			double z = (data[r * cols + c] - minz) / (maxz - minz);
-			if(z != nodata)
-				pts.emplace_back(x, y, z);
-			++i;
-		}
-	}
-	*/
 
 	std::vector<Point> pts;
 	size_t i = 0;

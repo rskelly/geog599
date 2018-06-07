@@ -17,7 +17,7 @@
 
 #include "viewer/sim1viewer.hpp"
 #include "viewer/renderwidget.hpp"
-#include "sim/geometry.hpp"
+#include "geometry.hpp"
 #include "rangefinder.hpp"
 #include "platform.hpp"
 

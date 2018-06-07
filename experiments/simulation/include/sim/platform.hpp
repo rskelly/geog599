@@ -9,6 +9,7 @@
 #define INCLUDE_SIM_PLATFORM_HPP_
 
 #include "util.hpp"
+#include "surface.hpp"
 #include "../platform.hpp"
 #include "../rangefinder.hpp"
 
@@ -34,6 +35,7 @@ private:
 
 	uav::Gimbal* m_gimbal;
 	uav::Rangefinder* m_rangefinder;
+	uav::surface::Surface* m_surface;
 
 public:
 
@@ -66,6 +68,10 @@ public:
 	void setRangefinder(uav::Rangefinder* rangefinder);
 
 	const uav::Rangefinder* rangefinder() const;
+
+	void setSurface(uav::surface::Surface* surface);
+
+	const uav::surface::Surface* surface() const;
 
 	const Eigen::Vector3d& orientation() const;
 

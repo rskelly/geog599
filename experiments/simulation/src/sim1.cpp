@@ -23,6 +23,7 @@
 */
 
 #include "util.hpp"
+#include "surface.hpp"
 #include "sim/rangefinder.hpp"
 #include "sim/platform.hpp"
 #include "sim/terrain.hpp"
@@ -32,6 +33,7 @@
 
 using namespace uav::util;
 using namespace uav::sim;
+using namespace uav::surface;
 
 double time() {
 	timeval time;
@@ -56,6 +58,8 @@ Simulator::Simulator() :
 	m_platform = new Platform();
 	m_platform->setGimbal(m_gimbal);
 	m_platform->setRangefinder(new Rangefinder());
+
+	m_surface = new DelaunaySurface();
 }
 
 void Simulator::start() {

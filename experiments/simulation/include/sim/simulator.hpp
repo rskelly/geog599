@@ -32,6 +32,7 @@ private:
 	uav::sim::Terrain* m_terrain;
 	uav::Platform* m_platform;
 	uav::Gimbal* m_gimbal;
+	uav::surface::Surface* m_surface;
 	std::unique_ptr<std::thread> m_thread;
 	std::vector<uav::sim::SimulatorObserver*> m_obs;
 
@@ -45,6 +46,7 @@ public:
 	uav::sim::Terrain* terrain();
 	uav::Platform* platform();
 	uav::Gimbal* gimbal();
+	uav::surface::Surface* surface();
 	~Simulator();
 };
 

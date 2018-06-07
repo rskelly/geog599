@@ -5,9 +5,10 @@
  *      Author: rob
  */
 
-#include "util.hpp"
+#include <iostream>
 
-#define PI 3.141592653589793
+#include "uav.hpp"
+#include "util.hpp"
 
 using namespace uav::util;
 
@@ -52,6 +53,90 @@ Eigen::Matrix3d uav::util::rotFromAxisAngle(const Eigen::Vector3d& vec, double a
 			(nz * nx * (1.0 - cosa) - ny * sina), (nz * ny * (1.0 - cosa) + nx * sina), (cosa + nz2 * (1.0 - cosa));
 
 	return out;
+}
+
+void rotate(const Eigen::Vector3d& euler, Eigen::Vector3d& orientation) {
+	double xc = std::cos(euler[0]), xs = std::sin(euler[0]);
+	double yc = std::cos(euler[1]), ys = std::sin(euler[1]);
+	double zc = std::cos(euler[2]), zs = std::sin(euler[2]);
+	Eigen::Matrix3d x, y, z;
+	x << 1, 0, 0, 0, xc, -xs, 0, xs, xc;
+	y << yc, 0, ys, 0, 1, 0, -ys, 0, yc;
+	z << zc, -zs, 0, zs, zc, 0, 0, 0, 1;
+	//orientation *= z * y * x;
+}
+
+Eigen::Matrix3d uav::util::rotateX(double r) {
+	double rc = std::cos(r), rs = std::sin(r);
+	Eigen::Matrix3d mtx;
+	mtx(0, 0) = 1;
+	mtx(0, 1) = 0;
+	mtx(0, 2) = 0;
+	mtx(1, 0) = 0;
+	mtx(1, 1) = rc;
+	mtx(1, 2) =-rs;
+	mtx(2, 0) = 0;
+	mtx(2, 1) = rs;
+	mtx(2, 2) = rc;
+	return mtx;
+}
+
+Eigen::Matrix3d uav::util::rotateY(double r) {
+	double rc = std::cos(r), rs = std::sin(r);
+	Eigen::Matrix3d mtx;
+	mtx(0, 0) = rc;
+	mtx(0, 1) = 0;
+	mtx(0, 2) = rs;
+	mtx(1, 0) = 0;
+	mtx(1, 1) = 1;
+	mtx(1, 2) = 0;
+	mtx(2, 0) = -rs;
+	mtx(2, 1) = 0;
+	mtx(2, 2) = rc;
+	return mtx;
+}
+
+Eigen::Matrix3d uav::util::rotateZ(double r) {
+	double rc = std::cos(r), rs = std::sin(r);
+	Eigen::Matrix3d mtx;
+	mtx(0, 0) = rc;
+	mtx(0, 1) = -rs;
+	mtx(0, 2) = 0;
+	mtx(1, 0) = rs;
+	mtx(1, 1) = rc;
+	mtx(1, 2) = 0;
+	mtx(2, 0) = 0;
+	mtx(2, 1) = 0;
+	mtx(2, 2) = 1;
+	return mtx;
+}
+
+Eigen::Matrix3d uav::util::rotMatrix(double lat, double lon, double twist) {
+	return  rotateZ(lat) * rotateY(lon) * rotateZ(twist);
+}
+
+Eigen::Matrix3d uav::util::eulerToMatrix(const Eigen::Vector3d& vec) {
+	return rotMatrix(vec[0], vec[1], vec[2]);
+}
+
+Eigen::Vector3d uav::util::matrixToEuler(const Eigen::Matrix3d& mtx) {
+	// TODO: Singularities
+	Eigen::Vector3d vec;
+	vec[0] = std::atan2(mtx(2, 1), mtx(2, 2));
+	vec[1] = std::atan2(-mtx(2, 0), std::sqrt(std::pow(mtx(2,1), 2) + std::pow(mtx(2, 2), 2)));
+	vec[2] = std::atan2(mtx(1, 0), mtx(0, 0));
+	//std::cerr << "euler " << vec << "\n";
+	return vec;
+}
+
+Eigen::Vector3d uav::util::eulerToVector(const Eigen::Vector3d& euler) {
+	Eigen::Matrix3d mtx = eulerToMatrix(euler);
+	Eigen::Vector3d v(1, 0, 0);
+	return mtx * v;
+}
+
+void uav::util::printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
+	std::cerr << name << "\n" << mtx << "\n";
 }
 
 double uav::util::toRad(double deg) {

@@ -13,7 +13,7 @@
 
 #include <Eigen/Core>
 
-#include "sim/geometry.hpp"
+#include "geometry.hpp"
 
 namespace uav {
 namespace sim {

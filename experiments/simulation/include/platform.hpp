@@ -12,6 +12,7 @@
 
 #include "gimbal.hpp"
 #include "rangefinder.hpp"
+#include "surface.hpp"
 
 namespace uav {
 
@@ -53,6 +54,20 @@ public:
 	 * @return A pointer to the rangefinder.
 	 */
 	virtual const Rangefinder* rangefinder() const = 0;
+
+	/**
+	 * Set a pointer to the surface generator.
+	 *
+	 * @param surface A pointer to the surface generator.
+	 */
+	virtual void setSurface(uav::surface::Surface* surface) = 0;
+
+	/**
+	 * Return a pointer to the surface generator.
+	 *
+	 * @return A pointer to the surface generator.
+	 */
+	virtual const uav::surface::Surface* surface() const = 0;
 
 	/**
 	 * Get the current state of orientation of the platform. This is the orientation

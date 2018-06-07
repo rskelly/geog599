@@ -51,6 +51,69 @@ Eigen::Matrix3d rotFromAxisAngle(const Eigen::Vector3d& vec, double angle);
 Eigen::Matrix3d rotFromEuler(const Eigen::Matrix3d& mtx);
 
 /**
+ * Gives the rotation matrix around x for the given angle.
+ *
+ * @param r An angle.
+ * @return A rotation matrix.
+ */
+Eigen::Matrix3d rotateX(double r);
+
+/**
+ * Gives the rotation matrix around y for the given angle.
+ *
+ * @param r An angle.
+ * @return A rotation matrix.
+ */
+Eigen::Matrix3d rotateY(double r);
+
+/**
+ * Gives the rotation matrix around z for the given angle.
+ *
+ * @param r An angle.
+ * @return A rotation matrix.
+ */
+Eigen::Matrix3d rotateZ(double r);
+
+/**
+ * Converts three Euler angles to a rotation matrix.
+ *
+ * @param lat Latitude.
+ * @param lon Longitude.
+ * @param twist Twist (around z axis.)
+ * @return A rotation matrix.
+ */
+Eigen::Matrix3d rotMatrix(double lat, double lon, double twist);
+
+/**
+ * Converta a vector containing Euler angles to a rotation matrix.
+ *
+ * @param vec A vector containing Euler angles (z, y, z).
+ * @return A rotation matrix.
+ */
+Eigen::Matrix3d eulerToMatrix(const Eigen::Vector3d& vec);
+
+/**
+ * Converts a rotation matrix to a vector containing Euler angles.
+ *
+ * @param mtx A rotation matrix.
+ * @return A vector containing Euler angles (z, y, z).
+ */
+Eigen::Vector3d matrixToEuler(const Eigen::Matrix3d& mtx);
+
+/**
+ * Converts a vector of Euler angles to a direction vector.
+ *
+ * @param euler A vector containing Euler angles (z, y, z).
+ * @return A vector containing a normalized direction vector.
+ */
+Eigen::Vector3d eulerToVector(const Eigen::Vector3d& euler);
+
+/**
+ * Prints a matrix to stdout.
+ */
+void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx);
+
+/**
  * Returns the angle in radians.
  *
  * @return The angle in radians.
