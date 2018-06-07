@@ -63,15 +63,15 @@ public:
 
 	void setGimbal(uav::Gimbal* gimbal);
 
-	const uav::Gimbal* gimbal() const;
+	uav::Gimbal* gimbal() const;
 
 	void setRangefinder(uav::Rangefinder* rangefinder);
 
-	const uav::Rangefinder* rangefinder() const;
+	uav::Rangefinder* rangefinder() const;
 
 	void setSurface(uav::surface::Surface* surface);
 
-	const uav::surface::Surface* surface() const;
+	uav::surface::Surface* surface() const;
 
 	const Eigen::Vector3d& orientation() const;
 

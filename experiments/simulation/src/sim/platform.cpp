@@ -91,9 +91,10 @@ void Platform::update(double time) {
 	RangeBridge::setLaser(m_laserPosition, m_laserDirection);
 
 	Range* range = m_rangefinder->range();
-
-	Eigen::Vector3d point = (m_laserDirection.normalized() * range->range()) + m_laserPosition;
-	std::cerr << "Point: " << point << "\n";
+	if(!std::isnan(range->range())) {
+		Eigen::Vector3d point = (m_laserDirection.normalized() * range->range()) + m_laserPosition;
+		m_surface->addPoint(point, range->time());
+	}
 
 	/*
 	if(range) {
@@ -120,7 +121,7 @@ void Platform::setGimbal(uav::Gimbal* gimbal) {
 	m_gimbal = gimbal;
 }
 
-const uav::Gimbal* Platform::gimbal() const {
+uav::Gimbal* Platform::gimbal() const {
 	return m_gimbal;
 }
 
@@ -128,7 +129,7 @@ void Platform::setRangefinder(uav::Rangefinder* rangefinder) {
 	m_rangefinder = rangefinder;
 }
 
-const uav::Rangefinder* Platform::rangefinder() const {
+uav::Rangefinder* Platform::rangefinder() const {
 	return m_rangefinder;
 }
 
@@ -136,7 +137,7 @@ void Platform::setSurface(Surface* surface) {
 	m_surface = surface;
 }
 
-const Surface* Platform::surface() const {
+Surface* Platform::surface() const {
 	return m_surface;
 }
 

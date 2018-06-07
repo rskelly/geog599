@@ -30,7 +30,8 @@ RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
 	m_initialized(false),
 	m_terrain(nullptr),
-	m_platform(nullptr) {
+	m_platform(nullptr),
+	m_surface(nullptr) {
 }
 
 void RenderWidget::resizeGL(int w, int h) {
@@ -71,6 +72,8 @@ void RenderWidget::paintGL() {
 	renderTerrain();
 
 	glEnable(GL_COLOR_MATERIAL);
+
+	renderSurface();
 
 	renderPlatform();
 
@@ -190,6 +193,40 @@ void RenderWidget::renderTerrain() {
 			double ny = z[0] * x[1] - x[0] * z[1];
 			double nz = x[0] * y[1] - y[0] * x[1];
 			glNormal3f(nx, ny, nz);
+			glVertex3f(x[0], y[0], z[0] / 10 - 0.01); // Lower to make space for surface.
+			glVertex3f(x[1], y[1], z[1] / 10 - 0.01);
+			glVertex3f(x[2], y[2], z[2] / 10 - 0.01);
+		}
+	}
+
+	glEnd();
+}
+
+void RenderWidget::renderSurface() {
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glBegin(GL_TRIANGLES);
+
+	double minz = m_terrain->minz();
+	double maxz = m_terrain->maxz();
+	double width = m_terrain->width();
+	const double* trans = m_terrain->transform();
+	std::vector<double> vertices;
+	dynamic_cast<uav::surface::DelaunaySurface*>(m_surface)->getVertices(vertices);
+
+	double x[3];
+	double y[3];
+	double z[3];
+
+	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
+		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
+		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - 0.5;
+		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
+		if(j % 3 == 2) {
+			double nx = y[0] * z[1] - z[0] * y[1];
+			double ny = z[0] * x[1] - x[0] * z[1];
+			double nz = x[0] * y[1] - y[0] * x[1];
+			glNormal3f(nx, ny, nz);
 			glVertex3f(x[0], y[0], z[0] / 10);
 			glVertex3f(x[1], y[1], z[1] / 10);
 			glVertex3f(x[2], y[2], z[2] / 10);
@@ -197,6 +234,7 @@ void RenderWidget::renderTerrain() {
 	}
 
 	glEnd();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void RenderWidget::setTerrain(uav::sim::Terrain* terrain) {
@@ -207,6 +245,9 @@ void RenderWidget::setPlatform(uav::Platform* platform) {
 	m_platform = platform;
 }
 
+void RenderWidget::setSurface(uav::surface::Surface* surface) {
+	m_surface = surface;
+}
 
 Sim1Viewer::Sim1Viewer() :
 		m_sim(nullptr),
@@ -258,6 +299,7 @@ void Sim1Viewer::btnStartClicked() {
 
 	glPanel->setTerrain(m_sim->terrain());
 	glPanel->setPlatform(m_sim->platform());
+	glPanel->setSurface(m_sim->platform()->surface());
 
 	btnStart->setEnabled(false);
 	btnStop->setEnabled(true);
