@@ -88,37 +88,47 @@ Simply put, remote sensing is the acquisition of information about an object wit
 
 In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electro-magnetic or gravitational emissions from the Earth. Electro-magnetic instruments may be further broken down into active instruments, such as light detection and ranging (LiDAR) and radio detection and ranging (RADAR) which emit a pulse of radiation, then measure the temporal delay and intensity of the return; and passive instruments which measure the reflected energy emitted by natural sources such as the sun, or endogenous energy, such as thermal infrared radiation (i.e. heat).
 
-Among the many factors that influence the quality of remotely-sensed data are the position
+This research considers two types of remote sensing instruments typically used by UAV surveys, a hyperspectral imaging spectrometer (passive) and a scanning LiDAR device (active). 
+
+\subsection{Imaging Spectrometry}
+
+Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Geotz1985}. This is particularly important to researchers in agriculture, minerology and other fields where detection of extremely narrow features is necessary \cite{Goetz1985}.
+
+The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. In a pushbroom scanner, a single across-track-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a swath perpendicular to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity in all bands over an \emph{integration time}. During the integration time, all information captured by the element is saved to a single picture element, or pixel, which spatially referenced to the target itself. 
+
+The elevation of the platform above the target determines the across-track (lateral) scale of the resulting image, the forward velocity determines the along-track (longitudinal) scale, and the velocity coupled with the integration time determines the resolution. If the integration time is too short, the scanner will only record within a small portion of the cell. If it is  too long, the cells will ``smear'' together. Most importantly, the integration time and velocity together determine the ``dwell time'' -- the time that a scanner element spends recording any part of the target. As the dwell time increases, the contribution of background (additive) noise, relative to the signal and multiplicative noise, decreases. Thus dwell time is critical to the maintenance of an acceptably high signal to noise ratio \cite{F.MarkDanson1996,Avery1992,Rogass2014}.
+
+These qualities -- scale, resolution, dwell time and signal-to-noise ratio -- are, to some degree, manageble by careful maintenance of platform orientation and target distance. 
 
 
-\subsection{Data Quality}
+\subsection{LiDAR}
 
-The impetus for this research is the preservation of the quality of remotely sensed data over the course of an aerial survey. But what is quality in the context of remotely-sensed data? The question can be addressed through philosophical, statistical and geometric arguments.
-
-TODO: Address variation as the integral of the curve representing variations in various measures.
-Hyperspectral
-
-\cite{Rogass2014}
-Rogass, C., Mielke, C., Scheffler, D., Boesche, N. K., Lausch, A., Lubitz, C., … Guanter, L. (2014). Reduction of uncorrelated striping noise-applications for hyperspectral pushbroom acquisitions. Remote Sensing, 6(11), 11082–11106. https://doi.org/10.3390/rs61111082
-
-Pushbroom scanner - flight velocity -> optimal integration time -> lower S/N
-EO-1 Pushbroom scanner (AISA).
-IFOV 0.624deg wide - 7.5km swath, 705km altitude, etc.
+DEnsity
+Overlap
 
 
 \subsubsection{Geometric Effects on Image Quality}
 
 [Tangent plane assumption of earth geometry -- ignore geodetic distortions]
 
-The book, ``Remote Sensing Geology'' \cite{Gupta2018} provides an extensive survey of the geometric causes of image quality degradation with respect to photography and radiometry. Geometry degradation is grouped into two categories: systematic and non-systematic. Non-systematic distortions are due to variable or unpredictable factors such as airframe perturbation due to wind, while systematic distortions are those caused by fixed or planned effects, such as sensor-craft altitude and relief displacement.
+``Remote Sensing Geology'' \cite{Gupta2018} provides an extensive survey of the geometric causes of spectral image quality degradation. Geometric causes of degradation are grouped into two categories: systematic and non-systematic. Non-systematic distortions are due to variable or unpredictable factors such as airframe perturbation due to wind, while systematic distortions are those caused by fixed or planned effects, such as sensor-craft altitude and relief displacement.
 
-Some variations in the velocity and attitude of the airframe and instruments are induced by forces (e.g. wind) which are stochastic in time and space and so not easily predicted. Others are induced by phenomena which are stochastic in space but constant in time and therefore predictable. Terrain relief is one such phenomenon. Variations in terrain relief induce changes in target distance for a platform and instrument travelling at a constant absolute elevation, which in turn induces geometric distortions. Gupta \cite{Gupta2018} considers these disturbances to be non-systematic, but for the purposes of this research, they will be considered systematic and therefore addressable.
+Some variations in the velocity and attitude of the airframe and instruments are induced by forces (e.g. wind) which are stochastic in time and space and so not easily predicted. Others are induced by phenomena which are stochastic in space but constant in time and therefore predictable. Terrain relief is one of these. Variations in terrain relief induce changes in target distance for a platform and instrument travelling at a constant absolute elevation, which in turn induces geometric distortions. Gupta \cite{Gupta2018} considers these disturbances to be non-systematic, but for the purposes of this research, they will be considered systematic and therefore addressable.
 
-Scale distortions have two important effects on the quality of image data. First, changes in target distance induce changes in image scale and resolution. As the distance increases, the ability of the image to resolve objects of a particular size decreases -- the size of physical objects decreases relative to the size of an image cell. This phenomenon leads to spectral mixing, where radiant intensities of distinct physical objects are mixed within the same image pixel, reducing a researcher's ability to discriminate the phenomena under study.
+Scale
+
+As the target distance increases, with a constant instantaneous field of view, the surface area of the target captured in a single cell increases. In a digital image, a cell is a region with a constant area and a single value representing a measured value over the target area contained within the spatial extent of the cell. A image, or raster, is made up of a grid of cells. As a cell is the smallest unit that can be discriminated in a digital image, any objects within the cell will be impossible to isolate. Information about discrete objects within the cell is mixed together. As the distance decreases, the target area within a cell decreases, enhancing the contribution of any individual object to the overall cell's value. At a certain point, an object may not fit into a single cell and will occupy, at least in part, several cells. 
+
+
+, Scale distortions have two important effects on the quality of image data. First, changes in target distance induce changes in image scale and resolution. As the distance increases, the ability of the image to resolve objects of a particular size decreases -- the size of physical objects decreases relative to the size of an image cell. This phenomenon leads to spectral mixing, where radiant intensities of distinct physical objects are mixed within the same image pixel, reducing a researcher's ability to discriminate the phenomena under study.
 
 The most directly addressable non-systematic (or semi-systematic) effect is caused by unwanted changes in platform orientation, specifically pitch. A multi-copter UAV moves horizontally by changing its thrust vector from vertical. Since the rotors are generally fixed to the airframe, the platform itself must assume a non-vertical pose during image acquisition. This is undesireable but unavoidable. However, in order to adjust its altitude or maintain horizontal velocity in the presence head- or tailwinds, the UAV may rotate further, causing geometric distortions in the imagery. 
 
+Mixing and Signal to Noise Ratio
+
 These distortions have two sources, first, the as the vehicle rotates forward on the y (across-track) axis, the ground speed of the scanner footprint slows down. As the vehicle rotates to the rear, the footprint speeds up. This alters the dwell time of the scanner and leads to over- and under-sampling, respectively \cite{Gupta2018}. When he vehicle rotates either to the fore or the rear, the scanner axis rotates away from nadir, increasing its effective footprint, reducing its spatial resolution \cite{Gupta2018} and increasing the effects of spectral mixing. 
+
+An important consequence of variation in dwell time is the effect on the signal to noise ratio. The longer the dwell time, the more light is measured by the instrument relative to the background noise \cite{Rogass2014}.
 
 An optimal trajectory would minimize these rotations, but in the attempt to minimize fore-aft platform rotation, it must be remembered that changes in velocity also affect dwell time.
 
