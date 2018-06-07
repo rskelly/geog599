@@ -31,7 +31,8 @@ Platform::Platform() :
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
 
-	m_position << 489103, 6502712, 320; // 30m high
+	// TODO: Configure externally.
+	m_position << 489103, 6502712, 260; // 30m high
 	m_orientation << 0, 0, 0; // straight level
 }
 

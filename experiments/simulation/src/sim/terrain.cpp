@@ -64,9 +64,55 @@ void Terrain::getVertices(std::vector<double>& vertices) {
 		Delaunay::Triangle t = m_tri->triangle(it);
 		for(int i = 0; i < 3; ++i) {
 			Point v = t.vertex(i);
-			vertices.push_back((double) v.x());
-			vertices.push_back((double) v.y());
-			vertices.push_back((double) v.z());
+			vertices.push_back(v.x());
+			vertices.push_back(v.y());
+			vertices.push_back(v.z());
+		}
+	}
+}
+
+inline void __trinorm(Delaunay::Triangle& t, Eigen::Vector3d& vec) {
+	double x[3];
+	double y[3];
+	double z[3];
+	for(int i = 0; i < 3; ++i) {
+		Point v = t.vertex(i);
+		x[i] = v.x();
+		y[i] = v.y();
+		z[i] = v.z();
+	}
+	vec[0] = y[0] * z[1] - z[0] * y[1];
+	vec[1] = z[0] * x[1] - x[0] * z[1];
+	vec[2] = x[0] * y[1] - y[0] * x[1];
+}
+
+void Terrain::getNormals(std::vector<double>& normals) {
+	for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+			it != m_tri->finite_faces_end(); ++it){
+		Eigen::Vector3d norm, norm0;
+		for(int i = 0; i < 3; ++i) {
+			Delaunay::Vertex_handle v = it->vertex(i);
+			Delaunay::Face_circulator faces = v->incident_faces(), end(faces);
+			bool degen = false;
+			do {
+				if(m_tri->is_infinite(faces)) {
+					degen = true;
+					break;
+				}
+				Delaunay::Triangle t = m_tri->triangle(faces);
+				__trinorm(t, norm0);
+				norm += norm0;
+			} while(++faces != end);
+			if(degen) {
+				normals.push_back(0);
+				normals.push_back(0);
+				normals.push_back(0);
+			} else {
+				norm.normalize();
+				normals.push_back(norm[0]);
+				normals.push_back(norm[1]);
+				normals.push_back(norm[2]);
+			}
 		}
 	}
 }

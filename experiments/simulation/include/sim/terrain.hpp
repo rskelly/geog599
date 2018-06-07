@@ -67,6 +67,14 @@ public:
 	void getVertices(std::vector<double>& vertices);
 
 	/**
+	 * Add the vertex normal vectors of the triangulation to the vector.
+	 * These are in the same order as the vertices returned by getVertices.
+	 *
+	 * @param normals A vector to contain the normals.
+	 */
+	void getNormals(std::vector<double>& normals);
+
+	/**
 	 * Compute the length of the vector starting at origin and
 	 * coincident with direction.
 	 *

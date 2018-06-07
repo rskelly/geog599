@@ -53,7 +53,7 @@ Simulator::Simulator() :
 	SinGimbal* gimbal = new SinGimbal(1, 1);
 	gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
 	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
-	gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 4., 0)); // 45deg down (around the y axis.) TODO: This seems to be upside-down...
+	gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 8., 0)); // down (around the y axis.) TODO: This seems to be upside-down...
 	DelaunaySurface* surface = new DelaunaySurface();
 	Rangefinder* rangefinder = new Rangefinder();
 
@@ -120,6 +120,7 @@ int runWithGui(int argc, char **argv) {
 			try {
 				return QApplication::notify(receiver, e);
 			} catch(const std::exception &ex) {
+				std::cerr << ex.what() << "\n";
 				QMessageBox err;
 				err.setText("Error");
 				err.setInformativeText(QString(ex.what()));
