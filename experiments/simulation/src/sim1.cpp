@@ -35,12 +35,22 @@ using namespace uav::util;
 using namespace uav::sim;
 using namespace uav::surface;
 
+/**
+ * Get the current time in UTC seconds from epoch.
+ *
+ * @return The current time in UTC seconds from epoch.
+ */
 double time() {
 	timeval time;
 	gettimeofday(&time, NULL);
 	return (double) time.tv_sec + ((double) time.tv_usec / 1000000);
 }
 
+/**
+ * Run the simulator in a thread.
+ *
+ * @param sim A pointer to the simulator.
+ */
 void doRun(Simulator* sim) {
 	sim->run();
 }
@@ -55,12 +65,22 @@ Simulator::Simulator() :
 	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
 	gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 8., 0)); // down (around the y axis.) TODO: This seems to be upside-down...
 	DelaunaySurface* surface = new DelaunaySurface();
+
+	RangeBridge* rb1 = new RangeBridge();
+	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
+	rangefinder->setRangeBridge(rb1);
+
+	rb1 = new RangeBridge();
+	rb1->setTerrain(m_terrain);
+	Rangefinder* nadirRangefinder = new Rangefinder();
+	nadirRangefinder->setRangeBridge(rb1);
 
 	m_platform = new Platform();
 	m_platform->setGimbal(gimbal);
 	m_platform->setSurface(surface);
 	m_platform->setRangefinder(rangefinder);
+	m_platform->setNadirRangefinder(nadirRangefinder);
 }
 
 void Simulator::start() {
@@ -75,7 +95,6 @@ void Simulator::stop() {
 
 void Simulator::setTerrainFile(const std::string& file) {
 	m_terrain->load(file);
-	RangeBridge::setTerrain(m_terrain);
 }
 
 uav::sim::Terrain* Simulator::terrain() {

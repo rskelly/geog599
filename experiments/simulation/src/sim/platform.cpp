@@ -26,7 +26,9 @@ Platform::Platform() :
 	m_lastTime(0),
 	m_gimbal(nullptr),
 	m_rangefinder(nullptr),
-	m_surface(nullptr) {
+	m_nadirRangefinder(nullptr),
+	m_surface(nullptr),
+	m_elevation(0), m_elevationTime(0) {
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
@@ -89,13 +91,15 @@ void Platform::update(double time) {
 	//std::cerr << "Laser Position " << m_laserPosition << "\n";
 	//std::cerr << "Laser Direction " << m_laserDirection << "\n";
 
-	RangeBridge::setLaser(m_laserPosition, m_laserDirection);
+	dynamic_cast<uav::sim::Rangefinder*>(m_rangefinder)->rangeBridge()->setLaser(m_laserPosition, m_laserDirection);
 
 	Range* range = m_rangefinder->range();
 	if(!std::isnan(range->range())) {
 		Eigen::Vector3d point = (m_laserDirection.normalized() * range->range()) + m_laserPosition;
 		m_surface->addPoint(point, range->time());
 	}
+
+	std::cerr << "Elevation: " << elevation() << "\n";
 
 	/*
 	if(range) {
@@ -134,6 +138,24 @@ uav::Rangefinder* Platform::rangefinder() const {
 	return m_rangefinder;
 }
 
+void Platform::setNadirRangefinder(uav::Rangefinder* rangefinder) {
+	m_nadirRangefinder = rangefinder;
+}
+
+uav::Rangefinder* Platform::nadirRangefinder() const {
+	return m_nadirRangefinder;
+}
+
+double Platform::elevation() {
+	dynamic_cast<uav::sim::Rangefinder*>(m_nadirRangefinder)->rangeBridge()->setLaser(m_position, Eigen::Vector3d(0, 0, -1));
+	Range* r = m_nadirRangefinder->range();
+	if(r) {
+		m_elevation = r->range();
+		m_elevationTime = r->time();
+	}
+	return m_elevation;
+}
+
 void Platform::setSurface(Surface* surface) {
 	m_surface = surface;
 }
@@ -151,6 +173,10 @@ const Eigen::Vector3d& Platform::position() const {
 }
 
 Platform::~Platform() {
-	delete m_gimbal;
-	delete m_rangefinder;
+	if(m_gimbal)
+		delete m_gimbal;
+	if(m_rangefinder)
+		delete m_rangefinder;
+	if(m_nadirRangefinder)
+		delete m_nadirRangefinder;
 }

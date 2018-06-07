@@ -35,7 +35,11 @@ private:
 
 	uav::Gimbal* m_gimbal;
 	uav::Rangefinder* m_rangefinder;
+	uav::Rangefinder* m_nadirRangefinder;
 	uav::surface::Surface* m_surface;
+
+	double m_elevation;
+	double m_elevationTime;
 
 public:
 
@@ -68,6 +72,12 @@ public:
 	void setRangefinder(uav::Rangefinder* rangefinder);
 
 	uav::Rangefinder* rangefinder() const;
+
+	void setNadirRangefinder(uav::Rangefinder* rangefinder);
+
+	uav::Rangefinder* nadirRangefinder() const;
+
+	double elevation();
 
 	void setSurface(uav::surface::Surface* surface);
 

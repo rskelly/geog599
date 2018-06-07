@@ -39,7 +39,7 @@ public:
 	 *
 	 * @return The distance from laser to target.
 	 */
-	static double getRange();
+	double getRange();
 
 	/**
 	 * Set the laser position and direction for the next range retrieval.
@@ -47,21 +47,21 @@ public:
 	 * @param position The laser position.
 	 * @param direction The laser beam direction.
 	 */
-	static void setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction);
+	void setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction);
 
 	/**
 	 * Set the terrain.
 	 *
 	 * @param terrain The terrain.
 	 */
-	static void setTerrain(uav::sim::Terrain* terrain);
+	void setTerrain(uav::sim::Terrain* terrain);
 
 	/**
 	 * Return a pointer to the terrain.
 	 *
 	 * @return A pointer to the terrain.
 	 */
-	static Terrain* terrain();
+	Terrain* terrain();
 
 };
 
@@ -73,10 +73,9 @@ public:
  */
 class Rangefinder : public uav::Rangefinder {
 private:
-
-	double m_pulseFreq;
-
 	uav::util::Poisson m_poisson;
+	RangeBridge* m_bridge;
+	double m_pulseFreq;
 	double m_nextTime;
 
 	/**
@@ -101,6 +100,21 @@ public:
 	 * @param The frequency as measurements per second.
 	 */
 	void setPulseFrequency(double freq);
+
+	/**
+	 * Set a RangeBridge which the Rangefinder can use to measure a simulated
+	 * terrain. Takes ownership of the object.
+	 *
+	 * @param bridge A RangeBridge instance.
+	 */
+	void setRangeBridge(RangeBridge* bridge);
+
+	/**
+	 * Return a pointer to the RangeBridge instance.
+	 *
+	 * @return A pointer to the RangeBridge instance.
+	 */
+	RangeBridge* rangeBridge() const;
 
 	Range* range();
 

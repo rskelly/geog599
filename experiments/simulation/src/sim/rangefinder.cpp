@@ -37,30 +37,29 @@ public:
 
 using namespace uav::sim;
 
-RangeBridge __rb;
-
 RangeBridge::RangeBridge() :
 	m_terrain(nullptr) {
 }
 
 double RangeBridge::getRange() {
-	return __rb.m_terrain->range(__rb.m_position, __rb.m_direction);
+	return m_terrain->range(m_position, m_direction);
 }
 
 void RangeBridge::setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction) {
-	__rb.m_position = position;
-	__rb.m_direction = direction;
+	m_position = position;
+	m_direction = direction;
 }
 
 void RangeBridge::setTerrain(Terrain* terrain) {
-	__rb.m_terrain = terrain;
+	m_terrain = terrain;
 }
 
 Terrain* RangeBridge::terrain() {
-	return __rb.m_terrain;
+	return m_terrain;
 }
 
 Rangefinder::Rangefinder() :
+	m_bridge(nullptr),
 	m_pulseFreq(1. / 866.),
 	m_nextTime(0) {
 }
@@ -77,12 +76,22 @@ uav::Range* Rangefinder::range() {
 	double t = (double) time.tv_sec + ((double) time.tv_usec / 1000000);
 
 	if(t >= m_nextTime) {
-		result = new Range(RangeBridge::getRange(), t);
+		result = new Range(m_bridge->getRange(), t);
 		m_nextTime = t + m_poisson.next(m_pulseFreq);
 	}
 
 	return result;
 }
 
+void Rangefinder::setRangeBridge(RangeBridge* bridge) {
+	m_bridge = bridge;
+}
+
+RangeBridge* Rangefinder::rangeBridge() const {
+	return m_bridge;
+}
+
 Rangefinder::~Rangefinder() {
+	if(m_bridge)
+		delete m_bridge;
 }

@@ -295,6 +295,7 @@ void Sim1Viewer::showForm() {
 
 void Sim1Viewer::terrainFileChanged(QString file) {
 	m_settings[K_TERRAIN_FILE] = file.toStdString();
+	txtTerrainFile->setText(file);
 }
 
 void Sim1Viewer::btnStartClicked() {
@@ -323,7 +324,6 @@ void Sim1Viewer::btnStopClicked() {
 void Sim1Viewer::btnTerrainFileClicked() {
 	QString file = QFileDialog::getOpenFileName(m_form, "Choose a Terrain File", "", "*.tif");
 	terrainFileChanged(file);
-
 }
 
 void Sim1Viewer::btnCloseFormClicked() {
@@ -338,7 +338,7 @@ Sim1Viewer::~Sim1Viewer() {
 	QSettings settings("sim1", "dijital.ca");
 	for(const auto& item : m_settings)
 		settings.setValue(QString::fromStdString(item.first), QString::fromStdString(item.second));
-	if(m_form)
-		delete m_form;
+	//if(m_form)
+	//	delete m_form;
 }
 

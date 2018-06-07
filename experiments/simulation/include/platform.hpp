@@ -26,8 +26,8 @@ class Platform {
 public:
 
 	/**
-	 * Set a Gimbal instance on the Platform. The caller
-	 * maintains ownership of the Gimbal.
+	 * Set a Gimbal instance on the Platform. The Platform takes
+	 * ownership of the Gimbal.
 	 *
 	 * @param gimbal A pointer to a gimbal.
 	 */
@@ -38,25 +38,47 @@ public:
 	 *
 	 * @return A pointer to a Gimbal.
 	 */
-	virtual Gimbal* gimbal() const = 0;
+	virtual uav::Gimbal* gimbal() const = 0;
 
 	/**
-	 * Set a Rangefinder instance on the Platform. The caller
-	 * maintains ownership of the Rangefinder.
+	 * Set a Rangefinder instance on the Platform. The Platform
+	 * takes ownership of the Rangefinder.
 	 *
-	 * @param rangefinder A pointer to a rangefinder.
+	 * @param rangefinder A pointer to a Rangefinder.
 	 */
 	virtual void setRangefinder(uav::Rangefinder* rangefinder) = 0;
 
 	/**
-	 * Return a pointer to the rangefinder.
+	 * Return a pointer to the Rangefinder.
 	 *
-	 * @return A pointer to the rangefinder.
+	 * @return A pointer to the Rangefinder.
 	 */
-	virtual Rangefinder* rangefinder() const = 0;
+	virtual uav::Rangefinder* rangefinder() const = 0;
 
 	/**
-	 * Set a pointer to the surface generator.
+	 * Set a Rangefinder instance on the Platform for elevation measurement. The caller
+	 * maintains ownership of the Rangefinder.
+	 *
+	 * @param rangefinder A pointer to a nadir Rangefinder.
+	 */
+	virtual void setNadirRangefinder(uav::Rangefinder* rangefinder) = 0;
+
+	/**
+	 * Return a pointer to the nadir Rangefinder.
+	 *
+	 * @return A pointer to the nadir Rangefinder.
+	 */
+	virtual uav::Rangefinder* nadirRangefinder() const = 0;
+
+	/**
+	 * Return the platform elevation as measured by the nadir rangefinder.
+	 *
+	 * @return The platform elevation as measured by the nadir rangefinder.
+	 */
+	virtual double elevation() = 0;
+
+	/**
+	 * Set a pointer to the surface generator. The Platform takes ownership.
 	 *
 	 * @param surface A pointer to the surface generator.
 	 */
