@@ -39,6 +39,15 @@ public:
 };
 
 /**
+ * Get the current time in UTC seconds from epoch.
+ *
+ * @return The current time in UTC seconds from epoch.
+ */
+double uavtime();
+
+void rotate(const Eigen::Vector3d& euler, Eigen::Vector3d& orientation);
+
+/**
  * Returns a orientation matrix for the orientation around the given axis vector by the
  * given angle (in radians). The axis i
  *

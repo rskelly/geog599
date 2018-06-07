@@ -6,6 +6,7 @@
  */
 
 #include <iostream>
+#include <sys/time.h>
 
 #include "uav.hpp"
 #include "util.hpp"
@@ -33,6 +34,12 @@ double Poisson::nextCentered(double freq) {
 	return freq * (n / m_mean);
 }
 
+double uav::util::uavtime() {
+	timeval time;
+	gettimeofday(&time, NULL);
+	return (double) time.tv_sec + ((double) time.tv_usec / 1000000);
+}
+
 
 static double r2d = PI / 180.0;
 static double d2r = 180.0 / PI;
@@ -55,7 +62,7 @@ Eigen::Matrix3d uav::util::rotFromAxisAngle(const Eigen::Vector3d& vec, double a
 	return out;
 }
 
-void rotate(const Eigen::Vector3d& euler, Eigen::Vector3d& orientation) {
+void uav::util::rotate(const Eigen::Vector3d& euler, Eigen::Vector3d& orientation) {
 	double xc = std::cos(euler[0]), xs = std::sin(euler[0]);
 	double yc = std::cos(euler[1]), ys = std::sin(euler[1]);
 	double zc = std::cos(euler[2]), zs = std::sin(euler[2]);

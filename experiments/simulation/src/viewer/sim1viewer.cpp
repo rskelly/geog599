@@ -20,11 +20,13 @@
 #include "geometry.hpp"
 #include "rangefinder.hpp"
 #include "platform.hpp"
+#include "util.hpp"
 
 #define K_TERRAIN_FILE "terrainFile"
 
 using namespace uav::viewer;
 using namespace uav::sim;
+using namespace uav::util;
 
 RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
@@ -280,8 +282,14 @@ void Sim1Viewer::setSimulator(Simulator& sim) {
 	m_sim->addObserver(this);
 }
 
+double __lasttime = 0;
+
 void Sim1Viewer::simUpdate(Simulator& sim) {
-	glPanel->update();
+	double t = uavtime();
+	if(t - __lasttime > 0.05) {
+		glPanel->update();
+		__lasttime = t;
+	}
 }
 
 void Sim1Viewer::showForm() {

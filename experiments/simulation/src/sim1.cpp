@@ -3,7 +3,6 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include <sys/time.h>
 #include <iomanip>
 #include <vector>
 #include <memory>
@@ -34,17 +33,6 @@
 using namespace uav::util;
 using namespace uav::sim;
 using namespace uav::surface;
-
-/**
- * Get the current time in UTC seconds from epoch.
- *
- * @return The current time in UTC seconds from epoch.
- */
-double time() {
-	timeval time;
-	gettimeofday(&time, NULL);
-	return (double) time.tv_sec + ((double) time.tv_usec / 1000000);
-}
 
 /**
  * Run the simulator in a thread.
@@ -111,9 +99,9 @@ void Simulator::addObserver(SimulatorObserver* obs) {
 
 void Simulator::run() {
 	std::cerr << std::setprecision(12);
-	double start = time();
+	double start = uavtime();
 	while(m_running) {
-		double current = time() - start;
+		double current = uavtime() - start;
 		m_platform->update(current);
 		for(SimulatorObserver* obs : m_obs)
 			obs->simUpdate(*this);
