@@ -23,6 +23,7 @@ namespace viewer {
 class Sim1Viewer : public QDialog, public Ui::Sim1Viewer, public uav::sim::SimulatorObserver {
 	Q_OBJECT
 private:
+	double m_lastUpdate; 		// The last update time.
 	uav::sim::Simulator* m_sim;
 	QDialog* m_form;
 	std::unordered_map<std::string, std::string> m_settings;

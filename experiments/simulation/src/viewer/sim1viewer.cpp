@@ -27,8 +27,8 @@ using namespace uav::sim;
 using namespace uav::util;
 
 
-
 Sim1Viewer::Sim1Viewer() :
+		m_lastUpdate(0),
 		m_sim(nullptr),
 		m_form(nullptr) {
 	QSettings settings("sim1", "dijital.ca");
@@ -47,7 +47,6 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(btnStop, SIGNAL(clicked()), this, SLOT(btnStopClicked()));
     connect(chkShowInfo, SIGNAL(toggled(bool)), SLOT(chkShowInfoChanged(bool)));
     connect(chkShowSettings, SIGNAL(toggled(bool)), SLOT(chkShowSettingsChanged(bool)));
-
 }
 
 void Sim1Viewer::chkShowInfoChanged(bool checked) {
@@ -63,8 +62,6 @@ void Sim1Viewer::setSimulator(Simulator& sim) {
 	m_sim->addObserver(this);
 }
 
-double __lasttime = 0;
-
 void Sim1Viewer::updateInfo() {
 	QString e = QString::number(m_sim->platform()->elevation(), 'f', 2);
 	txtElevation->setText(e);
@@ -73,10 +70,10 @@ void Sim1Viewer::updateInfo() {
 
 void Sim1Viewer::simUpdate(Simulator& sim) {
 	double t = uavtime();
-	if(t - __lasttime > 0.05) {
+	if(t - m_lastUpdate > 0.05) {
 		glPanel->update();
 		updateInfo();
-		__lasttime = t;
+		m_lastUpdate = t;
 	}
 }
 
