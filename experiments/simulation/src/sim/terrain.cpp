@@ -59,15 +59,19 @@ void Terrain::load(const std::string& demfile) {
 }
 
 void Terrain::getVertices(std::vector<double>& vertices) {
-	for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
-			it != m_tri->finite_faces_end(); ++it){
-		Delaunay::Triangle t = m_tri->triangle(it);
-		for(int i = 0; i < 3; ++i) {
-			Point v = t.vertex(i);
-			vertices.push_back(v.x());
-			vertices.push_back(v.y());
-			vertices.push_back(v.z());
+	try {
+		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+				it != m_tri->finite_faces_end(); ++it){
+			Delaunay::Triangle t = m_tri->triangle(it);
+			for(int i = 0; i < 3; ++i) {
+				Point v = t.vertex(i);
+				vertices.push_back(v.x());
+				vertices.push_back(v.y());
+				vertices.push_back(v.z());
+			}
 		}
+	} catch(...) {
+		// It may happen that the program is killed while a thread calling this function is running.
 	}
 }
 
@@ -87,49 +91,57 @@ inline void __trinorm(Delaunay::Triangle& t, Eigen::Vector3d& vec) {
 }
 
 void Terrain::getNormals(std::vector<double>& normals) {
-	for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
-			it != m_tri->finite_faces_end(); ++it){
-		Eigen::Vector3d norm, norm0;
-		for(int i = 0; i < 3; ++i) {
-			Delaunay::Vertex_handle v = it->vertex(i);
-			Delaunay::Face_circulator faces = v->incident_faces(), end(faces);
-			bool degen = false;
-			do {
-				if(m_tri->is_infinite(faces)) {
-					degen = true;
-					break;
+	try {
+		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+				it != m_tri->finite_faces_end(); ++it){
+			Eigen::Vector3d norm, norm0;
+			for(int i = 0; i < 3; ++i) {
+				Delaunay::Vertex_handle v = it->vertex(i);
+				Delaunay::Face_circulator faces = v->incident_faces(), end(faces);
+				bool degen = false;
+				do {
+					if(m_tri->is_infinite(faces)) {
+						degen = true;
+						break;
+					}
+					Delaunay::Triangle t = m_tri->triangle(faces);
+					__trinorm(t, norm0);
+					norm += norm0;
+				} while(++faces != end);
+				if(degen) {
+					normals.push_back(0);
+					normals.push_back(0);
+					normals.push_back(0);
+				} else {
+					norm.normalize();
+					normals.push_back(norm[0]);
+					normals.push_back(norm[1]);
+					normals.push_back(norm[2]);
 				}
-				Delaunay::Triangle t = m_tri->triangle(faces);
-				__trinorm(t, norm0);
-				norm += norm0;
-			} while(++faces != end);
-			if(degen) {
-				normals.push_back(0);
-				normals.push_back(0);
-				normals.push_back(0);
-			} else {
-				norm.normalize();
-				normals.push_back(norm[0]);
-				normals.push_back(norm[1]);
-				normals.push_back(norm[2]);
 			}
 		}
+	} catch(...) {
+		// It may happen that the program is killed while a thread calling this function is running.
 	}
 }
 
 double Terrain::sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {
-	Point_3 pt(origin[0], origin[1], origin[2]);
-	Vector_3 dir(direction[0], direction[1], direction[2]);
-	Ray_3 line(pt, dir);
-	for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
-			it != m_tri->finite_faces_end(); ++it){
-		Delaunay::Triangle t = m_tri->triangle(it);
-		if(CGAL::do_intersect(line, t)) {
-			const CGAL::Object result = CGAL::intersection(line, t);
-			const Point_3* p = CGAL::object_cast<Point_3>(&result);
-			if(p)
-				return p->z();
+	try {
+		Point_3 pt(origin[0], origin[1], origin[2]);
+		Vector_3 dir(direction[0], direction[1], direction[2]);
+		Ray_3 line(pt, dir);
+		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+				it != m_tri->finite_faces_end(); ++it){
+			Delaunay::Triangle t = m_tri->triangle(it);
+			if(CGAL::do_intersect(line, t)) {
+				const CGAL::Object result = CGAL::intersection(line, t);
+				const Point_3* p = CGAL::object_cast<Point_3>(&result);
+				if(p)
+					return p->z();
+			}
 		}
+	} catch(...) {
+		// It may happen that the program is killed while a thread calling this function is running.
 	}
 	return std::numeric_limits<double>::quiet_NaN();
 }
@@ -159,19 +171,23 @@ inline double __dist3(const Point_3& a, const Point_3& b) {
 }
 
 double Terrain::range(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction) {
-	Point_3 pt(origin[0], origin[1], origin[2]);
-	Vector_3 dir(direction[0], direction[1], direction[2]);
-	Ray_3 line(pt, dir);
-	//std::cerr << "ray: " << line << "\n";
-	for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
-			it != m_tri->finite_faces_end(); ++it){
-		Delaunay::Triangle t = m_tri->triangle(it);
-		if(CGAL::do_intersect(line, t)) {
-			const CGAL::Object result = CGAL::intersection(line, t);
-			const Point_3* p = CGAL::object_cast<Point_3>(&result);
-			if(p)
-				return __dist3(*p, pt);
+	try {
+		Point_3 pt(origin[0], origin[1], origin[2]);
+		Vector_3 dir(direction[0], direction[1], direction[2]);
+		Ray_3 line(pt, dir);
+		//std::cerr << "ray: " << line << "\n";
+		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+				it != m_tri->finite_faces_end(); ++it){
+			Delaunay::Triangle t = m_tri->triangle(it);
+			if(CGAL::do_intersect(line, t)) {
+				const CGAL::Object result = CGAL::intersection(line, t);
+				const Point_3* p = CGAL::object_cast<Point_3>(&result);
+				if(p)
+					return __dist3(*p, pt);
+			}
 		}
+	} catch(...) {
+		// It may happen that the program is killed while a thread calling this function is running.
 	}
 	return std::numeric_limits<double>::quiet_NaN();
 }

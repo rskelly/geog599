@@ -22,24 +22,6 @@
 
 using namespace uav::viewer;
 
-RenderWidget::RenderWidget(QWidget* parent) :
-	QOpenGLWidget(parent),
-	m_initialized(false),
-	m_terrain(nullptr),
-	m_platform(nullptr),
-	m_surface(nullptr) {
-}
-
-Eigen::Vector3d __look(-6, -6, 2);
-
-void RenderWidget::resizeGL(int w, int h) {
-	//QOpenGLWidget::resizeGL(w, h);
-	glViewport(0,0,w,h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(8, (float) w / h, 0.01, 100.0);
-}
-
 const GLfloat ambient[] = { 0.5, 0.5, 0.5, 1.0 };
 const GLfloat specular[] = { 1.0, 1.0, 1.0, 1.0 };
 const GLfloat diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
@@ -50,17 +32,47 @@ const GLfloat terrain_diffuse[4] = {0.2f, 1.0f, 0.2f, 1.0f};
 const GLfloat terrain_ambient[4] = {0.2f, 1.0f, 0.2f, 1.0f};
 const GLfloat terrain_specular[] = { 0.0, 0.0, 0.0, 1.0 };
 
+
+RenderWidget::RenderWidget(QWidget* parent) :
+	QOpenGLWidget(parent),
+	m_initialized(false),
+	m_fov(8),
+	m_width(0), m_height(0),
+	m_mouseX(0), m_mouseY(0),
+	m_rotX(0), m_rotY(0),
+	m_eyeDist(5),
+	m_terrain(nullptr),
+	m_platform(nullptr),
+	m_surface(nullptr) {
+
+	m_eyePos << m_eyeDist, 0, 0;
+}
+
+void RenderWidget::resizeGL(int w, int h) {
+	//QOpenGLWidget::resizeGL(w, h);
+	m_width = w;
+	m_height = h;
+	glViewport(0, 0, m_width, m_height);
+}
+
 void RenderWidget::paintGL() {
 	if(!m_initialized || !m_terrain || !m_platform) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	Eigen::Matrix3d rotz = uav::util::rotateZ(m_rotX * PI * 2 - PI);
+	Eigen::Matrix3d roty = uav::util::rotateY(m_rotY * PI / 3);
+	m_eyePos = (rotz * roty) * Eigen::Vector3d(m_eyeDist, 0, 0);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(m_fov, (float) m_width / m_height, 0.01, 100.0);
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	std::cerr << "look 1: " << __look << "\n";
-	//Eigen::Vector3d look = uav::util::eulerToVector(__look);
-	//std::cerr << "look 2: " << look << "\n";
-	//gluLookAt(-6, -6, 1, 0, 0, 0, 0, 0, 1);
-	gluLookAt(__look[0], __look[1], __look[2], 0, 0, 0, 0, 1, 1);
+
+	// The eye position needs to be reversed from looking out from origin to looking back to origin.
+	Eigen::Vector3d eyePos = m_eyePos * -1;
+	gluLookAt(eyePos[0], eyePos[1], eyePos[2], 0, -0.25, 0, 0, 0, 1);
 	//glDisable(GL_COLOR_MATERIAL);
 	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
 	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
@@ -68,7 +80,6 @@ void RenderWidget::paintGL() {
 	glEnable(GL_COLOR_MATERIAL);
 
 	renderTerrain();
-
 
 	renderPlatform();
 
@@ -170,11 +181,6 @@ void RenderWidget::renderTerrain() {
 
 	glBegin(GL_TRIANGLES);
 
-	//glMaterialfv(GL_FRONT, GL_AMBIENT, terrain_ambient);
-	//glMaterialfv(GL_FRONT, GL_DIFFUSE, terrain_diffuse);
-	//glMaterialfv(GL_FRONT, GL_SPECULAR, terrain_specular);
-	//glMaterialfv(GL_FRONT, GL_SHININESS, terrain_shininess); //The shininess parameter
-
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
 	double width = m_terrain->width();
@@ -193,10 +199,6 @@ void RenderWidget::renderTerrain() {
 		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - 0.5;
 		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
 		if(j % 3 == 2) {
-			//double nx = y[0] * z[1] - z[0] * y[1];
-			//double ny = z[0] * x[1] - x[0] * z[1];
-			//double nz = x[0] * y[1] - y[0] * x[1];
-			//glNormal3f(nx, ny, nz);
 			glColor3f(0.0f, 0.3 + z[0] * 0.5, 0.0f);
 			glVertex3f(x[0], y[0], z[0] / 10 - 0.01); // Lower to make space for surface.
 			glColor3f(0.0f, 0.3 + z[1] * 0.5, 0.0f);
@@ -211,7 +213,6 @@ void RenderWidget::renderTerrain() {
 
 void RenderWidget::renderSurface() {
 
-	//glDisable(GL_LIGHTING);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glBegin(GL_TRIANGLES);
 
@@ -243,34 +244,37 @@ void RenderWidget::renderSurface() {
 
 	glEnd();
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//glEnable(GL_LIGHTING);
+
 }
 
-double __rotz = 0;
-
-void RenderWidget::rotate(int x, int y) {
-	__rotz += 0.1 * x;
-	Eigen::Matrix3d rotz = uav::util::rotateZ(__rotz);
-	__look = rotz * __look;
+void RenderWidget::rotate(double x, double y) {
+	m_rotX = std::max(-1.0, std::min(1.0, m_rotX + x));
+	m_rotY = std::max(-1.0, std::min(1.0, m_rotY + y));
 }
 
-int __mx = -1;
-int __my = -1;
+void RenderWidget::zoom(double delta) {
+	if(delta > 0) {
+		m_eyeDist += 0.1;
+	} else if(delta < 0) {
+		m_eyeDist -= 0.1;
+	}
+}
 
 bool RenderWidget::event(QEvent* evt) {
-	if(evt->type() == QEvent::MouseMove) {
+	if(evt->type() == QEvent::MouseButtonPress) {
+		QMouseEvent* mevt = dynamic_cast<QMouseEvent*>(evt);
+		m_mouseX = mevt->globalX();
+		m_mouseY = mevt->globalY();
+	} else	if(evt->type() == QEvent::MouseMove) {
 		QMouseEvent* mevt = dynamic_cast<QMouseEvent*>(evt);
 		int mx = mevt->globalX();
 		int my = mevt->globalY();
-		if(__mx == -1) {
-			__mx = mx;
-			__my = my;
-		} else {
-			rotate(mx - __mx, my - __my);
-			__mx = mx;
-			__my = my;
-		}
-		std::cerr << "evt: mousemove\n";
+		rotate((double) (mx - m_mouseX) / width(), (double) (my - m_mouseY) / height());
+		m_mouseX = mx;
+		m_mouseY = my;
+	} else if(evt->type() == QEvent::Wheel) {
+		QWheelEvent* wevt = dynamic_cast<QWheelEvent*>(evt);
+		zoom((double) wevt->delta());
 	}
 	return QWidget::event(evt);
 }
