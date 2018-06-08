@@ -13,6 +13,44 @@
   <property name="windowTitle">
    <string>UAV Simulator</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">* {
+  color: #ccc;
+}
+
+QDialog {
+	background: black;
+}
+
+QFrame {
+  border-color: #666;
+}
+
+QCheckBox, QCheckBox::indicator, QCheckBox::indicator::checked, 
+QCheckBox::indicator::unchecked {
+	background: none;
+}
+
+QLineEdit {
+  background: #222;
+  border-color: #666;
+}
+
+QPushButton, QToolButton {
+  background: #222;
+  border-color: #666;
+}
+
+QPushButton::disabled {
+  color: #666;
+  background: #111;
+}
+
+QPushButton::enabled {
+  background: #222;
+  color: #ccc;
+}</string>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="uav::viewer::RenderWidget" name="glPanel">
@@ -27,7 +65,7 @@
    <item>
     <widget class="QFrame" name="frmInfo">
      <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
+      <enum>QFrame::NoFrame</enum>
      </property>
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
@@ -59,7 +97,7 @@
    <item>
     <widget class="QFrame" name="frmSettings">
      <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
+      <enum>QFrame::NoFrame</enum>
      </property>
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
@@ -83,13 +121,6 @@
        </widget>
       </item>
      </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
     </widget>
    </item>
    <item>
