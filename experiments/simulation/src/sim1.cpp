@@ -76,22 +76,22 @@ Simulator::Simulator() :
 
 void Simulator::start() {
 	m_running = true;
-	m_thread.reset(new std::thread(doRun, this));
+	m_thread = std::thread(doRun, this);
+	m_platform->start();
 }
 
 void Simulator::stop() {
+	m_platform->stop();
 	m_running = false;
-	if(m_thread.get()) {
-		m_thread->join();
-		m_thread.reset();
-	}
+	if(m_thread.joinable())
+		m_thread.join();
 }
 
 void Simulator::setTerrainFile(const std::string& file) {
 	m_terrain->load(file);
 	double x = m_terrain->minx() + 10;
 	double y = m_terrain->miny() + m_terrain->height() / 2.0;
-	m_platform->setInitialPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 30.0));
+	m_platform->setInitialPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 50.0));
 }
 
 uav::sim::Terrain* Simulator::terrain() {
@@ -108,16 +108,11 @@ void Simulator::addObserver(SimulatorObserver* obs) {
 
 void Simulator::run() {
 	std::cerr << std::setprecision(12);
-	double start = uavtime();
 	while(m_running) {
-		// Get the elapsed time.
-		double current = uavtime() - start;
-		// Update the platform's time step. TODO: This should be endogenous to the platform?
-		m_platform->update(current);
 		// Tell observers that the simulator has updated.
 		for(SimulatorObserver* obs : m_obs)
 			obs->simUpdate(*this);
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 }
 

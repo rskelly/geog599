@@ -21,21 +21,46 @@ using namespace uav::sim;
 using namespace uav::surface;
 using namespace uav::util;
 
+void _update(Platform* p, bool* running) {
+	while(*running) {
+		p->update(uavtime());
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+}
+
 Platform::Platform() :
 	m_forwardVelocity(10),
-	m_lastTime(0),
+	m_lastTime(-1),
 	m_gimbal(nullptr),
 	m_rangefinder(nullptr),
 	m_nadirRangefinder(nullptr),
 	m_surface(nullptr),
-	m_elevation(0), m_elevationTime(0) {
+	m_elevation(0), m_elevationTime(0),
+	m_running(false),
+	m_startTime(0) {
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
 }
 
+void Platform::start() {
+	m_startTime = uavtime();
+	m_running = true;
+	m_thread = std::thread(_update, this, &m_running);
+}
+
+void Platform::stop() {
+	m_running = false;
+	if(m_thread.joinable())
+		m_thread.join();
+}
 
 void Platform::update(double time) {
+	if(m_lastTime < 0) {
+		m_lastTime = time;
+		return;
+	}
+
 	double t = time - m_lastTime;
 	m_lastTime = time;
 
@@ -152,6 +177,7 @@ const Eigen::Vector3d& Platform::position() const {
 }
 
 Platform::~Platform() {
+	stop();
 	if(m_gimbal)
 		delete m_gimbal;
 	if(m_rangefinder)

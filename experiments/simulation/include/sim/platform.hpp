@@ -8,6 +8,8 @@
 #ifndef INCLUDE_SIM_PLATFORM_HPP_
 #define INCLUDE_SIM_PLATFORM_HPP_
 
+#include <thread>
+
 #include "util.hpp"
 #include "surface.hpp"
 #include "../platform.hpp"
@@ -41,9 +43,23 @@ private:
 	double m_elevation;
 	double m_elevationTime;
 
+	std::thread m_thread; // Update thread.
+	bool m_running; // To control update thread.
+	double m_startTime;
+
 public:
 
 	Platform();
+
+	/**
+	 * Start the update thread.
+	 */
+	void start();
+
+	/**
+	 * Stop the update thread.
+	 */
+	void stop();
 
 	/**
 	 * Update the state of the platform. This is the "tick" that

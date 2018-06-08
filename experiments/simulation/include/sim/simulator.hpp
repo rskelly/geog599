@@ -8,7 +8,6 @@
 #ifndef INCLUDE_SIM_SIMULATOR_HPP_
 #define INCLUDE_SIM_SIMULATOR_HPP_
 
-#include <memory>
 #include <thread>
 #include <string>
 
@@ -31,7 +30,7 @@ private:
 	bool m_running;
 	uav::sim::Terrain* m_terrain;
 	uav::sim::Platform* m_platform;
-	std::unique_ptr<std::thread> m_thread;
+	std::thread m_thread;
 	std::vector<uav::sim::SimulatorObserver*> m_obs;
 
 public:
