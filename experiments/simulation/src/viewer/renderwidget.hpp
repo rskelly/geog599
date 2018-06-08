@@ -28,10 +28,12 @@ private:
 	void renderPlatform();
 	void renderLaser();
 	void renderSurface();
+	void rotate(int x, int y);
 protected:
 	void resizeGL(int w, int h);
 	void paintGL();
 	void initializeGL();
+	bool event(QEvent* evt);
 public:
 	RenderWidget(QWidget* parent);
 	void setTerrain(uav::sim::Terrain* terrain);

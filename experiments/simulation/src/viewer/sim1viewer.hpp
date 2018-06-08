@@ -34,7 +34,7 @@ public:
 	void setSimulator(uav::sim::Simulator& sim);
 	void simUpdate(uav::sim::Simulator& sim);
 	void updateInfo();
-	virtual ~Sim1Viewer();
+	~Sim1Viewer();
 
 public slots:
 	void chkShowInfoChanged(bool checked);

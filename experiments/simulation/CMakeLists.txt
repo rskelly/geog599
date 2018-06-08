@@ -69,7 +69,8 @@ include_directories(BEFORE SYSTEM ./include ./src
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR})
 	
 if(${WITH_GUI})
-	include_directories(./build/sim1_autogen/include ${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
+	include_directories(./build/sim1_autogen/include ${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} 
+		${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
 endif()
  
 link_directories(. ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
@@ -87,7 +88,7 @@ endif()
 if(${WITH_GUI})
 	add_executable (sim1 src/sim1.cpp 
 		src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp 
-		src/sim/gimbal.cpp src/viewer/sim1viewer.cpp
+		src/sim/gimbal.cpp src/viewer/sim1viewer.cpp src/viewer/renderwidget.cpp 
 		src/surface.cpp)
 	target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} 
 		${GL_LIBRARY} ${GLU_LIBRARY} Qt5::Gui Qt5::Core Qt5::Widgets) 
