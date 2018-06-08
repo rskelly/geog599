@@ -31,6 +31,8 @@ Sim1Viewer::Sim1Viewer() :
 		m_lastUpdate(0),
 		m_sim(nullptr),
 		m_form(nullptr) {
+
+	// Load the settings from the local store.
 	QSettings settings("sim1", "dijital.ca");
 	m_settings[K_TERRAIN_FILE] = settings.value(K_TERRAIN_FILE, "").toString().toStdString();
 }
@@ -38,8 +40,10 @@ Sim1Viewer::Sim1Viewer() :
 void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 	Ui::Sim1Viewer::setupUi(Sim1Viewer);
 
+	// Set the terrain file on the text box from the settings map.
 	txtTerrainFile->setText(QString::fromStdString(m_settings[K_TERRAIN_FILE]));
 
+	// Connect events.
 	connect(txtTerrainFile, SIGNAL(textEdited(QString)), this, SLOT(terrainFileChanged(QString)));
     connect(btnTerrainFile, SIGNAL(clicked()), this, SLOT(btnTerrainFileClicked()));
     connect(btnClose, SIGNAL(clicked()), this, SLOT(btnCloseFormClicked()));
@@ -123,15 +127,17 @@ void Sim1Viewer::btnCloseFormClicked() {
 	if(m_form) {
 		m_form->close();
 		delete m_form;
+		m_form = nullptr;
 	}
 }
 
 
 Sim1Viewer::~Sim1Viewer() {
+	// Save the settings to the store.
 	QSettings settings("sim1", "dijital.ca");
 	for(const auto& item : m_settings)
 		settings.setValue(QString::fromStdString(item.first), QString::fromStdString(item.second));
-	//if(m_form)
-	//	delete m_form;
+	if(m_form)
+		delete m_form;
 }
 

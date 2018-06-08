@@ -44,15 +44,19 @@ Platform::Platform() :
 }
 
 void Platform::start() {
-	m_startTime = uavtime();
-	m_running = true;
-	m_thread = std::thread(_update, this, &m_running);
+	if(!m_running) {
+		m_startTime = uavtime();
+		m_running = true;
+		m_thread = std::thread(_update, this, &m_running);
+	}
 }
 
 void Platform::stop() {
-	m_running = false;
-	if(m_thread.joinable())
-		m_thread.join();
+	if(m_running) {
+		m_running = false;
+		if(m_thread.joinable())
+			m_thread.join();
+	}
 }
 
 void Platform::update(double time) {
@@ -99,7 +103,7 @@ void Platform::update(double time) {
 	dynamic_cast<uav::sim::Rangefinder*>(m_rangefinder)->rangeBridge()->setLaser(m_laserPosition, m_laserDirection);
 
 	Range* range = m_rangefinder->range();
-	if(!std::isnan(range->range())) {
+	if(range && !std::isnan(range->range())) {
 		Eigen::Vector3d point = (m_laserDirection.normalized() * range->range()) + m_laserPosition;
 		m_surface->addPoint(point, range->time());
 	}

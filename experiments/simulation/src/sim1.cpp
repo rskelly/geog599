@@ -75,16 +75,20 @@ Simulator::Simulator() :
 }
 
 void Simulator::start() {
-	m_running = true;
-	m_thread = std::thread(doRun, this);
-	m_platform->start();
+	if(!m_running) {
+		m_running = true;
+		m_thread = std::thread(doRun, this);
+		m_platform->start();
+	}
 }
 
 void Simulator::stop() {
-	m_platform->stop();
-	m_running = false;
-	if(m_thread.joinable())
-		m_thread.join();
+	if(m_running) {
+		m_platform->stop();
+		m_running = false;
+		if(m_thread.joinable())
+			m_thread.join();
+	}
 }
 
 void Simulator::setTerrainFile(const std::string& file) {
@@ -139,8 +143,8 @@ int runWithGui(int argc, char **argv) {
 				QMessageBox err;
 				err.setText("Error");
 				err.setInformativeText(QString(ex.what()));
-				err.exec();
-				return false;
+				bool result = err.exec();
+				return result;
 			}
 		}
 	};
@@ -150,7 +154,8 @@ int runWithGui(int argc, char **argv) {
 	Simulator sim;
 	v.setSimulator(sim);
 	v.showForm();
-	return q.exec();
+	bool result = q.exec();
+	return result;
 #else
 	std::cerr << "GUI not enabled." << std::endl;
 	return 1;
