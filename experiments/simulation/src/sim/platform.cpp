@@ -32,10 +32,6 @@ Platform::Platform() :
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
-
-	// TODO: Configure externally.
-	m_position << 489103, 6502712, 260; // 30m high
-	m_orientation << 0, 0, 0; // straight level
 }
 
 
@@ -57,10 +53,6 @@ void Platform::update(double time) {
 	Eigen::Matrix3d God = eulerToMatrix(m_gimbal->orientation());
 	Eigen::Vector3d A = God * Gpd;
 
-	//std::cerr << "Gpd " << Gpd << "\n";
-	//std::cerr << "God " << God << "\n";
-	//std::cerr << "A " << A << "\n";
-
 	// 2) Rotate the laser by the gimbal's static orientation and translate it into the platform's frame.
 
 	Eigen::Vector3d Gps(m_gimbal->staticPosition());
@@ -68,28 +60,16 @@ void Platform::update(double time) {
 
 	Eigen::Vector3d B = Gos * A + Gps;
 
-	//std::cerr << "Gps " << Gps << "\n";
-	//std::cerr << "Gos " << Gos << "\n";
-	//std::cerr << "B " << B << "\n";
-
 	// 3) Rotate the platform then translate into the inertial frame.
 
 	Eigen::Vector3d Pp(position());
 	Eigen::Matrix3d Po = eulerToMatrix(orientation());
 
-	//std::cerr << "Pp " << Pp << "\n";
-	//std::cerr << "Po " << Po << "\n";
-
 	m_laserPosition = Po * B + Pp;
 
 	// 4) Compute the laser orientation by adding the orientations. It passes through the laserPosition.
 
-	//std::cerr << "laser orientation " << God * Gos * Po << "\n";
-
 	m_laserDirection = eulerToVector(matrixToEuler(God * Gos * Po));
-
-	//std::cerr << "Laser Position " << m_laserPosition << "\n";
-	//std::cerr << "Laser Direction " << m_laserDirection << "\n";
 
 	dynamic_cast<uav::sim::Rangefinder*>(m_rangefinder)->rangeBridge()->setLaser(m_laserPosition, m_laserDirection);
 
@@ -99,15 +79,14 @@ void Platform::update(double time) {
 		m_surface->addPoint(point, range->time());
 	}
 
-	///std::cerr << "Elevation: " << elevation() << "\n";
+}
 
-	/*
-	if(range) {
-		std::cerr << "Range " << range->range() << ", " << range->time() << "\n";
-		std::cerr << "Position " << m_position[0] << ", " << m_position[1] << "\n";
-		delete range;
-	}
-	*/
+void Platform::setInitialOrientation(const Eigen::Vector3d orientation) {
+	m_orientation = orientation;
+}
+
+void Platform::setInitialPosition(const Eigen::Vector3d position) {
+	m_position = position;
 }
 
 uav::Range* Platform::range() const {

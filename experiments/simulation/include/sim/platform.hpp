@@ -61,6 +61,20 @@ public:
 	 */
 	Range* range() const;
 
+	/**
+	 * Set the initial position of the vehicle (i.e. relative to the terrain.)
+	 *
+	 * @param position The initial position of the vehicle (i.e. relative to the terrain.)
+	 */
+	void setInitialPosition(const Eigen::Vector3d position);
+
+	/**
+	 * Set the initial orientation of the vehicle (i.e. relative to the inertial frame.)
+	 *
+	 * @param position The initial orientation of the vehicle (i.e. relative to the inertial frame.)
+	 */
+	void setInitialOrientation(const Eigen::Vector3d orientation);
+
 	const Eigen::Vector3d laserPosition() const;
 
 	const Eigen::Vector3d laserDirection() const;

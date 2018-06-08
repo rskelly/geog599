@@ -146,6 +146,27 @@ double Terrain::sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& dir
 	return std::numeric_limits<double>::quiet_NaN();
 }
 
+double Terrain::sample(double x, double y) {
+	try {
+		Point_3 p1(x, y, maxz() + 100);
+		Point_3 p2(x, y, minz() - 100);
+		Segment_3 line(p1, p2);
+		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+				it != m_tri->finite_faces_end(); ++it){
+			Delaunay::Triangle t = m_tri->triangle(it);
+			if(CGAL::do_intersect(line, t)) {
+				const CGAL::Object result = CGAL::intersection(line, t);
+				const Point_3* p = CGAL::object_cast<Point_3>(&result);
+				if(p)
+					return p->z();
+			}
+		}
+	} catch(...) {
+		// It may happen that the program is killed while a thread calling this function is running.
+	}
+	return std::numeric_limits<double>::quiet_NaN();
+}
+
 const double* Terrain::transform() const {
 	return m_trans;
 }
@@ -164,6 +185,22 @@ double Terrain::minz() const {
 
 double Terrain::maxz() const {
 	return m_maxz;
+}
+
+double Terrain::minx() const {
+	if(m_trans[1] < 0) {
+		return m_trans[0] - width();
+	} else {
+		return m_trans[0];
+	}
+}
+
+double Terrain::miny() const {
+	if(m_trans[5] < 0) {
+		return m_trans[3] - height();
+	} else {
+		return m_trans[3];
+	}
 }
 
 inline double __dist3(const Point_3& a, const Point_3& b) {

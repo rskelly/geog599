@@ -60,6 +60,15 @@ public:
 	double sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& direction);
 
 	/**
+	 * Sample the terrain at the coordinate.
+	 *
+	 * @param x The x coordinate.
+	 * @param y The y coordinate.
+	 * @return The elevation of the terrain at the given position.
+	 */
+	double sample(double x, double y);
+
+	/**
 	 * Add the 3D vertices of the triangulation to the vector.
 	 *
 	 * @param vertices A vector to contain the vertices in x, y, z order.
@@ -118,6 +127,20 @@ public:
 	 * @return The minimum elevation of the terrain.
 	 */
 	double maxz() const;
+
+	/**
+	 * The minimum x coordinate of the terrain.
+	 *
+	 * @return The minimum x coordinate of the terrain.
+	 */
+	double minx() const;
+
+	/**
+	 * The minimum y coordinate of the terrain.
+	 *
+	 * @return The minimum y coordinate of the terrain.
+	 */
+	double miny() const;
 
 };
 

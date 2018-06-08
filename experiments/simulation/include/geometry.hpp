@@ -25,5 +25,7 @@ typedef K::Point_3   										Point;
 typedef CGAL::Point_3<K> 	Point_3;
 typedef CGAL::Vector_3<K> 	Vector_3;
 typedef CGAL::Ray_3<K> 		Ray_3;
+typedef CGAL::Line_3<K> 	Line_3;
+typedef CGAL::Segment_3<K> 	Segment_3;
 
 #endif /* INCLUDE_SIM_GEOMETRY_HPP_ */

@@ -71,6 +71,7 @@ Simulator::Simulator() :
 	m_platform->setSurface(surface);
 	m_platform->setRangefinder(rangefinder);
 	m_platform->setNadirRangefinder(nadirRangefinder);
+	m_platform->setInitialOrientation(Eigen::Vector3d(0, 0, 0));
 }
 
 void Simulator::start() {
@@ -88,6 +89,9 @@ void Simulator::stop() {
 
 void Simulator::setTerrainFile(const std::string& file) {
 	m_terrain->load(file);
+	double x = m_terrain->minx() + 10;
+	double y = m_terrain->miny() + m_terrain->height() / 2.0;
+	m_platform->setInitialPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 30.0));
 }
 
 uav::sim::Terrain* Simulator::terrain() {
