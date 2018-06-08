@@ -15,12 +15,6 @@
 
 #include <Eigen/Core>
 
-/*
-#include <GL/glew.h>
-#include <GL/glut.h>
-#include <GLFW/glfw3.h>
-*/
-
 #include "util.hpp"
 #include "surface.hpp"
 #include "sim/rangefinder.hpp"
@@ -46,24 +40,32 @@ void doRun(Simulator* sim) {
 Simulator::Simulator() :
 	m_running(false) {
 
+	// Instantiate the terrain. Will load the DEM later.
 	m_terrain = new Terrain();
 
+	// These are parameters that organize the components of the laser system w/r/t the
+	// UAV platform.
 	SinGimbal* gimbal = new SinGimbal(1, 1);
 	gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
 	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
 	gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 8., 0)); // down (around the y axis.) TODO: This seems to be upside-down...
-	DelaunaySurface* surface = new DelaunaySurface();
 
+	// Set up the forward rangefinder using a range bridge and the terrain.
 	RangeBridge* rb1 = new RangeBridge();
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
 
+	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
 	rb1->setTerrain(m_terrain);
 	Rangefinder* nadirRangefinder = new Rangefinder();
 	nadirRangefinder->setRangeBridge(rb1);
 
+	// This is the surface reconstruction module.
+	DelaunaySurface* surface = new DelaunaySurface();
+
+	// Configure the platform.
 	m_platform = new Platform();
 	m_platform->setGimbal(gimbal);
 	m_platform->setSurface(surface);
@@ -78,7 +80,10 @@ void Simulator::start() {
 
 void Simulator::stop() {
 	m_running = false;
-	m_thread->join();
+	if(m_thread.get()) {
+		m_thread->join();
+		m_thread.reset();
+	}
 }
 
 void Simulator::setTerrainFile(const std::string& file) {
@@ -101,8 +106,11 @@ void Simulator::run() {
 	std::cerr << std::setprecision(12);
 	double start = uavtime();
 	while(m_running) {
+		// Get the elapsed time.
 		double current = uavtime() - start;
+		// Update the platform's time step. TODO: This should be endogenous to the platform?
 		m_platform->update(current);
+		// Tell observers that the simulator has updated.
 		for(SimulatorObserver* obs : m_obs)
 			obs->simUpdate(*this);
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -110,6 +118,7 @@ void Simulator::run() {
 }
 
 Simulator::~Simulator() {
+	stop();
 	delete m_terrain;
 	delete m_platform;
 }
