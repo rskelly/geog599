@@ -8,6 +8,7 @@
 #include <chrono>
 
 #include "sim/controller.hpp"
+#include "sim/platform.hpp"
 #include "util.hpp"
 
 using namespace uav::sim;
@@ -53,6 +54,12 @@ void Controller::setPlatform(uav::Platform* platform) {
 
 void Controller::tick(double time) {
 	m_platform->update(time);
+	const uav::PlatformState& state = m_platform->platformState();
+	uav::sim::PlatformControlInput input;
+	if(state.altitude() != 10) {
+		input.setAltitude(10);
+		m_platform->setControlInput(input);
+	}
 }
 
 Controller::~Controller() {

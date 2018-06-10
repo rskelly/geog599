@@ -32,6 +32,14 @@ public:
 	 */
 	virtual double time() const = 0;
 
+	/**
+	 * Return true if the range and time of the Range are
+	 * valid. That is, not null etc.
+	 *
+	 * @return True if the Range is valid.
+	 */
+	virtual bool valid() const = 0;
+
 	virtual ~Range() {}
 };
 

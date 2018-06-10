@@ -70,20 +70,18 @@ public:
 	virtual double mass() const = 0;
 
 	/**
-	 * Returns the elevation as measured by a rangefinder, so relative to
-	 * the surface.
+	 * Returns the altitude.
 	 *
-	 * @return The surface elevation as measured by a rangefinder.
+	 * @return The altitude.
 	 */
-	virtual double surfaceElevation() const = 0;
+	virtual double altitude() const = 0;
 
 	/**
-	 * Return the exact time the surface elevation was collected in
-	 * seconds since the epoch.
+	 * Return the exact time the altitude was measured.
 	 *
-	 * @return The exact time the surface elevation was collected.
+	 * @return The exact time the altitude was measured.
 	 */
-	virtual double surfaceElevationTime() const = 0;
+	virtual double altitudeTime() const = 0;
 
 	virtual ~PlatformState() {}
 };
@@ -119,7 +117,15 @@ public:
  * a Controller object to the Platform.
  */
 class PlatformControlInput {
+public:
+	/**
+	 * Set the target elevation of the platform.
+	 *
+	 * @param elevation The target elevation of the platform.
+	 */
+	virtual void setAltitude(double altitude) = 0;
 
+	virtual ~PlatformControlInput() {}
 };
 
 /**

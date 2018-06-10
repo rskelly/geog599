@@ -67,7 +67,7 @@ void Sim1Viewer::setSimulator(Simulator& sim) {
 }
 
 void Sim1Viewer::updateInfo() {
-	double elev = m_sim->platform()->platformState().surfaceElevation();
+	double elev = m_sim->platform()->platformState().altitude();
 	QString e = QString::number(elev, 'f', 2);
 	txtElevation->setText(e);
 

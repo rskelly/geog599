@@ -26,8 +26,8 @@ using namespace uav::util;
 PlatformState::PlatformState() :
 		m_batteryLevel(0),
 		m_mass(0),
-		m_surfaceElevation(0),
-		m_surfaceElevationTime(0) {
+		m_altitude(0),
+		m_altitudeTime(0) {
 }
 
 const Eigen::Vector3d& PlatformState::position() const {
@@ -54,12 +54,12 @@ double PlatformState::mass() const {
 	return m_mass;
 }
 
-double PlatformState::surfaceElevation() const {
-	return m_surfaceElevation;
+double PlatformState::altitude() const {
+	return m_altitude;
 }
 
-double PlatformState::surfaceElevationTime() const {
-	return m_surfaceElevationTime;
+double PlatformState::altitudeTime() const {
+	return m_altitudeTime;
 }
 
 void PlatformState::setPosition(const Eigen::Vector3d& position) {
@@ -70,6 +70,14 @@ void PlatformState::setOrientation(const Eigen::Vector3d& orientation) {
 	m_orientation = orientation;
 }
 
+void PlatformState::setLinearVelocity(const Eigen::Vector3d& linearVelocity) {
+	m_linearVelocity = linearVelocity;
+}
+
+void PlatformState::setAngularVelocity(const Eigen::Vector3d& angularVelocity) {
+	m_angularVelocity = angularVelocity;
+}
+
 void PlatformState::setBatteryLevel(double level) {
 	m_batteryLevel = level;
 }
@@ -78,12 +86,12 @@ void PlatformState::setMass(double mass) {
 	m_mass = mass;
 }
 
-void PlatformState::setSurfaceElevation(double elevation) {
-	m_surfaceElevation = elevation;
+void PlatformState::setAltitude(double altitude) {
+	m_altitude = altitude;
 }
 
-void PlatformState::setSurfaceElevationTime(double time) {
-	m_surfaceElevationTime = time;
+void PlatformState::setAltitudeTime(double time) {
+	m_altitudeTime = time;
 }
 
 void RangefinderState::setLaserPosition(const Eigen::Vector3d& position) {
@@ -161,8 +169,10 @@ void Platform::update(double time) {
 	std::vector<uav::Range*> ranges;
 	if(m_rangefinder->getRanges(ranges)) {
 		for(Range* range : ranges) {
-			Eigen::Vector3d point = (laserDir.normalized() * range->range()) + laserPos;
-			m_surface->addPoint(point, range->time());
+			if(range->valid()) {
+				Eigen::Vector3d point = (laserDir.normalized() * range->range()) + laserPos;
+				m_surface->addPoint(point, range->time());
+			}
 			delete range;
 		}
 		ranges.clear();
@@ -173,8 +183,8 @@ void Platform::update(double time) {
 	dynamic_cast<uav::sim::Rangefinder*>(m_nadirRangefinder)->rangeBridge()->setLaser(Pp, Eigen::Vector3d(0, 0, -1));
 	if(m_nadirRangefinder->getRanges(ranges)) {
 		const Range* last = ranges[ranges.size() - 1];
-		m_platformState.setSurfaceElevation(last->range());
-		m_platformState.setSurfaceElevationTime(last->time());
+		m_platformState.setAltitude(last->range());
+		m_platformState.setAltitudeTime(last->time());
 		for(Range* range : ranges)
 			delete range;
 		ranges.clear();
@@ -231,7 +241,12 @@ const uav::PlatformState& Platform::platformState() const {
 }
 
 void Platform::setControlInput(const uav::PlatformControlInput& input) {
-
+	const uav::sim::PlatformControlInput& i = dynamic_cast<const uav::sim::PlatformControlInput&>(input);
+	if(!std::isnan(i.altitude())) {
+		Eigen::Vector3d pos(m_platformState.position());
+		pos[2] += (i.altitude() - m_platformState.altitude()) / 2.0;
+		m_platformState.setPosition(pos);
+	}
 }
 
 Platform::~Platform() {

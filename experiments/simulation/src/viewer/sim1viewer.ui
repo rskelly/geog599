@@ -77,7 +77,7 @@ QPushButton::enabled {
       <item row="0" column="0">
        <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Elevation</string>
+         <string>Altitude:</string>
         </property>
        </widget>
       </item>

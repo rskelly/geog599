@@ -137,7 +137,7 @@ void RenderWidget::renderPlatform() {
 	double y = std::abs(pos[1] - trans[3]) / width - 0.5;
 	double z = (pos[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
 
-	double size = 0.2 / trans[1];
+	double size = 1 / width; // The vehicle is 1m square, scaled to the width of the scene.
 
 	glBegin(GL_QUADS);
 
@@ -194,17 +194,19 @@ void RenderWidget::renderTerrain() {
 	double y[3];
 	double z[3];
 
+	double offset = 0.001;
+
 	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
 		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
 		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - 0.5;
 		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
 		if(j % 3 == 2) {
 			glColor3f(0.0f, 0.3 + z[0] * 0.5, 0.0f);
-			glVertex3f(x[0], y[0], z[0] / 10 - 0.01); // Lower to make space for surface.
+			glVertex3f(x[0], y[0], z[0] / 10 - offset); // Lower to make space for surface.
 			glColor3f(0.0f, 0.3 + z[1] * 0.5, 0.0f);
-			glVertex3f(x[1], y[1], z[1] / 10 - 0.01);
+			glVertex3f(x[1], y[1], z[1] / 10 - offset);
 			glColor3f(0.0f, 0.3 + z[2] * 0.5, 0.0f);
-			glVertex3f(x[2], y[2], z[2] / 10 - 0.01);
+			glVertex3f(x[2], y[2], z[2] / 10 - offset);
 		}
 	}
 

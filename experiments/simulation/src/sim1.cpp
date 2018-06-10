@@ -77,6 +77,7 @@ Simulator::Simulator() :
 
 	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
 	state.setOrientation(Eigen::Vector3d(0, 0, 0));
+	state.setLinearVelocity(Eigen::Vector3d(4, 0, 0));
 	m_platform->setInitialPlatformState(state);
 
 	m_controller->setPlatform(m_platform);
@@ -105,7 +106,7 @@ void Simulator::setTerrainFile(const std::string& file) {
 	double y = m_terrain->miny() + m_terrain->height() / 2.0;
 
 	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
-	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 0.1));
+	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 10));
 	m_platform->setInitialPlatformState(state);
 }
 

@@ -29,6 +29,9 @@ public:
 	double time() const {
 		return m_time;
 	}
+	bool valid() const {
+		return !std::isnan(m_range) && m_time > 0 && !std::isnan(m_time);
+	}
 };
 
 } // sim

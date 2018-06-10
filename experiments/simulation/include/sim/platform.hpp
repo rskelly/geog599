@@ -26,8 +26,8 @@ private:
 	Eigen::Vector3d m_angularVelocity;
 	double m_batteryLevel;
 	double m_mass;
-	double m_surfaceElevation;
-	double m_surfaceElevationTime;
+	double m_altitude;
+	double m_altitudeTime;
 
 public:
 
@@ -41,9 +41,13 @@ public:
 
 	void setMass(double mass);
 
-	void setSurfaceElevation(double elevation);
+	void setAltitude(double altitude);
 
-	void setSurfaceElevationTime(double time);
+	void setAltitudeTime(double time);
+
+	void setLinearVelocity(const Eigen::Vector3d& linearVelocity);
+
+	void setAngularVelocity(const Eigen::Vector3d& angularVelocity);
 
 	const Eigen::Vector3d& position() const;
 
@@ -57,9 +61,9 @@ public:
 
 	double mass() const;
 
-	double surfaceElevation() const;
+	double altitude() const;
 
-	double surfaceElevationTime() const;
+	double altitudeTime() const;
 };
 
 /**
@@ -79,8 +83,23 @@ public:
 	const Eigen::Vector3d& laserPosition() const;
 
 	const Eigen::Vector3d& laserDirection() const;
-
 };
+
+class PlatformControlInput : public uav::PlatformControlInput {
+private:
+	double m_altitude;
+public:
+	PlatformControlInput() :
+		m_altitude(std::numeric_limits<double>::quiet_NaN()) {
+	}
+	void setAltitude(double altitude) {
+		m_altitude = altitude;
+	}
+	double altitude() const {
+		return m_altitude;
+	}
+};
+
 /**
  * A platform simulation. The platform is roughly autonomous, so everything
  * about its state originates here, other than the instruction to update.
