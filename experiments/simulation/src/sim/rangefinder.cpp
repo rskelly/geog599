@@ -72,8 +72,12 @@ void Rangefinder::setPulseFrequency(double freq) {
 }
 
 int Rangefinder::getRanges(std::vector<uav::Range*>& ranges) {
-	ranges.push_back(new Range(m_bridge->getRange(), uav::util::uavtime()));
-	return 1;
+	double r = m_bridge->getRange();
+	if(!std::isnan(r) && r < 100.0) { // TODO: Configurable max range.
+		ranges.push_back(new Range(m_bridge->getRange(), uav::util::uavtime()));
+		return 1;
+	}
+	return 0;
 }
 
 void Rangefinder::setRangeBridge(RangeBridge* bridge) {

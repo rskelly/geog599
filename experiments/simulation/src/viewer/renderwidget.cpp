@@ -112,7 +112,7 @@ void RenderWidget::renderLaser() {
 	double y0 = std::abs(pos[1] - trans[3]) / width - 0.5;
 	double z0 = (pos[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
 
-	Eigen::Vector3d pos1 = pos + dir * pos[2];
+	Eigen::Vector3d pos1 = pos + dir.normalized() * 100.0; // TODO: configure range.
 
 	double x1 = std::abs(pos1[0] - trans[0]) / width - 0.5;
 	double y1 = std::abs(pos1[1] - trans[3]) / width - 0.5;
