@@ -22,6 +22,7 @@
 #include "sim/terrain.hpp"
 #include "sim/simulator.hpp"
 #include "sim/gimbal.hpp"
+#include "sim/controller.hpp"
 #include "viewer/sim1viewer.hpp"
 
 using namespace uav::util;
@@ -39,6 +40,8 @@ void doRun(Simulator* sim) {
 
 Simulator::Simulator() :
 	m_running(false) {
+
+	m_controller = new Controller();
 
 	// Instantiate the terrain. Will load the DEM later.
 	m_terrain = new Terrain();
@@ -71,20 +74,25 @@ Simulator::Simulator() :
 	m_platform->setSurface(surface);
 	m_platform->setRangefinder(rangefinder);
 	m_platform->setNadirRangefinder(nadirRangefinder);
-	m_platform->setInitialOrientation(Eigen::Vector3d(0, 0, 0));
+
+	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
+	state.setOrientation(Eigen::Vector3d(0, 0, 0));
+	m_platform->setInitialPlatformState(state);
+
+	m_controller->setPlatform(m_platform);
 }
 
 void Simulator::start() {
 	if(!m_running) {
 		m_running = true;
 		m_thread = std::thread(doRun, this);
-		m_platform->start();
+		m_controller->start();
 	}
 }
 
 void Simulator::stop() {
 	if(m_running) {
-		m_platform->stop();
+		m_controller->stop();
 		m_running = false;
 		if(m_thread.joinable())
 			m_thread.join();
@@ -95,7 +103,10 @@ void Simulator::setTerrainFile(const std::string& file) {
 	m_terrain->load(file);
 	double x = m_terrain->minx() + 10;
 	double y = m_terrain->miny() + m_terrain->height() / 2.0;
-	m_platform->setInitialPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 50.0));
+
+	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
+	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 0.1));
+	m_platform->setInitialPlatformState(state);
 }
 
 uav::sim::Terrain* Simulator::terrain() {

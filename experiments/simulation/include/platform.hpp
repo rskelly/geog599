@@ -16,6 +16,112 @@
 
 namespace uav {
 
+class Platform;
+
+/**
+ * An object that contains information about a
+ * Platform that the platform has seen fit
+ * to report. Retrieved from the Platform by a
+ * Controller instance.
+ */
+class PlatformState {
+public:
+
+	/**
+	 * The position of the platform relative to the inertial frame.
+	 *
+	 * @return The position of the platform relative to the inertial frame.
+	 */
+	virtual const Eigen::Vector3d& position() const = 0;
+
+	/**
+	 * The orientation of the platform relative to the inertial frame.
+	 *
+	 * @return The orientation of the platform relative to the inertial frame.
+	 */
+	virtual const Eigen::Vector3d& orientation() const = 0;
+
+	/**
+	 * The linear velocity of the platform relative to the inertial frame.
+	 *
+	 * @return The linear velocity of the platform relative to the inertial frame.
+	 */
+	virtual const Eigen::Vector3d& linearVelocity() const = 0;
+
+	/**
+	 * The angular velocity of the platform relative to the inertial frame.
+	 *
+	 * @return The angular velocity of the platform relative to the inertial frame.
+	 */
+	virtual const Eigen::Vector3d& angularVelocity() const = 0;
+
+	/**
+	 * The current battery level, between 0 and 1.
+	 *
+	 * @return The current battery level, between 0 and 1.
+	 */
+	virtual double batteryLevel() const = 0;
+
+	/**
+	 * The mass of the platform in kg.
+	 *
+	 * @return The mass of the platform in kg.
+	 */
+	virtual double mass() const = 0;
+
+	/**
+	 * Returns the elevation as measured by a rangefinder, so relative to
+	 * the surface.
+	 *
+	 * @return The surface elevation as measured by a rangefinder.
+	 */
+	virtual double surfaceElevation() const = 0;
+
+	/**
+	 * Return the exact time the surface elevation was collected in
+	 * seconds since the epoch.
+	 *
+	 * @return The exact time the surface elevation was collected.
+	 */
+	virtual double surfaceElevationTime() const = 0;
+
+	virtual ~PlatformState() {}
+};
+
+/**
+ * Represents the state of the rangefinder.
+ */
+class RangefinderState {
+public:
+
+	/**
+	 * Return the caculated laser position. Only available after an update.
+	 *
+	 * @return The caculated laser position. Only available after an update.
+	 */
+	virtual const Eigen::Vector3d& laserPosition() const = 0;
+
+	/**
+	 * Return the caculated laser direction. Only available after an update.
+	 *
+	 * @return The caculated laser direction. Only available after an update.
+	 */
+	virtual const Eigen::Vector3d& laserDirection() const = 0;
+
+	virtual ~RangefinderState() {}
+};
+
+/**
+ * An object containing a set of inputs to the
+ * platforms controls. This could operate on the
+ * low level (e.g. throttle inputs) or a higher
+ * level (e.g. increase elevation). Passed from
+ * a Controller object to the Platform.
+ */
+class PlatformControlInput {
+
+};
+
 /**
  * This interface provides information about the platform in real-time.
  * Information such as the position and orientation, time sync signal
@@ -71,13 +177,6 @@ public:
 	virtual uav::Rangefinder* nadirRangefinder() const = 0;
 
 	/**
-	 * Return the platform elevation as measured by the nadir rangefinder.
-	 *
-	 * @return The platform elevation as measured by the nadir rangefinder.
-	 */
-	virtual double elevation() = 0;
-
-	/**
 	 * Set a pointer to the surface generator. The Platform takes ownership.
 	 *
 	 * @param surface A pointer to the surface generator.
@@ -92,21 +191,18 @@ public:
 	virtual uav::surface::Surface* surface() const = 0;
 
 	/**
-	 * Get the current state of orientation of the platform. This is the orientation
-	 * of the platform around its center of mass. Relative to the inertial frame.
-	 * Euler angles.
+	 * Returns the RangefinderState object for the nadir rangefinder.
 	 *
-	 * @return The platform's orientation.
+	 * @return The RangefinderState object for the nadir rangefinder.
 	 */
-	virtual const Eigen::Vector3d& orientation() const = 0;
+	virtual const uav::RangefinderState& nadirRangefinderState() const = 0;
 
 	/**
-	 * Get the current position of the platform. This is the position of the
-	 * platform's center of mass relative to the inertial frame.
+	 * Returns the RangefinderState object for the rangefinder.
 	 *
-	 * @return The platform's position.
+	 * @return The RangefinderState object for the rangefinder.
 	 */
-	virtual const Eigen::Vector3d& position() const = 0;
+	virtual const uav::RangefinderState& rangefinderState() const = 0;
 
 	/**
 	 * The update method is the primary driver of the Platform.
@@ -120,18 +216,18 @@ public:
 	virtual void update(double time) = 0;
 
 	/**
-	 * Return the caculated laser position. Only available after an update.
+	 * Return a reference the PlatformState object for this Platform.
 	 *
-	 * @return The caculated laser position. Only available after an update.
+	 * @return A reference the PlatformState object for this Platform.
 	 */
-	virtual const Eigen::Vector3d laserPosition() const = 0;
+	virtual const uav::PlatformState& platformState() const = 0;
 
 	/**
-	 * Return the caculated laser direction. Only available after an update.
+	 * Passes a control input to the Platform.
 	 *
-	 * @return The caculated laser direction. Only available after an update.
+	 * @param input An instance of PlatformControlInput.
 	 */
-	virtual const Eigen::Vector3d laserDirection() const = 0;
+	virtual void setControlInput(const uav::PlatformControlInput& input) = 0;
 
 	virtual ~Platform() {}
 

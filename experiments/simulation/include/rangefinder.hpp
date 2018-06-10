@@ -36,25 +36,25 @@ public:
 };
 
 /**
- * This interface represents an object that emits information about the
- * state of a range finder. The current understanding of this device
- * is that it knows the return distance and time of each pulse, and nothing else.
- * Any information about the orientation of the instrument, the position of the
- * platform or the transformation of space is external.
+ * This interface represents an object that emits range measurements. The current
+ * understanding of this device is that it knows the return distance and time of
+ * each pulse, and nothing else. Any information about the orientation of the
+ * instrument, the position of the platform or the transformation of space is external.
  */
 class Rangefinder {
 public:
 
 	/**
-	 * Returns a Range object containing the range information that was
-	 * available when the call was made. If a null pointer is returned,
-	 * no range measurement has been taken in the interval since the
-	 * last call. A range can only be retrieved once. The caller owns the
-	 * returned pointer.
+	 * Adds the Range objects to the given vector. Since the rangefinder
+	 * generates ranges at its own pace, the platform may not be able to
+	 * request them faster than they're generated. These are all the ranges
+	 * generated between this call and the last.
 	 *
-	 * @return A pointer to a Range object or nullptr.
+	 * The caller is responsible for the Range objects and their destruction.
+	 *
+	 * @return The number of ranges generated.
 	 */
-	virtual Range* range() = 0;
+	virtual int getRanges(std::vector<uav::Range*>& ranges) = 0;
 
 
 	virtual ~Rangefinder() {}

@@ -116,7 +116,7 @@ public:
 	 */
 	RangeBridge* rangeBridge() const;
 
-	Range* range();
+	int getRanges(std::vector<uav::Range*>& ranges);
 
 	~Rangefinder();
 };

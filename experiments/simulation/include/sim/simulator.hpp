@@ -13,6 +13,7 @@
 
 #include "sim/platform.hpp"
 #include "sim/terrain.hpp"
+#include "controller.hpp"
 
 namespace uav {
 namespace sim {
@@ -30,6 +31,7 @@ private:
 	bool m_running;
 	uav::sim::Terrain* m_terrain;
 	uav::sim::Platform* m_platform;
+	uav::Controller* m_controller;
 	std::thread m_thread;
 	std::vector<uav::sim::SimulatorObserver*> m_obs;
 

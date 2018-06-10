@@ -100,8 +100,8 @@ void RenderWidget::initializeGL() {
 }
 
 void RenderWidget::renderLaser() {
-	const Eigen::Vector3d& dir = m_platform->laserDirection();
-	const Eigen::Vector3d& pos = m_platform->laserPosition();
+	const Eigen::Vector3d& dir = m_platform->rangefinderState().laserDirection();
+	const Eigen::Vector3d& pos = m_platform->rangefinderState().laserPosition();
 
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
@@ -126,7 +126,7 @@ void RenderWidget::renderLaser() {
 }
 
 void RenderWidget::renderPlatform() {
-	const Eigen::Vector3d& pos = m_platform->position();
+	const Eigen::Vector3d& pos = m_platform->platformState().position();
 
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
