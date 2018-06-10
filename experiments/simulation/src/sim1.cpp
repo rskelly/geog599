@@ -85,18 +85,18 @@ Simulator::Simulator() :
 
 void Simulator::start() {
 	if(!m_running) {
+		m_controller->start();
 		m_running = true;
 		m_thread = std::thread(doRun, this);
-		m_controller->start();
 	}
 }
 
 void Simulator::stop() {
 	if(m_running) {
-		m_controller->stop();
 		m_running = false;
 		if(m_thread.joinable())
 			m_thread.join();
+		m_controller->stop();
 	}
 }
 

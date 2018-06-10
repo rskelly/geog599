@@ -16,7 +16,7 @@ using namespace uav::util;
 
 void _run(Controller* controller, bool* running) {
 	double time = -1;
-	while(running) {
+	while(*running) {
 		double time0 = uavtime();
 		if(time == -1) {
 			time = time0;
