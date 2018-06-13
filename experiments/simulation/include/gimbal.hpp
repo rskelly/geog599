@@ -93,6 +93,16 @@ public:
 	 */
 	virtual const Eigen::Vector3d& staticPosition() const = 0;
 
+	/**
+	 * Start the gimbal's operation.
+	 */
+	virtual void start() = 0;
+
+	/**
+	 * Stop the gimbal's operation.
+	 */
+	virtual void stop() = 0;
+
 	virtual ~Gimbal() {}
 };
 

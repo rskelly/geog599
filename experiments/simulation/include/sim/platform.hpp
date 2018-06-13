@@ -122,6 +122,10 @@ public:
 
 	Platform();
 
+	void start();
+
+	void stop();
+
 	/**
 	 * Update the state of the platform. This is the "tick" that
 	 * advances the platforms state, meaning its position, attitude, etc.

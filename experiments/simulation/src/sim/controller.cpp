@@ -23,7 +23,7 @@ void _run(Controller* controller, bool* running) {
 		} else {
 			controller->tick(time0 - time);
 			time = time0;
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
 }
@@ -37,11 +37,13 @@ void Controller::start() {
 	if(!m_running) {
 		m_running = true;
 		m_thread = std::thread(_run, this, &m_running);
+		m_platform->start();
 	}
 }
 
 void Controller::stop() {
 	if(m_running) {
+		m_platform->stop();
 		m_running = false;
 		if(m_thread.joinable())
 			m_thread.join();

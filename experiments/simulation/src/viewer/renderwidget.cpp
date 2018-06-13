@@ -22,16 +22,6 @@
 
 using namespace uav::viewer;
 
-const GLfloat ambient[] = { 0.5, 0.5, 0.5, 1.0 };
-const GLfloat specular[] = { 1.0, 1.0, 1.0, 1.0 };
-const GLfloat diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-const GLfloat position[] = { -1.0, 0.0, 1.0, 1.0};
-
-const GLfloat terrain_shininess[1] = {10.0f};
-const GLfloat terrain_diffuse[4] = {0.2f, 1.0f, 0.2f, 1.0f};
-const GLfloat terrain_ambient[4] = {0.2f, 1.0f, 0.2f, 1.0f};
-const GLfloat terrain_specular[] = { 0.0, 0.0, 0.0, 1.0 };
-
 
 RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
@@ -49,7 +39,6 @@ RenderWidget::RenderWidget(QWidget* parent) :
 }
 
 void RenderWidget::resizeGL(int w, int h) {
-	//QOpenGLWidget::resizeGL(w, h);
 	m_width = w;
 	m_height = h;
 	glViewport(0, 0, m_width, m_height);
@@ -69,33 +58,22 @@ void RenderWidget::paintGL() {
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
 	// The eye position needs to be reversed from looking out from origin to looking back to origin.
 	Eigen::Vector3d eyePos = m_eyePos * -1;
 	gluLookAt(eyePos[0], eyePos[1], eyePos[2], 0, -0.25, 0, 0, 0, 1);
-	//glDisable(GL_COLOR_MATERIAL);
-	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-	//glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	//glLightfv(GL_LIGHT0, GL_POSITION, position);
+
 	glEnable(GL_COLOR_MATERIAL);
 
 	renderTerrain();
-
 	renderPlatform();
-
 	renderLaser();
-
 	renderSurface();
 }
 
 void RenderWidget::initializeGL() {
 	initializeOpenGLFunctions();
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_LIGHTING);
-	//glEnable(GL_LIGHT0);
-	//glEnable(GL_NORMALIZE);
 	glShadeModel(GL_SMOOTH);
-
 	m_initialized = true;
 }
 

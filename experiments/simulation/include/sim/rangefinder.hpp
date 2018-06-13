@@ -29,6 +29,9 @@ private:
 	Terrain* m_terrain;
 	Eigen::Vector3d m_position;
 	Eigen::Vector3d m_direction;
+	Eigen::Vector3d m_prevPosition;  ///<! These are kept to interpolate between the last position and the current one.
+	Eigen::Vector3d m_prevDirection; ///<! These are kept to interpolate between the last position and the current one.
+	double m_lastTime;               ///<! Time of the last request for ranges.
 
 public:
 	RangeBridge();
@@ -40,6 +43,16 @@ public:
 	 * @return The distance from laser to target.
 	 */
 	double getRange();
+
+	/**
+	 * Calculate the interpolated ranges and times between the current
+	 * time and the last request.
+	 *
+	 * @param pulseCount The number of pulses per second.
+	 * @param ranges A vector to hold the interpolated ranges.
+	 * @param times A vector to hold the interpolated times.
+	 */
+	void getInterpRanges(int pulseCount, std::vector<double>& ranges, std::vector<double>& times);
 
 	/**
 	 * Set the laser position and direction for the next range retrieval.

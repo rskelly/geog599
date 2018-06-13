@@ -9,10 +9,11 @@
 #include <iostream>
 
 #include "uav.hpp"
-
+#include "util.hpp"
 #include "sim/gimbal.hpp"
 
 using namespace uav::sim;
+using namespace uav::util;
 
 /**
  * Updates the gimbal's dynamic orientation in a separate thread.
@@ -21,23 +22,36 @@ using namespace uav::sim;
  * @param orientation The gimbal's dynamic orientation vector (Euler angles).
  */
 void updateGimbal(Eigen::Vector3d* orientation, bool* running) {
-	double t = 0;
+	double t = uavtime();
 	while(*running) {
-		double a = std::sin(t += 0.05) * (PI / 4);
-		//std::cerr << "gimbal angle: " << a << "\n";
+		double t0 = uavtime();
+		// Every second, performs a full rotation of 2PI, with a +-20 degree sweep.
+		double a = std::sin((t0 - t) * PI * 2) * (PI / 9);
 		(*orientation)[2] = a; // around z-axis (side to side)
-		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(10));
+		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(100));
 	}
 }
 
 SinGimbal::SinGimbal(double sweepAngle, double sweepFrequency) :
-	m_position(Eigen::Vector3d(0, 0, 0)), // 2cm down
-	m_running(true),
+	m_position(Eigen::Vector3d(0, 0, -2)), // 2cm down
+	m_running(false),
 	m_sweepAngle(sweepAngle), m_sweepFrequency(sweepFrequency) {
-
-	m_thread = std::thread(updateGimbal, &m_orientation, &m_running);
 }
 
+void SinGimbal::start() {
+	if(!m_running) {
+		m_running = true;
+		m_thread = std::thread(updateGimbal, &m_orientation, &m_running);
+	}
+}
+
+void SinGimbal::stop() {
+	if(m_running) {
+		m_running = false;
+		if(m_thread.joinable())
+			m_thread.join();
+	}
+}
 void SinGimbal::setOrientation(const Eigen::Vector3d& orientation) {
 	m_orientation = orientation;
 }
@@ -71,6 +85,5 @@ const Eigen::Vector3d& SinGimbal::staticPosition() const {
 }
 
 SinGimbal::~SinGimbal() {
-	m_running = false;
-	m_thread.join();
+	stop();
 }

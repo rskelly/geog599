@@ -48,6 +48,10 @@ public:
 	 */
 	SinGimbal(double sweepAngle = PI / 2, double sweepFrequency = 1);
 
+	void start();
+
+	void stop();
+
 	void setOrientation(const Eigen::Vector3d& orientation);
 
 	const Eigen::Vector3d& orientation() const;

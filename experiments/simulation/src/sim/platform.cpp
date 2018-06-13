@@ -120,6 +120,14 @@ Platform::Platform() :
 	m_rotPoisson.setMean(1000);
 }
 
+void Platform::start() {
+	m_gimbal->start();
+}
+
+void Platform::stop() {
+	m_gimbal->stop();
+}
+
 void Platform::update(double time) {
 
 	Eigen::Vector3d Pp(m_platformState.position());

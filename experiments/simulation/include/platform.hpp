@@ -211,6 +211,16 @@ public:
 	virtual const uav::RangefinderState& rangefinderState() const = 0;
 
 	/**
+	 * Start the platform and any services or devices it carries.
+	 */
+	virtual void start() = 0;
+
+	/**
+	 * Stop the platform and any services or devices it carries.
+	 */
+	virtual void stop() = 0;
+
+	/**
 	 * The update method is the primary driver of the Platform.
 	 * The update method may be called from without or within,
 	 * but it must be implemented to drive the Platform's
