@@ -27,16 +27,19 @@ RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
 	m_initialized(false),
 	m_showTerrain(true),
-	m_fov(8),
+	m_altDown(false),
 	m_width(0), m_height(0),
 	m_mouseX(0), m_mouseY(0),
 	m_rotX(0), m_rotY(0),
+	m_origX(0), m_origY(0),
 	m_eyeDist(5),
 	m_terrain(nullptr),
 	m_platform(nullptr),
 	m_surface(nullptr) {
 
 	m_eyePos << m_eyeDist, 0, 0;
+
+	setFocusPolicy(Qt::FocusPolicy::ClickFocus);
 }
 
 void RenderWidget::showTerrain(bool show) {
@@ -63,9 +66,13 @@ void RenderWidget::paintGL() {
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+	// Need to rotate the translation according to the eye position.
+	double eyeEngleZ = uav::util::angle(m_eyePos[0], m_eyePos[1]);
+	Eigen::Matrix3d rot = uav::util::rotateZ(eyeEngleZ);
+	Eigen::Vector3d orig = rot * Eigen::Vector3d(m_origX, m_origY, 0);
 	// The eye position needs to be reversed from looking out from origin to looking back to origin.
 	Eigen::Vector3d eyePos = m_eyePos * -1;
-	gluLookAt(eyePos[0], eyePos[1], eyePos[2], 0, -0.25, 0, 0, 0, 1);
+	gluLookAt(eyePos[0], eyePos[1], eyePos[2], orig[0], orig[1], 0, 0, 0, 1);
 
 	glEnable(GL_COLOR_MATERIAL);
 
@@ -234,9 +241,14 @@ void RenderWidget::renderSurface() {
 
 }
 
-void RenderWidget::rotate(double x, double y) {
-	m_rotX = std::max(-1.0, std::min(1.0, m_rotX + x));
-	m_rotY = std::max(-1.0, std::min(1.0, m_rotY + y));
+void RenderWidget::rotate(double dx, double dy) {
+	m_rotX = std::max(-1.0, std::min(1.0, m_rotX + dx));
+	m_rotY = std::max(-1.0, std::min(1.0, m_rotY + dy));
+}
+
+void RenderWidget::translate(double dx, double dy) {
+	m_origX = std::max(-1.0, std::min(1.0, m_origX + dx));
+	m_origY = std::max(-1.0, std::min(1.0, m_origY + dy));
 }
 
 void RenderWidget::zoom(double delta) {
@@ -244,6 +256,22 @@ void RenderWidget::zoom(double delta) {
 		m_eyeDist += 0.1;
 	} else if(delta < 0) {
 		m_eyeDist -= 0.1;
+	}
+}
+
+void RenderWidget::keyPressEvent(QKeyEvent* evt) {
+	if(evt->type() == QEvent::KeyPress) {
+		QKeyEvent* kevt = dynamic_cast<QKeyEvent*>(evt);
+		if(kevt->key() == Qt::Key_Shift)
+			m_altDown = true;
+	}
+}
+
+void RenderWidget::keyReleaseEvent(QKeyEvent* evt) {
+	if(evt->type() == QEvent::KeyRelease) {
+		QKeyEvent* kevt = dynamic_cast<QKeyEvent*>(evt);
+		if(kevt->key() == Qt::Key_Shift)
+			m_altDown = false;
 	}
 }
 
@@ -256,7 +284,11 @@ bool RenderWidget::event(QEvent* evt) {
 		QMouseEvent* mevt = dynamic_cast<QMouseEvent*>(evt);
 		int mx = mevt->globalX();
 		int my = mevt->globalY();
-		rotate((double) (mx - m_mouseX) / width(), (double) (my - m_mouseY) / height());
+		if(m_altDown) {
+			translate((double) (mx - m_mouseX) / width(), (double) (my - m_mouseY) / height());
+		} else {
+			rotate((double) (mx - m_mouseX) / width(), (double) (my - m_mouseY) / height());
+		}
 		m_mouseX = mx;
 		m_mouseY = my;
 	} else if(evt->type() == QEvent::Wheel) {

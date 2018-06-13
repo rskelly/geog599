@@ -118,6 +118,14 @@ Eigen::Vector3d matrixToEuler(const Eigen::Matrix3d& mtx);
 Eigen::Vector3d eulerToVector(const Eigen::Vector3d& euler);
 
 /**
+ * Calculate the angle of the vector given by x and y, in radians.
+ *
+ * @param x The x-component of the vector.
+ * @param y The y-component of the vector.
+ * @return The angle of the vector given by x and y, in radians.
+ */
+double angle(double x, double y);
+/**
  * Prints a matrix to stdout.
  */
 void printMatrix(const std::string& name, const Eigen::MatrixXd& mtx);

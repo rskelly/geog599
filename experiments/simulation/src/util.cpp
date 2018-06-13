@@ -142,6 +142,10 @@ Eigen::Vector3d uav::util::eulerToVector(const Eigen::Vector3d& euler) {
 	return mtx * v;
 }
 
+double uav::util::angle(double x, double y) {
+	return std::atan2(x, y);
+}
+
 void uav::util::printMatrix(const std::string& name, const Eigen::MatrixXd& mtx) {
 	std::cerr << name << "\n" << mtx << "\n";
 }

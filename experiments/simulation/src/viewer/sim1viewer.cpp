@@ -44,6 +44,7 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 
 	// Set the terrain file on the text box from the settings map.
 	txtTerrainFile->setText(QString::fromStdString(m_settings[K_TERRAIN_FILE]));
+	// Show whether terrain will be rendered.
 	chkShowTerrain->setChecked(m_settings[K_SHOW_TERRAIN] == "true");
 
 	// Connect events.
@@ -55,19 +56,6 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(chkShowInfo, SIGNAL(toggled(bool)), SLOT(chkShowInfoChanged(bool)));
     connect(chkShowSettings, SIGNAL(toggled(bool)), SLOT(chkShowSettingsChanged(bool)));
     connect(chkShowTerrain, SIGNAL(toggled(bool)), SLOT(chkShowTerrainChanged(bool)));
-}
-
-void Sim1Viewer::chkShowTerrainChanged(bool show) {
-	glPanel->showTerrain(show);
-	m_settings[K_SHOW_TERRAIN] = show ? "true" : "false";
-}
-
-void Sim1Viewer::chkShowInfoChanged(bool checked) {
-	frmInfo->setVisible(checked);
-}
-
-void Sim1Viewer::chkShowSettingsChanged(bool checked) {
-	frmSettings->setVisible(checked);
 }
 
 void Sim1Viewer::setSimulator(Simulator& sim) {
@@ -99,6 +87,19 @@ void Sim1Viewer::showForm() {
 }
 
 // slots
+
+void Sim1Viewer::chkShowTerrainChanged(bool show) {
+	glPanel->showTerrain(show);
+	m_settings[K_SHOW_TERRAIN] = show ? "true" : "false";
+}
+
+void Sim1Viewer::chkShowInfoChanged(bool checked) {
+	frmInfo->setVisible(checked);
+}
+
+void Sim1Viewer::chkShowSettingsChanged(bool checked) {
+	frmSettings->setVisible(checked);
+}
 
 void Sim1Viewer::terrainFileChanged(QString file) {
 	m_settings[K_TERRAIN_FILE] = file.toStdString();

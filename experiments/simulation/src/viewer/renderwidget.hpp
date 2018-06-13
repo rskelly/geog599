@@ -24,10 +24,11 @@ class RenderWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 private:
 	bool m_initialized;
 	bool m_showTerrain;					// Whether terrain should be rendered.
-	double m_fov; 						// Field of view.
+	bool m_altDown;						// True if the alt key is pressed.
 	int m_width, m_height; 				// Widget dimensions.
 	int m_mouseX, m_mouseY; 			// Position of mouse on mouse button press.
 	double m_rotX, m_rotY; 				// Proportion of angle to rotate eye vector (-1 - 1).
+	double m_origX, m_origY;			// Origin of view.
 	double m_eyeDist; 					// Distance of eye from origin.
 	uav::sim::Terrain* m_terrain;		// Pointer to the terrain object. (Not owned.)
 	uav::Platform* m_platform;			// Pointer to the platform object. (Not owned.)
@@ -63,6 +64,14 @@ private:
 	void rotate(double dx, double dy);
 
 	/**
+	 * Translate the origin of the view by the specified amount.
+	 *
+	 * @param dx Translate in x.
+	 * @param dy Translate in y.
+	 */
+	void translate(double dx, double dy);
+
+	/**
 	 * Zoom by the specified amount. Adjusts the eye distance from the origin.
 	 *
 	 * @param z Amount by which to adjust the eye distance.
@@ -74,7 +83,8 @@ protected:
 	void paintGL();
 	void initializeGL();
 	bool event(QEvent* evt);
-
+	void keyPressEvent(QKeyEvent* evt);
+	void keyReleaseEvent(QKeyEvent* evt);
 public:
 
 	RenderWidget(QWidget* parent);
