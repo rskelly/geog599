@@ -21,6 +21,7 @@
 #include "util.hpp"
 
 #define K_TERRAIN_FILE "terrainFile"
+#define K_SHOW_TERRAIN "showTerrain"
 
 using namespace uav::viewer;
 using namespace uav::sim;
@@ -35,6 +36,7 @@ Sim1Viewer::Sim1Viewer() :
 	// Load the settings from the local store.
 	QSettings settings("sim1", "dijital.ca");
 	m_settings[K_TERRAIN_FILE] = settings.value(K_TERRAIN_FILE, "").toString().toStdString();
+	m_settings[K_SHOW_TERRAIN] = settings.value(K_SHOW_TERRAIN, "true").toString().toStdString();
 }
 
 void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
@@ -42,6 +44,7 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 
 	// Set the terrain file on the text box from the settings map.
 	txtTerrainFile->setText(QString::fromStdString(m_settings[K_TERRAIN_FILE]));
+	chkShowTerrain->setChecked(m_settings[K_SHOW_TERRAIN] == "true");
 
 	// Connect events.
 	connect(txtTerrainFile, SIGNAL(textEdited(QString)), this, SLOT(terrainFileChanged(QString)));
@@ -51,6 +54,12 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(btnStop, SIGNAL(clicked()), this, SLOT(btnStopClicked()));
     connect(chkShowInfo, SIGNAL(toggled(bool)), SLOT(chkShowInfoChanged(bool)));
     connect(chkShowSettings, SIGNAL(toggled(bool)), SLOT(chkShowSettingsChanged(bool)));
+    connect(chkShowTerrain, SIGNAL(toggled(bool)), SLOT(chkShowTerrainChanged(bool)));
+}
+
+void Sim1Viewer::chkShowTerrainChanged(bool show) {
+	glPanel->showTerrain(show);
+	m_settings[K_SHOW_TERRAIN] = show ? "true" : "false";
 }
 
 void Sim1Viewer::chkShowInfoChanged(bool checked) {

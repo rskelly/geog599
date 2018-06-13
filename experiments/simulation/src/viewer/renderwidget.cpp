@@ -26,6 +26,7 @@ using namespace uav::viewer;
 RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
 	m_initialized(false),
+	m_showTerrain(true),
 	m_fov(8),
 	m_width(0), m_height(0),
 	m_mouseX(0), m_mouseY(0),
@@ -36,6 +37,10 @@ RenderWidget::RenderWidget(QWidget* parent) :
 	m_surface(nullptr) {
 
 	m_eyePos << m_eyeDist, 0, 0;
+}
+
+void RenderWidget::showTerrain(bool show) {
+	m_showTerrain = show;
 }
 
 void RenderWidget::resizeGL(int w, int h) {
@@ -54,7 +59,7 @@ void RenderWidget::paintGL() {
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(m_fov, (float) m_width / m_height, 0.01, 100.0);
+	gluPerspective(45, (float) m_width / m_height, 0.01, 100.0);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -156,6 +161,8 @@ void RenderWidget::renderPlatform() {
 }
 
 void RenderWidget::renderTerrain() {
+	if(!m_showTerrain)
+		return;
 
 	glBegin(GL_TRIANGLES);
 

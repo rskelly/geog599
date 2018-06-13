@@ -40,6 +40,7 @@ public:
 public slots:
 	void chkShowInfoChanged(bool checked);
 	void chkShowSettingsChanged(bool checked);
+	void chkShowTerrainChanged(bool checked);
 	void terrainFileChanged(QString file);
 	void btnTerrainFileClicked();
 	void btnCloseFormClicked();
