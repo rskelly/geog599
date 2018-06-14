@@ -88,6 +88,7 @@ public:
 class Rangefinder : public uav::Rangefinder {
 private:
 	uav::util::Poisson m_poisson;
+	uav::util::Gaussian m_gauss;
 	uav::RangefinderObserver* m_obs;
 	uav::sim::RangeBridge* m_bridge;
 	double m_pulseFreq;

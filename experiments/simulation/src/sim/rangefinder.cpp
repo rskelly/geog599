@@ -105,6 +105,9 @@ Rangefinder::Rangefinder() :
 	m_pulseFreq(5.0),
 	m_nextTime(0),
 	m_running(false) {
+
+	m_gauss.setMean(0);
+	m_gauss.setStdDev(0.1);
 }
 
 void Rangefinder::setObserver(uav::RangefinderObserver* obs) {
@@ -132,7 +135,7 @@ void Rangefinder::setPulseFrequency(double freq) {
 }
 
 void Rangefinder::generatePulse() {
-	m_obs->rangeUpdate(this, new Range(m_bridge->getRange(), uavtime()));
+	m_obs->rangeUpdate(this, new Range(m_bridge->getRange()  + m_gauss.next(), uavtime()));
 }
 
 int Rangefinder::getRanges(std::vector<uav::Range*>& ranges) {

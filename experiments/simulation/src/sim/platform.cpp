@@ -138,12 +138,12 @@ void Platform::stop() {
 void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {
 	if(rangefinder == m_rangefinder) {
 		if(range->valid()) {
-			Eigen::Vector3d point = (m_rangefinderState.laserDirection() * (range->range() + __gauss.next())) + m_rangefinderState.laserPosition();
+			Eigen::Vector3d point = (m_rangefinderState.laserDirection() * range->range()) + m_rangefinderState.laserPosition();
 			m_surface->addPoint(point, range->time());
 		}
 	} else if(rangefinder == m_nadirRangefinder) {
 		if(range->valid()) {
-			m_platformState.setAltitude(range->range() + __gauss.next());
+			m_platformState.setAltitude(range->range());
 			m_platformState.setAltitudeTime(range->time());
 		}
 	}
