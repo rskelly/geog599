@@ -52,10 +52,12 @@ Gaussian::Gaussian(double mean, double stddev) {
 
 void Gaussian::setStdDev(double stddev) {
 	m_stddev = stddev;
+	m_distribution.param(std::normal_distribution<double>::param_type{m_mean, m_stddev});
 }
 
 void Gaussian::setMean(double mean) {
 	m_mean = mean;
+	m_distribution.param(std::normal_distribution<double>::param_type{m_mean, m_stddev});
 }
 
 double Gaussian::next() {
