@@ -110,6 +110,9 @@ const Eigen::Vector3d& RangefinderState::laserDirection() const {
 	return m_direction;
 }
 
+// Random noise, S.D 1cm.
+uav::util::Gaussian __gauss(0, 0.01);
+
 Platform::Platform() :
 	m_gimbal(nullptr),
 	m_rangefinder(nullptr),
@@ -123,22 +126,24 @@ Platform::Platform() :
 void Platform::start() {
 	m_gimbal->start();
 	m_rangefinder->start();
+	m_nadirRangefinder->start();
 }
 
 void Platform::stop() {
 	m_gimbal->stop();
 	m_rangefinder->stop();
+	m_nadirRangefinder->stop();
 }
 
 void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {
 	if(rangefinder == m_rangefinder) {
 		if(range->valid()) {
-			Eigen::Vector3d point = (m_rangefinderState.laserDirection() * range->range()) + m_rangefinderState.laserPosition();
+			Eigen::Vector3d point = (m_rangefinderState.laserDirection() * (range->range() + __gauss.next())) + m_rangefinderState.laserPosition();
 			m_surface->addPoint(point, range->time());
 		}
 	} else if(rangefinder == m_nadirRangefinder) {
 		if(range->valid()) {
-			m_platformState.setAltitude(range->range());
+			m_platformState.setAltitude(range->range() + __gauss.next());
 			m_platformState.setAltitudeTime(range->time());
 		}
 	}
@@ -220,6 +225,7 @@ uav::Gimbal* Platform::gimbal() const {
 
 void Platform::setRangefinder(uav::Rangefinder* rangefinder) {
 	m_rangefinder = rangefinder;
+	m_rangefinder->setObserver(this);
 }
 
 uav::Rangefinder* Platform::rangefinder() const {
@@ -228,6 +234,7 @@ uav::Rangefinder* Platform::rangefinder() const {
 
 void Platform::setNadirRangefinder(uav::Rangefinder* rangefinder) {
 	m_nadirRangefinder = rangefinder;
+	m_nadirRangefinder->setObserver(this);
 }
 
 uav::Rangefinder* Platform::nadirRangefinder() const {

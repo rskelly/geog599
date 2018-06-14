@@ -44,9 +44,13 @@ In the scientific remote-sensing field, where the execution of an aerial survey 
 
 Naturally, there are compromises to be made between traditional aerial remote-sensing and the use of UAVs. UAVs tend to be limited to low elevations, short flight times and small site sizes. The instrumentation -- specifically multi- and hyperspectral imagers and LiDAR -- has only recently achieved a level of quality sufficient for research and form factor small and light enough for inclusion on a UAV. Additionally, many of these instruments are designed for uses other than remote sensing, in particular LiDAR devices, which are often designed for the automotive market. However, with the drawbacks come advantages. The level of detail attainable with a low-elevation UAV survey would be impossible with a traditional aerial campaign and the cost, danger and disruption of a traditional campaign could be prohibitive.
 
-Traditional aerial surveys have the advantage that, at typical survey elevations of $\SI{250}\m-\SI{1000}\m$, variations in terrain elevation are insignificant, relative to the overall elevation -- except in extreme cases, such as alpine terrain -- with minimal scale distortion in the resulting imagery. Low-elevation UAV surveys, which may take place at $\SI{10}\m-\SI{50}\m$ elevation above the surface, encounter much larger relative variations in terrain elevation and so must follow the terrain, both to maintain the scale and quality of the data they collect, and to avoid colliding with it. In addition, because there are many structures, both natural and manmade, that may project above the elevation of the UAV's trajectory, the vehicle must have the ability to detect and avoid hazards. Manned aircraft, with an alert pilot and high elevation, rarely face such obstacles.
+Traditional aerial surveys have the advantage that, at typical survey elevations of $\SI{250}\m-\SI{1000}\m$, variations in terrain relief and vegetation canopy height are insignificant relative to the overall elevation -- except in extreme cases, such as alpine terrain -- with minimal scale distortion in the resulting imagery. Low-elevation UAV surveys, which may take place at $\SI{10}\m-\SI{50}\m$ elevation above the surface, encounter much larger relative variations in relief and so must follow the terrain, both to maintain the scale and quality of the data they collect, and to avoid colliding with it. In addition, because there are many structures, both natural and manmade, that may project above the elevation of the UAV's trajectory, the vehicle must have the ability to detect and avoid hazards. Manned aircraft, with an alert pilot and high elevation, rarely face such obstacles.
 
-So, in order to use a small, low-elevation UAV for remote sensing, the vehicle must be capable of maintaining a constant elevation of flight above the terrain. Because the pilot cannot be present to monitor the terrain ahead of the vehicle, make desicions about what the terrain \emph{is} (the forest canopy? the ground?) and whether it should be followed, calculate a trajectory and adjust the altitude to follow it, an autonomous terrain-following control system is required.
+The \emph{quality} of remotely-sensed data is defined in many ways. For example, the density of a LiDAR point cloud contributes to the statistical power of any statistical derivatives, so the consistency of the point density across the campaign is desireable. Hyperspectral imagery can be affected by variations in atmospheric attenuation due to variations in platorm elevation, scale distortions of various kinds, and signal-to-noise fluctuations due to variations in dwell time. As the instruments are generally fixed to the platform, these characteristics must be maintained by through careful management of the vehicle's vertical trajectory.
+
+An important aspect of data quality is time-of-collection. A hyperspectral survey is ideally conducted during solar noon under stable conditions, but interrupting the survey to change batteries may delay the completion of the survey or limit the size of the study site. The vertical trajectory has a direct effect on power consumption and flight duration, so the calculation of the trajectory must take power consumption into account.
+
+So, in order to use a small, low-elevation UAV for remote sensing, the vehicle must be capable of maintaining a relatively constant elevation of flight above the terrain, and must do this in a manner that maximizes image quality while minimizing the consumption of power. Because the pilot cannot be present to monitor the terrain ahead of the vehicle, make desicions about what the terrain \emph{is} (the forest canopy? the ground?) and whether it should be followed, calculate a trajectory and adjust the altitude to follow it, an autonomous terrain-following control system is required.
 
 The justification, design and construction of such a system touches on many different fields in remote-sensing, earth science and engineering. The principle topics covered here are as follows:
 
@@ -56,11 +60,11 @@ The justification, design and construction of such a system touches on many diff
 \begin{enumerate}
 \item Data Quality
 \end{enumerate}
-\item Trajectory Estimation
 \item Surface Reconstruction
 	\begin{enumerate}
 	\item Computational Geometry
 	\end{enumerate}
+\item Trajectory Estimation
 \item Control Systems
 	\begin{enumerate}
 	\item Kinematics and Dynamics
@@ -69,7 +73,7 @@ The justification, design and construction of such a system touches on many diff
 \end{enumerate}
 
 
-This review will summarize research into a variety of disparate fields, insofar as they contribute to the development of the terrain-following system. This will include academic research into the topics previously discussed, as well as books and more informal sources of insight, where available.
+This review will summarize research into a variety of disparate fields, insofar as they contribute to the development of the terrain-following system.
 
 
 \section{Ethics}
@@ -92,7 +96,7 @@ This research considers two types of remote sensing instruments typically used b
 
 \subsection{Imaging Spectrometry}
 
-Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Geotz1985}. This is particularly important to researchers in agriculture, minerology and other fields where detection of extremely narrow features is necessary \cite{Goetz1985}.
+Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Goetz1985}. This is particularly important to researchers in agriculture, minerology and other fields where detection of extremely narrow features is necessary \cite{Goetz1985}.
 
 The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. In a pushbroom scanner, a single across-track-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a swath perpendicular to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity in all bands over an \emph{integration time}. During the integration time, all information captured by the element is saved to a single picture element, or pixel, which spatially referenced to the target itself. 
 
