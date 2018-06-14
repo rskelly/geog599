@@ -41,6 +41,29 @@ double uav::util::uavtime() {
 }
 
 
+
+Gaussian::Gaussian() : Gaussian(0, 1) {}
+
+Gaussian::Gaussian(double mean, double stddev) {
+	setMean(mean);
+	setStdDev(stddev);
+	m_distribution.param(std::normal_distribution<double>::param_type{m_mean, m_stddev});
+}
+
+void Gaussian::setStdDev(double stddev) {
+	m_stddev = stddev;
+}
+
+void Gaussian::setMean(double mean) {
+	m_mean = mean;
+}
+
+double Gaussian::next() {
+	return m_distribution(m_gen);
+}
+
+
+
 static double r2d = PI / 180.0;
 static double d2r = 180.0 / PI;
 

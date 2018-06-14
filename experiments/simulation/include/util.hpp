@@ -39,6 +39,31 @@ public:
 };
 
 /**
+ * Provides a simple method for retrieving a Gaussian-distributed
+ * value given a mean.
+ */
+class Gaussian {
+private:
+	double m_mean;
+	double m_stddev;
+	std::mt19937 m_gen;
+	std::normal_distribution<double> m_distribution;
+
+public:
+
+	Gaussian();
+
+	Gaussian(double mean, double stddev);
+
+	void setMean(double mean);
+
+	void setStdDev(double stddev);
+
+	double next();
+
+};
+
+/**
  * Get the current time in UTC seconds from epoch.
  *
  * @return The current time in UTC seconds from epoch.
