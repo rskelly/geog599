@@ -21,6 +21,7 @@ private:
 	uav::Platform* m_platform;
 	std::thread m_thread;
 	bool m_running;
+	double m_lastTickTime;
 
 public:
 	Controller();
