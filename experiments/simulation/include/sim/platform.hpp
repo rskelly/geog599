@@ -64,6 +64,7 @@ public:
 	double altitude() const;
 
 	double altitudeTime() const;
+
 };
 
 /**
@@ -104,7 +105,7 @@ public:
  * A platform simulation. The platform is roughly autonomous, so everything
  * about its state originates here, other than the instruction to update.
  */
-class Platform : public uav::Platform {
+class Platform : public uav::Platform,	public uav::RangefinderObserver {
 private:
 	uav::sim::PlatformState m_platformState;
 	uav::sim::RangefinderState m_rangefinderState;
@@ -125,6 +126,8 @@ public:
 	void start();
 
 	void stop();
+
+	void rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range);
 
 	/**
 	 * Update the state of the platform. This is the "tick" that

@@ -5,8 +5,8 @@
  *      Author: rob
  */
 
-#include <time.h>
-#include <sys/time.h>
+#include <chrono>
+#include <thread>
 
 #include "sim/rangefinder.hpp"
 #include "util.hpp"
@@ -90,14 +90,49 @@ Terrain* RangeBridge::terrain() {
 	return m_terrain;
 }
 
+
+void __runRangefinder(Rangefinder* rangefinder, double freq, bool* running) {
+	int sleep = 1.0 / freq * 1000000.0;
+	while(*running) {
+		rangefinder->generatePulse();
+		std::this_thread::sleep_for(std::chrono::microseconds(sleep));
+	}
+}
+
 Rangefinder::Rangefinder() :
+	m_obs(nullptr),
 	m_bridge(nullptr),
 	m_pulseFreq(5.0),
-	m_nextTime(0) {
+	m_nextTime(0),
+	m_running(false) {
 }
+
+void Rangefinder::setObserver(uav::RangefinderObserver* obs) {
+	m_obs = obs;
+}
+
+void Rangefinder::start() {
+	if(!m_running) {
+		m_running = true;
+		m_thread = std::thread(__runRangefinder, this, m_pulseFreq, &m_running);
+	}
+}
+
+void Rangefinder::stop() {
+	if(m_running) {
+		m_running = false;
+		if(m_thread.joinable())
+			m_thread.join();
+	}
+}
+
 
 void Rangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
+}
+
+void Rangefinder::generatePulse() {
+	m_obs->rangeUpdate(this, new Range(m_bridge->getRange(), uavtime()));
 }
 
 int Rangefinder::getRanges(std::vector<uav::Range*>& ranges) {

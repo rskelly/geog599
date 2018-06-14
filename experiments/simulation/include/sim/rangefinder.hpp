@@ -9,6 +9,7 @@
 #define INCLUDE_SIM_RANGEFINDER_HPP_
 
 #include <string>
+#include <thread>
 
 #include <Eigen/Core>
 #include <gdal_priv.h>
@@ -87,9 +88,12 @@ public:
 class Rangefinder : public uav::Rangefinder {
 private:
 	uav::util::Poisson m_poisson;
-	RangeBridge* m_bridge;
+	uav::RangefinderObserver* m_obs;
+	uav::sim::RangeBridge* m_bridge;
 	double m_pulseFreq;
 	double m_nextTime;
+	bool m_running;
+	std::thread m_thread;
 
 	/**
 	 * Compute the measured range when the scanner is at the given angle
@@ -108,6 +112,11 @@ public:
 	Rangefinder();
 
 	/**
+	 * Generate a pulse.
+	 */
+	void generatePulse();
+
+	/**
 	 * Set the measurement frequency. This should have noise added.
 	 *
 	 * @param The frequency as measurements per second.
@@ -120,14 +129,20 @@ public:
 	 *
 	 * @param bridge A RangeBridge instance.
 	 */
-	void setRangeBridge(RangeBridge* bridge);
+	void setRangeBridge(uav::sim::RangeBridge* bridge);
 
 	/**
 	 * Return a pointer to the RangeBridge instance.
 	 *
 	 * @return A pointer to the RangeBridge instance.
 	 */
-	RangeBridge* rangeBridge() const;
+	uav::sim::RangeBridge* rangeBridge() const;
+
+	void setObserver(uav::RangefinderObserver* obs);
+
+	void start();
+
+	void stop();
 
 	int getRanges(std::vector<uav::Range*>& ranges);
 

@@ -43,6 +43,25 @@ public:
 	virtual ~Range() {}
 };
 
+class Rangefinder;
+
+/**
+ * Implemented by classes that wish to listen for rangefinder events.
+ */
+class RangefinderObserver {
+public:
+	/**
+	 * The implementor will be notified of a range result from the given
+	 * rangefinder.
+	 *
+	 * @param rangefinder The Rangefinder that generated the Range.
+	 * @param range A Range.
+	 */
+	virtual void rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) = 0;
+
+	virtual ~RangefinderObserver() {}
+};
+
 /**
  * This interface represents an object that emits range measurements. The current
  * understanding of this device is that it knows the return distance and time of
@@ -64,6 +83,23 @@ public:
 	 */
 	virtual int getRanges(std::vector<uav::Range*>& ranges) = 0;
 
+	/**
+	 * Set a pointer to an object that will listen to events from this
+	 * Rangefinder.
+	 *
+	 * @param obs A RangefinderObserver.
+	 */
+	virtual void setObserver(RangefinderObserver* obs) = 0;
+
+	/**
+	 * Start the rangefinder.
+	 */
+	virtual void start() = 0;
+
+	/**
+	 * Stop the rangefinder.
+	 */
+	virtual void stop() = 0;
 
 	virtual ~Rangefinder() {}
 

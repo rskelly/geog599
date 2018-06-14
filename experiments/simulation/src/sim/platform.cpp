@@ -122,10 +122,27 @@ Platform::Platform() :
 
 void Platform::start() {
 	m_gimbal->start();
+	m_rangefinder->start();
 }
 
 void Platform::stop() {
 	m_gimbal->stop();
+	m_rangefinder->stop();
+}
+
+void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {
+	if(rangefinder == m_rangefinder) {
+		if(range->valid()) {
+			Eigen::Vector3d point = (m_rangefinderState.laserDirection() * range->range()) + m_rangefinderState.laserPosition();
+			m_surface->addPoint(point, range->time());
+		}
+	} else if(rangefinder == m_nadirRangefinder) {
+		if(range->valid()) {
+			m_platformState.setAltitude(range->range());
+			m_platformState.setAltitudeTime(range->time());
+		}
+	}
+	delete range;
 }
 
 void Platform::update(double time) {
@@ -167,6 +184,7 @@ void Platform::update(double time) {
 	// 4) Compute the laser orientation by adding the orientations. It passes through the laserPosition.
 
 	Eigen::Vector3d laserDir = eulerToVector(God + Gos + Po);
+	laserDir.normalize();
 
 	m_rangefinderState.setLaserPosition(laserPos);
 	m_rangefinderState.setLaserDirection(laserDir);
@@ -174,30 +192,10 @@ void Platform::update(double time) {
 	// Set the laser position for the range bridge, get the point and
 	// TODO: This will be wrong because all the ranges are using the same rotation/position.
 	dynamic_cast<uav::sim::Rangefinder*>(m_rangefinder)->rangeBridge()->setLaser(laserPos, laserDir);
-	std::vector<uav::Range*> ranges;
-	if(m_rangefinder->getRanges(ranges)) {
-		for(Range* range : ranges) {
-			if(range->valid()) {
-				Eigen::Vector3d point = (laserDir.normalized() * range->range()) + laserPos;
-				m_surface->addPoint(point, range->time());
-			}
-			delete range;
-		}
-		ranges.clear();
-	}
 
 	// Get the surface elevation; use the last returned range.
 	// TODO: This will be wrong because all the ranges are using the same rotation/position.
 	dynamic_cast<uav::sim::Rangefinder*>(m_nadirRangefinder)->rangeBridge()->setLaser(Pp, Eigen::Vector3d(0, 0, -1));
-	if(m_nadirRangefinder->getRanges(ranges)) {
-		const Range* last = ranges[ranges.size() - 1];
-		m_platformState.setAltitude(last->range());
-		m_platformState.setAltitudeTime(last->time());
-		for(Range* range : ranges)
-			delete range;
-		ranges.clear();
-	}
-
 }
 
 void Platform::setInitialPlatformState(const uav::sim::PlatformState& state) {
