@@ -18,6 +18,50 @@
 namespace uav {
 namespace sim {
 
+
+class PlatformControlInput : public uav::PlatformControlInput {
+private:
+	double m_altitude;
+public:
+	PlatformControlInput() :
+		m_altitude(std::numeric_limits<double>::quiet_NaN()) {
+	}
+
+	/**
+	 * Set the altitude.
+	 *
+	 * @param altitude The altitude.
+	 */
+	void setAltitude(double altitude) {
+		m_altitude = altitude;
+	}
+
+	/**
+	 * Get the altitude.
+	 *
+	 * @return The altitude.
+	 */
+	double altitude() const {
+		return m_altitude;
+	}
+	/**
+	 * Merge the input into the current input.
+	 *
+	 * @param input A PlatformControlInput.
+	 */
+	void operator<<(const uav::PlatformControlInput& input) {
+		setAltitude(input.altitude());
+	}
+
+	/**
+	 * Reset to the initial state.
+	 */
+	void reset() {
+		m_altitude = std::numeric_limits<double>::quiet_NaN();
+	}
+};
+
+
 class PlatformState : public uav::PlatformState {
 private:
 	Eigen::Vector3d m_orientation;   ///<! The orientation matrix. Euler angles.
@@ -86,21 +130,6 @@ public:
 	const Eigen::Vector3d& laserDirection() const;
 };
 
-class PlatformControlInput : public uav::PlatformControlInput {
-private:
-	double m_altitude;
-public:
-	PlatformControlInput() :
-		m_altitude(std::numeric_limits<double>::quiet_NaN()) {
-	}
-	void setAltitude(double altitude) {
-		m_altitude = altitude;
-	}
-	double altitude() const {
-		return m_altitude;
-	}
-};
-
 /**
  * A platform simulation. The platform is roughly autonomous, so everything
  * about its state originates here, other than the instruction to update.
@@ -110,6 +139,7 @@ private:
 	uav::sim::PlatformState m_platformState;
 	uav::sim::RangefinderState m_rangefinderState;
 	uav::sim::RangefinderState m_nadirRangefinderState;
+	uav::sim::PlatformControlInput m_controlInput;
 
 	uav::util::Poisson m_posPoisson; ///<! Generator for Poisson values.
 	uav::util::Poisson m_rotPoisson; ///<! Generator for Poisson values.

@@ -18,13 +18,11 @@ void _run(Controller* controller, bool* running) {
 	double time = -1;
 	while(*running) {
 		double time0 = uavtime();
-		if(time == -1) {
-			time = time0;
-		} else {
+		if(time != -1) {
 			controller->tick(time0 - time);
-			time = time0;
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
+		time = time0;
 	}
 }
 
@@ -56,15 +54,15 @@ void Controller::setPlatform(uav::Platform* platform) {
 }
 
 void Controller::tick(double time) {
-	m_platform->update(time);
 	const uav::PlatformState& state = m_platform->platformState();
 	uav::sim::PlatformControlInput input;
-	// Check for a recent altitude measurement. If there is one, adjust.
 	if(state.altitude() != 10 && state.altitudeTime() > m_lastTickTime) {
+		// Check for a recent altitude measurement. If there is one, adjust.
 		input.setAltitude(10);
-		m_platform->setControlInput(input);
 	}
 	m_lastTickTime = time;
+	m_platform->setControlInput(input);
+	m_platform->update(time);
 }
 
 Controller::~Controller() {

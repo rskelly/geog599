@@ -118,12 +118,20 @@ public:
  */
 class PlatformControlInput {
 public:
+
 	/**
 	 * Set the target elevation of the platform.
 	 *
 	 * @param elevation The target elevation of the platform.
 	 */
 	virtual void setAltitude(double altitude) = 0;
+
+	/**
+	 * Get the target elevation of the platform.
+	 *
+	 * @return The target elevation of the platform.
+	 */
+	virtual double altitude() const = 0;
 
 	virtual ~PlatformControlInput() {}
 };

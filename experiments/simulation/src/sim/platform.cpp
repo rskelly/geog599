@@ -110,8 +110,6 @@ const Eigen::Vector3d& RangefinderState::laserDirection() const {
 	return m_direction;
 }
 
-// Random noise, S.D 1cm.
-uav::util::Gaussian __gauss(0, 0.01);
 
 Platform::Platform() :
 	m_gimbal(nullptr),
@@ -154,6 +152,16 @@ void Platform::update(double time) {
 
 	Eigen::Vector3d Pp(m_platformState.position());
 	Eigen::Vector3d Po(m_platformState.orientation());
+
+	if(!std::isnan(m_controlInput.altitude())) {
+		std::cerr << "altitude " << m_controlInput.altitude() << ", " << m_platformState.altitude() << "\n";
+		Eigen::Vector3d pos(m_platformState.position());
+		std::cerr << "pos 1: " << pos << "\n";
+		pos[2] += (m_controlInput.altitude() - m_platformState.altitude()) / 2.0;
+		std::cerr << "pos 2: " << pos << "\n";
+		m_platformState.setPosition(pos);
+	}
+	m_controlInput.reset();
 
 	const Eigen::Vector3d& lVel = m_platformState.linearVelocity();
 
@@ -254,12 +262,7 @@ const uav::PlatformState& Platform::platformState() const {
 }
 
 void Platform::setControlInput(const uav::PlatformControlInput& input) {
-	const uav::sim::PlatformControlInput& i = dynamic_cast<const uav::sim::PlatformControlInput&>(input);
-	if(!std::isnan(i.altitude())) {
-		Eigen::Vector3d pos(m_platformState.position());
-		pos[2] += (i.altitude() - m_platformState.altitude()) / 2.0;
-		m_platformState.setPosition(pos);
-	}
+	m_controlInput << input;
 }
 
 Platform::~Platform() {
