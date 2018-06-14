@@ -58,12 +58,14 @@ Simulator::Simulator() :
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
+	rangefinder->setPulseFrequency(100);
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
 	rb1->setTerrain(m_terrain);
 	Rangefinder* nadirRangefinder = new Rangefinder();
 	nadirRangefinder->setRangeBridge(rb1);
+	nadirRangefinder->setPulseFrequency(10);
 
 	// This is the surface reconstruction module.
 	DelaunaySurface* surface = new DelaunaySurface();
@@ -105,8 +107,9 @@ void Simulator::setTerrainFile(const std::string& file) {
 	double x = m_terrain->minx() + 10;
 	double y = m_terrain->miny() + m_terrain->height() / 2.0;
 
+	// Start the vehicle off at 10cm above the terrain.
 	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
-	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 10));
+	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 0.1));
 	m_platform->setInitialPlatformState(state);
 }
 
