@@ -29,7 +29,8 @@ void _run(Controller* controller, bool* running) {
 Controller::Controller() :
 		m_platform(nullptr),
 		m_running(false),
-		m_lastTickTime(0) {
+		m_lastTickTime(0),
+		m_lastAltitudeTime(0) {
 }
 
 void Controller::start() {
@@ -56,9 +57,10 @@ void Controller::setPlatform(uav::Platform* platform) {
 void Controller::tick(double time) {
 	const uav::PlatformState& state = m_platform->platformState();
 	uav::sim::PlatformControlInput input;
-	if(state.altitude() != 10 && state.altitudeTime() > m_lastTickTime) {
+	if(state.altitude() != 10 && state.altitudeTime() > m_lastAltitudeTime) {
 		// Check for a recent altitude measurement. If there is one, adjust.
 		input.setAltitude(10);
+		m_lastAltitudeTime = state.altitudeTime();
 	}
 	m_lastTickTime = time;
 	m_platform->setControlInput(input);

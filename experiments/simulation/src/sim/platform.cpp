@@ -154,14 +154,11 @@ void Platform::update(double time) {
 	Eigen::Vector3d Po(m_platformState.orientation());
 
 	if(!std::isnan(m_controlInput.altitude())) {
-		std::cerr << "altitude " << m_controlInput.altitude() << ", " << m_platformState.altitude() << "\n";
-		Eigen::Vector3d pos(m_platformState.position());
-		std::cerr << "pos 1: " << pos << "\n";
-		pos[2] += (m_controlInput.altitude() - m_platformState.altitude()) / 2.0;
-		std::cerr << "pos 2: " << pos << "\n";
-		m_platformState.setPosition(pos);
+		double adj = (m_controlInput.altitude() - m_platformState.altitude()) / 2.0;
+		Pp[2] += adj;
 	}
 	m_controlInput.reset();
+
 
 	const Eigen::Vector3d& lVel = m_platformState.linearVelocity();
 

@@ -28,7 +28,7 @@ void updateGimbal(Eigen::Vector3d* orientation, bool* running) {
 		// Every second, performs a full rotation of 2PI, with a +-20 degree sweep.
 		double a = std::sin((t0 - t) * PI * 2) * (PI / 9);
 		(*orientation)[2] = a; // around z-axis (side to side)
-		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(100));
+		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(10));
 	}
 }
 

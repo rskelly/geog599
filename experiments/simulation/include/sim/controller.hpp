@@ -22,6 +22,7 @@ private:
 	std::thread m_thread;
 	bool m_running;
 	double m_lastTickTime;
+	double m_lastAltitudeTime;
 
 public:
 	Controller();
