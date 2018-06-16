@@ -51,7 +51,7 @@ Simulator::Simulator() :
 	SinGimbal* gimbal = new SinGimbal(1, 1);
 	gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
 	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
-	gimbal->setStaticOrientation(Eigen::Vector3d(0, PI / 8., 0)); // down (around the y axis.) TODO: This seems to be upside-down...
+	gimbal->setStaticOrientation(Eigen::Vector3d(0, 0, 0)); // down (around the y axis.) TODO: This seems to be upside-down...
 
 	// Set up the forward rangefinder using a range bridge and the terrain.
 	RangeBridge* rb1 = new RangeBridge();
@@ -113,6 +113,12 @@ void Simulator::setTerrainFile(const std::string& file) {
 	m_platform->setInitialPlatformState(state);
 }
 
+void Simulator::setGimbalAngle(double angle) {
+	Eigen::Vector3d rot = m_platform->gimbal()->staticOrientation();
+	rot[1] = angle;
+	m_platform->gimbal()->setStaticOrientation(rot);
+}
+
 uav::sim::Terrain* Simulator::terrain() {
 	return m_terrain;
 }
@@ -147,7 +153,9 @@ int runWithGui(int argc, char **argv) {
 	class Sim1Application : public QApplication {
 	public:
 		Sim1Application(int &argc, char **argv) : QApplication(argc, argv) {
-
+			QCoreApplication::setOrganizationName("dijital.ca");
+			QCoreApplication::setOrganizationDomain("dijital.ca");
+			QCoreApplication::setApplicationName("UAVSimulator1");
 		}
 
 		bool notify(QObject *receiver, QEvent *e) {

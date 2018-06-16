@@ -12,6 +12,7 @@
 #include <unordered_map>
 
 #include <QtWidgets/QDialog>
+#include <QtCore/QSettings>
 
 #include "ui_sim1viewer.h"
 
@@ -26,7 +27,7 @@ private:
 	double m_lastUpdate; 		// The last update time.
 	uav::sim::Simulator* m_sim;
 	QDialog* m_form;
-	std::unordered_map<std::string, std::string> m_settings;
+	QSettings m_settings;
 
 public:
 	Sim1Viewer();
@@ -46,6 +47,7 @@ public slots:
 	void btnCloseFormClicked();
 	void btnStopClicked();
 	void btnStartClicked();
+	void spnGimbalAngleChanged(double value);
 };
 
 

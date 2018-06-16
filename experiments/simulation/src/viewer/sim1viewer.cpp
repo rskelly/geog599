@@ -11,8 +11,8 @@
 #include <QtWidgets/QFileDialog>
 #include <QtGui/QKeyEvent>
 #include <QtCore/QString>
-#include <QtCore/QSettings>
 
+#include "uav.hpp"
 #include "viewer/sim1viewer.hpp"
 #include "viewer/renderwidget.hpp"
 #include "geometry.hpp"
@@ -22,6 +22,7 @@
 
 #define K_TERRAIN_FILE "terrainFile"
 #define K_SHOW_TERRAIN "showTerrain"
+#define K_GIMBAL_ANGLE "gimbalAngle"
 
 using namespace uav::viewer;
 using namespace uav::sim;
@@ -32,20 +33,17 @@ Sim1Viewer::Sim1Viewer() :
 		m_lastUpdate(0),
 		m_sim(nullptr),
 		m_form(nullptr) {
-
-	// Load the settings from the local store.
-	QSettings settings("sim1", "dijital.ca");
-	m_settings[K_TERRAIN_FILE] = settings.value(K_TERRAIN_FILE, "").toString().toStdString();
-	m_settings[K_SHOW_TERRAIN] = settings.value(K_SHOW_TERRAIN, "true").toString().toStdString();
 }
 
 void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 	Ui::Sim1Viewer::setupUi(Sim1Viewer);
 
 	// Set the terrain file on the text box from the settings map.
-	txtTerrainFile->setText(QString::fromStdString(m_settings[K_TERRAIN_FILE]));
+	txtTerrainFile->setText(m_settings.value(K_TERRAIN_FILE, "").toString());
 	// Show whether terrain will be rendered.
-	chkShowTerrain->setChecked(m_settings[K_SHOW_TERRAIN] == "true");
+	chkShowTerrain->setChecked(m_settings.value(K_SHOW_TERRAIN, true).toBool());
+	// Show the gimbal angle.
+	spnGimbalAngle->setValue(m_settings.value(K_GIMBAL_ANGLE, QVariant(45.0)).toDouble());
 
 	// Connect events.
 	connect(txtTerrainFile, SIGNAL(textEdited(QString)), this, SLOT(terrainFileChanged(QString)));
@@ -56,6 +54,7 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(chkShowInfo, SIGNAL(toggled(bool)), SLOT(chkShowInfoChanged(bool)));
     connect(chkShowSettings, SIGNAL(toggled(bool)), SLOT(chkShowSettingsChanged(bool)));
     connect(chkShowTerrain, SIGNAL(toggled(bool)), SLOT(chkShowTerrainChanged(bool)));
+    connect(spnGimbalAngle, SIGNAL(valueChanged(double)), SLOT(spnGimbalAngleChanged(double)));
 }
 
 void Sim1Viewer::setSimulator(Simulator& sim) {
@@ -86,11 +85,17 @@ void Sim1Viewer::showForm() {
 	m_form->show();
 }
 
+
 // slots
+
+void Sim1Viewer::terrainFileChanged(QString file) {
+	m_settings.setValue(K_TERRAIN_FILE, file);
+	txtTerrainFile->setText(file);
+}
 
 void Sim1Viewer::chkShowTerrainChanged(bool show) {
 	glPanel->showTerrain(show);
-	m_settings[K_SHOW_TERRAIN] = show ? "true" : "false";
+	m_settings.setValue(K_SHOW_TERRAIN, show ? true : false);
 }
 
 void Sim1Viewer::chkShowInfoChanged(bool checked) {
@@ -101,15 +106,11 @@ void Sim1Viewer::chkShowSettingsChanged(bool checked) {
 	frmSettings->setVisible(checked);
 }
 
-void Sim1Viewer::terrainFileChanged(QString file) {
-	m_settings[K_TERRAIN_FILE] = file.toStdString();
-	txtTerrainFile->setText(file);
-}
-
 void Sim1Viewer::btnStartClicked() {
 	if(!m_sim)
 		throw std::runtime_error("Simulator not set.");
-	m_sim->setTerrainFile(m_settings[K_TERRAIN_FILE]);
+	m_sim->setTerrainFile(m_settings.value(K_TERRAIN_FILE, "").toString().toStdString());
+	m_sim->setGimbalAngle(m_settings.value(K_GIMBAL_ANGLE, 0).toDouble() * PI / 180);
 	m_sim->addObserver(this);
 	m_sim->start();
 
@@ -142,12 +143,11 @@ void Sim1Viewer::btnCloseFormClicked() {
 	}
 }
 
+void Sim1Viewer::spnGimbalAngleChanged(double value) {
+	m_settings.setValue(K_GIMBAL_ANGLE, QString::number(value));
+}
 
 Sim1Viewer::~Sim1Viewer() {
-	// Save the settings to the store.
-	QSettings settings("sim1", "dijital.ca");
-	for(const auto& item : m_settings)
-		settings.setValue(QString::fromStdString(item.first), QString::fromStdString(item.second));
 	if(m_form)
 		delete m_form;
 }
