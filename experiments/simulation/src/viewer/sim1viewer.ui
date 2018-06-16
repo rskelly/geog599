@@ -31,7 +31,7 @@ QCheckBox::indicator::unchecked {
 	background: none;
 }
 
-QLineEdit {
+QLineEdit, QDoubleSpinBox {
   background: #222;
   border-color: #666;
 }
