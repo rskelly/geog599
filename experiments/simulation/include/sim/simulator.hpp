@@ -11,6 +11,8 @@
 #include <thread>
 #include <string>
 
+#include <Eigen/Core>
+
 #include "sim/platform.hpp"
 #include "sim/terrain.hpp"
 #include "controller.hpp"

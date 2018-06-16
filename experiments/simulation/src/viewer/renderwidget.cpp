@@ -30,14 +30,13 @@ RenderWidget::RenderWidget(QWidget* parent) :
 	m_altDown(false),
 	m_width(0), m_height(0),
 	m_mouseX(0), m_mouseY(0),
-	m_rotX(0), m_rotY(0),
-	m_origX(0), m_origY(0),
 	m_eyeDist(5),
 	m_terrain(nullptr),
 	m_platform(nullptr),
 	m_surface(nullptr) {
 
 	m_eyePos << m_eyeDist, 0, 0;
+	m_eyeRot << -1, -1, 0;
 
 	setFocusPolicy(Qt::FocusPolicy::ClickFocus);
 }
@@ -56,22 +55,23 @@ void RenderWidget::paintGL() {
 	if(!m_initialized || !m_terrain || !m_platform) return;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	Eigen::Matrix3d rotz = uav::util::rotateZ(m_rotX * PI * 2 - PI);
-	Eigen::Matrix3d roty = uav::util::rotateY(m_rotY * PI / 3);
-	m_eyePos = (rotz * roty) * Eigen::Vector3d(m_eyeDist, 0, 0);
-
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(45, (float) m_width / m_height, 0.01, 100.0);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	Eigen::Matrix3d rotz = uav::util::rotateZ(m_eyeRot[0] * PI * 2 - PI);
+	Eigen::Matrix3d roty = uav::util::rotateY(m_eyeRot[1] * PI / 3);
+	// The eye position needs to be reversed from looking out from origin to looking back to origin.
+	Eigen::Vector3d eyePos = (rotz * roty) * Eigen::Vector3d(m_eyeDist, 0, 0) * -1;
+
 	// Need to rotate the translation according to the eye position.
 	double eyeEngleZ = uav::util::angle(m_eyePos[0], m_eyePos[1]);
 	Eigen::Matrix3d rot = uav::util::rotateZ(eyeEngleZ);
-	Eigen::Vector3d orig = rot * Eigen::Vector3d(m_origX, m_origY, 0);
-	// The eye position needs to be reversed from looking out from origin to looking back to origin.
-	Eigen::Vector3d eyePos = m_eyePos * -1;
+	Eigen::Vector3d orig = rot * Eigen::Vector3d(m_vOrigin[0], m_vOrigin[1], 0);
+
 	gluLookAt(eyePos[0], eyePos[1], eyePos[2], orig[0], orig[1], 0, 0, 0, 1);
 
 	glEnable(GL_COLOR_MATERIAL);
@@ -242,13 +242,13 @@ void RenderWidget::renderSurface() {
 }
 
 void RenderWidget::rotate(double dx, double dy) {
-	m_rotX = std::max(-1.0, std::min(1.0, m_rotX + dx));
-	m_rotY = std::max(-1.0, std::min(1.0, m_rotY + dy));
+	m_eyeRot[0] = std::max(-1.0, std::min(1.0, m_eyeRot[0] + dx));
+	m_eyeRot[1] = std::max(-1.0, std::min(1.0, m_eyeRot[1] + dy));
 }
 
 void RenderWidget::translate(double dx, double dy) {
-	m_origX = std::max(-1.0, std::min(1.0, m_origX + dx));
-	m_origY = std::max(-1.0, std::min(1.0, m_origY + dy));
+	m_vOrigin[0] = std::max(-1.0, std::min(1.0, m_vOrigin[0] + dx));
+	m_vOrigin[1] = std::max(-1.0, std::min(1.0, m_vOrigin[1] + dy));
 }
 
 void RenderWidget::zoom(double delta) {
@@ -308,4 +308,36 @@ void RenderWidget::setPlatform(uav::Platform* platform) {
 
 void RenderWidget::setSurface(uav::surface::Surface* surface) {
 	m_surface = surface;
+}
+
+void RenderWidget::setEyePosition(const Eigen::Vector3d& pos) {
+	m_eyePos = pos;
+}
+
+const Eigen::Vector3d& RenderWidget::eyePosition() const {
+	return m_eyePos;
+}
+
+void RenderWidget::setEyeRotation(const Eigen::Vector3d& rot) {
+	m_eyeRot = rot;
+}
+
+const Eigen::Vector3d& RenderWidget::eyeRotation() const {
+	return m_eyeRot;
+}
+
+void RenderWidget::setOrigin(const Eigen::Vector3d& origin) {
+	m_vOrigin = origin;
+}
+
+const Eigen::Vector3d& RenderWidget::origin() const {
+	return m_vOrigin;
+}
+
+void RenderWidget::setEyeDistance(double dist) {
+	m_eyeDist = dist;
+}
+
+double RenderWidget::eyeDistance() const {
+	return m_eyeDist;
 }

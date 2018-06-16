@@ -27,13 +27,13 @@ private:
 	bool m_altDown;						// True if the alt key is pressed.
 	int m_width, m_height; 				// Widget dimensions.
 	int m_mouseX, m_mouseY; 			// Position of mouse on mouse button press.
-	double m_rotX, m_rotY; 				// Proportion of angle to rotate eye vector (-1 - 1).
-	double m_origX, m_origY;			// Origin of view.
 	double m_eyeDist; 					// Distance of eye from origin.
 	uav::sim::Terrain* m_terrain;		// Pointer to the terrain object. (Not owned.)
 	uav::Platform* m_platform;			// Pointer to the platform object. (Not owned.)
 	uav::surface::Surface* m_surface;	// Pointer to the surface object. (Not owned.)
 	Eigen::Vector3d m_eyePos;  			// The eye position, represented as a vector from the origin. Must be reversed to use for glLookAt
+	Eigen::Vector3d m_eyeRot; 			// Proportion of angle to rotate eye vector (-1 - 1).
+	Eigen::Vector3d m_vOrigin;			// Origin of view.
 
 	/**
 	 * Called on paint to render the terrain.
@@ -116,6 +116,63 @@ public:
 	 * @param surface A pointer to a surface object.
 	 */
 	void setSurface(uav::surface::Surface* surface);
+
+	/**
+	 * Set the eye position vector.
+	 *
+	 * @param pos The eye position vector.
+	 */
+	void setEyePosition(const Eigen::Vector3d& pos);
+
+	/**
+	 * Get the eye position vector.
+	 *
+	 * @return Get the eye position vector.
+	 */
+	const Eigen::Vector3d& eyePosition() const;
+
+	/**
+	 * Set the eye rotation vector.
+	 *
+	 * @param pos The eye rotation vector.
+	 */
+	void setEyeRotation(const Eigen::Vector3d& rot);
+
+	/**
+	 * Get the eye rotation vector.
+	 *
+	 * @return Get the eye rotation vector.
+	 */
+	const Eigen::Vector3d& eyeRotation() const;
+
+	/**
+	 * Set the eye origin vector.
+	 *
+	 * @param origin The origin vector.
+	 */
+	void setOrigin(const Eigen::Vector3d& origin);
+
+	/**
+	 * Get the origin vector.
+	 *
+	 * @return Get the origin vector.
+	 */
+	const Eigen::Vector3d& origin() const;
+
+	/**
+	 * Set the eye distance.
+	 *
+	 * @param dist The eye distance.
+	 */
+	void setEyeDistance(double dist);
+
+	/**
+	 * Get the eye distance.
+	 *
+	 * @return The eye distance.
+	 */
+	double eyeDistance() const;
+
 };
 
 } // viewer

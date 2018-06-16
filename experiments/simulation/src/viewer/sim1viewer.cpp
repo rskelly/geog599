@@ -23,6 +23,14 @@
 #define K_TERRAIN_FILE "terrainFile"
 #define K_SHOW_TERRAIN "showTerrain"
 #define K_GIMBAL_ANGLE "gimbalAngle"
+#define K_ORIGIN_X "originX"
+#define K_ORIGIN_Y "originY"
+#define K_EYEPOS_X "eyeRotX"
+#define K_EYEPOS_Y "eyeRotY"
+#define K_EYEPOS_Z "eyeRotZ"
+#define K_EYEROT_X "eyeRotY"
+#define K_EYEROT_Y "eyeRotZ"
+#define K_EYEDIST "eyeDist"
 
 using namespace uav::viewer;
 using namespace uav::sim;
@@ -44,6 +52,18 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 	chkShowTerrain->setChecked(m_settings.value(K_SHOW_TERRAIN, true).toBool());
 	// Show the gimbal angle.
 	spnGimbalAngle->setValue(m_settings.value(K_GIMBAL_ANGLE, QVariant(45.0)).toDouble());
+
+	glPanel->setOrigin(Eigen::Vector3d(
+			m_settings.value(K_ORIGIN_X, 0.0).toDouble(),
+			m_settings.value(K_ORIGIN_Y, 0.0).toDouble(), 0));
+	glPanel->setEyePosition(Eigen::Vector3d(
+			m_settings.value(K_EYEPOS_X, 0.0).toDouble(),
+			m_settings.value(K_EYEPOS_Y, 0.0).toDouble(),
+			m_settings.value(K_EYEPOS_Z, 0.0).toDouble()));
+	glPanel->setEyeRotation(Eigen::Vector3d(
+			m_settings.value(K_EYEROT_X, -1.0).toDouble(),
+			m_settings.value(K_EYEROT_Y, -1.0).toDouble(), 0));
+	glPanel->setEyeDistance(m_settings.value(K_EYEDIST, 5).toDouble());
 
 	// Connect events.
 	connect(txtTerrainFile, SIGNAL(textEdited(QString)), this, SLOT(terrainFileChanged(QString)));
@@ -148,6 +168,17 @@ void Sim1Viewer::spnGimbalAngleChanged(double value) {
 }
 
 Sim1Viewer::~Sim1Viewer() {
+	const Eigen::Vector3d origin = glPanel->origin();
+	m_settings.setValue(K_ORIGIN_X, origin[0]);
+	m_settings.setValue(K_ORIGIN_Y, origin[1]);
+	const Eigen::Vector3d eyePos = glPanel->eyePosition();
+	m_settings.setValue(K_EYEPOS_X, eyePos[0]);
+	m_settings.setValue(K_EYEPOS_Y, eyePos[1]);
+	m_settings.setValue(K_EYEPOS_Z, eyePos[2]);
+	const Eigen::Vector3d eyeRot = glPanel->eyeRotation();
+	m_settings.setValue(K_EYEROT_X, eyeRot[0]);
+	m_settings.setValue(K_EYEROT_Y, eyeRot[1]);
+	m_settings.setValue(K_EYEDIST, glPanel->eyeDistance());
 	if(m_form)
 		delete m_form;
 }
