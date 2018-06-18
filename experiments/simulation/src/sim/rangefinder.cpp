@@ -118,6 +118,7 @@ void Rangefinder::start() {
 	if(!m_running) {
 		m_running = true;
 		m_thread = std::thread(__runRangefinder, this, m_pulseFreq, &m_running);
+		uav::thread::setPriority(m_thread, SCHED_FIFO, 99);
 	}
 }
 

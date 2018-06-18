@@ -9,9 +9,19 @@
 #define INCLUDE_UTIL_HPP_
 
 #include <random>
+#include <thread>
+#include <iostream>
+
 #include <Eigen/Core>
 
 namespace uav {
+
+namespace thread {
+
+void setPriority(std::thread &th, int policy, int priority);
+
+} // thread
+
 namespace util {
 
 /**

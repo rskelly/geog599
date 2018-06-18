@@ -72,6 +72,7 @@ private:
 	double m_mass;
 	double m_altitude;
 	double m_altitudeTime;
+	double m_pulseRate;
 
 public:
 
@@ -109,6 +110,9 @@ public:
 
 	double altitudeTime() const;
 
+	void setPulseRate(double rate);
+
+	double pulseRate() const;
 };
 
 /**

@@ -58,14 +58,14 @@ Simulator::Simulator() :
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
-	rangefinder->setPulseFrequency(100);
+	rangefinder->setPulseFrequency(500);
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
 	rb1->setTerrain(m_terrain);
 	Rangefinder* nadirRangefinder = new Rangefinder();
 	nadirRangefinder->setRangeBridge(rb1);
-	nadirRangefinder->setPulseFrequency(10);
+	nadirRangefinder->setPulseFrequency(1);
 
 	// This is the surface reconstruction module.
 	DelaunaySurface* surface = new DelaunaySurface();

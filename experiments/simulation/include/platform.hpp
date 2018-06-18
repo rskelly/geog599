@@ -83,6 +83,13 @@ public:
 	 */
 	virtual double altitudeTime() const = 0;
 
+	/**
+	 * Return the rangefinder pulse rate in Hz.
+	 *
+	 * @return The rangefinder pulse rate in Hz.
+	 */
+	virtual double pulseRate() const = 0;
+
 	virtual ~PlatformState() {}
 };
 

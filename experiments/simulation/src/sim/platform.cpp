@@ -27,7 +27,8 @@ PlatformState::PlatformState() :
 		m_batteryLevel(0),
 		m_mass(0),
 		m_altitude(0),
-		m_altitudeTime(0) {
+		m_altitudeTime(0),
+		m_pulseRate(0) {
 }
 
 const Eigen::Vector3d& PlatformState::position() const {
@@ -94,6 +95,14 @@ void PlatformState::setAltitudeTime(double time) {
 	m_altitudeTime = time;
 }
 
+double PlatformState::pulseRate() const {
+	return m_pulseRate;
+}
+
+void PlatformState::setPulseRate(double rate) {
+	m_pulseRate = rate;
+}
+
 void RangefinderState::setLaserPosition(const Eigen::Vector3d& position) {
 	m_position = position;
 }
@@ -133,11 +142,20 @@ void Platform::stop() {
 	m_nadirRangefinder->stop();
 }
 
+double __rutime = -1;
+size_t __ruct = 0;
+
 void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {
 	if(rangefinder == m_rangefinder) {
+		if(__rutime == -1)
+			__rutime = uavtime();
 		if(range->valid()) {
 			Eigen::Vector3d point = (m_rangefinderState.laserDirection() * range->range()) + m_rangefinderState.laserPosition();
 			m_surface->addPoint(point, range->time());
+			double t = uavtime();
+			__ruct++;
+			if(t - __rutime > 0)
+				m_platformState.setPulseRate(__ruct / (t - __rutime));
 		}
 	} else if(rangefinder == m_nadirRangefinder) {
 		if(range->valid()) {

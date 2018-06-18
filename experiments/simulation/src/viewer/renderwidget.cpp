@@ -208,7 +208,7 @@ void RenderWidget::renderTerrain() {
 void RenderWidget::renderSurface() {
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glBegin(GL_TRIANGLES);
+	glBegin(GL_POINTS);
 
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();

@@ -20,7 +20,7 @@ void _run(Controller* controller, bool* running) {
 		double time0 = uavtime();
 		if(time != -1) {
 			controller->tick(time0 - time);
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 		time = time0;
 	}
@@ -37,6 +37,7 @@ void Controller::start() {
 	if(!m_running) {
 		m_running = true;
 		m_thread = std::thread(_run, this, &m_running);
+		uav::thread::setPriority(m_thread, SCHED_FIFO, 98);
 		m_platform->start();
 	}
 }

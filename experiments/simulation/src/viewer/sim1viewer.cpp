@@ -53,6 +53,8 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 	// Show the gimbal angle.
 	spnGimbalAngle->setValue(m_settings.value(K_GIMBAL_ANGLE, QVariant(45.0)).toDouble());
 
+	glPanel->showTerrain(m_settings.value(K_SHOW_TERRAIN, true).toBool());
+
 	glPanel->setOrigin(Eigen::Vector3d(
 			m_settings.value(K_ORIGIN_X, 0.0).toDouble(),
 			m_settings.value(K_ORIGIN_Y, 0.0).toDouble(), 0));
@@ -84,9 +86,9 @@ void Sim1Viewer::setSimulator(Simulator& sim) {
 
 void Sim1Viewer::updateInfo() {
 	double elev = m_sim->platform()->platformState().altitude();
-	QString e = QString::number(elev, 'f', 2);
-	txtElevation->setText(e);
-
+	double prate = m_sim->platform()->platformState().pulseRate();
+	txtElevation->setText(QString::number(elev, 'f', 2));
+	txtPulseRate->setText(QString::number(prate, 'f', 2));
 }
 
 void Sim1Viewer::simUpdate(Simulator& sim) {
