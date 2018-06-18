@@ -68,6 +68,8 @@ public:
 
 	const Eigen::Vector3d& staticPosition() const;
 
+	void tick(double tick);
+
 	~SinGimbal();
 };
 

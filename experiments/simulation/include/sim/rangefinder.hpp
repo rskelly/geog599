@@ -85,7 +85,7 @@ public:
  * rangefinder gets the calculated range from the RangeBridge class which
  * is a singleton.
  */
-class Rangefinder : public uav::Rangefinder {
+class Rangefinder : public uav::util::ClockObserver, public uav::Rangefinder {
 private:
 	uav::util::Poisson m_poisson;
 	uav::util::Gaussian m_gauss;
@@ -145,7 +145,7 @@ public:
 
 	void stop();
 
-	int getRanges(std::vector<uav::Range*>& ranges);
+	void tick(double time);
 
 	~Rangefinder();
 };

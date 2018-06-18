@@ -13,6 +13,7 @@
 #include "gimbal.hpp"
 #include "rangefinder.hpp"
 #include "surface.hpp"
+#include "util.hpp"
 
 namespace uav {
 
@@ -149,7 +150,7 @@ public:
  * battery life and other flight parameters is available through the
  * methods in this interface.
  */
-class Platform {
+class Platform : public uav::util::ClockObserver {
 public:
 
 	/**
@@ -234,17 +235,6 @@ public:
 	 * Stop the platform and any services or devices it carries.
 	 */
 	virtual void stop() = 0;
-
-	/**
-	 * The update method is the primary driver of the Platform.
-	 * The update method may be called from without or within,
-	 * but it must be implemented to drive the Platform's
-	 * functions. The parameter is the time in seconds since
-	 * the epoch.
-	 *
-	 * @param time The time since the epoch in seconds.
-	 */
-	virtual void update(double time) = 0;
 
 	/**
 	 * Return a reference the PlatformState object for this Platform.

@@ -119,6 +119,7 @@ const Eigen::Vector3d& RangefinderState::laserDirection() const {
 	return m_direction;
 }
 
+constexpr double PF_CLOCK_DELAY = 0.01;
 
 Platform::Platform() :
 	m_gimbal(nullptr),
@@ -128,9 +129,11 @@ Platform::Platform() :
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
+
 }
 
 void Platform::start() {
+	Clock::addObserver(this, PF_CLOCK_DELAY);
 	m_gimbal->start();
 	m_rangefinder->start();
 	m_nadirRangefinder->start();
@@ -140,22 +143,14 @@ void Platform::stop() {
 	m_gimbal->stop();
 	m_rangefinder->stop();
 	m_nadirRangefinder->stop();
+	Clock::removeObserver(this);
 }
-
-double __rutime = -1;
-size_t __ruct = 0;
 
 void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {
 	if(rangefinder == m_rangefinder) {
-		if(__rutime == -1)
-			__rutime = uavtime();
 		if(range->valid()) {
 			Eigen::Vector3d point = (m_rangefinderState.laserDirection() * range->range()) + m_rangefinderState.laserPosition();
 			m_surface->addPoint(point, range->time());
-			double t = uavtime();
-			__ruct++;
-			if(t - __rutime > 0)
-				m_platformState.setPulseRate(__ruct / (t - __rutime));
 		}
 	} else if(rangefinder == m_nadirRangefinder) {
 		if(range->valid()) {
@@ -166,7 +161,7 @@ void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {
 	delete range;
 }
 
-void Platform::update(double time) {
+void Platform::tick(double time) {
 
 	Eigen::Vector3d Pp(m_platformState.position());
 	Eigen::Vector3d Po(m_platformState.orientation());
@@ -180,7 +175,7 @@ void Platform::update(double time) {
 
 	const Eigen::Vector3d& lVel = m_platformState.linearVelocity();
 
-	Pp[0] += time * m_posPoisson.next(lVel[0]);
+	Pp[0] += time * m_posPoisson.next(lVel[0] * PF_CLOCK_DELAY); // m/s multiplied by the delay
 	Pp[1] += m_posPoisson.nextCentered();
 	Pp[2] += m_posPoisson.nextCentered();
 

@@ -14,41 +14,23 @@
 using namespace uav::sim;
 using namespace uav::util;
 
-void _run(Controller* controller, bool* running) {
-	double time = -1;
-	while(*running) {
-		double time0 = uavtime();
-		if(time != -1) {
-			controller->tick(time0 - time);
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
-		}
-		time = time0;
-	}
-}
-
 Controller::Controller() :
 		m_platform(nullptr),
-		m_running(false),
 		m_lastTickTime(0),
 		m_lastAltitudeTime(0) {
+
 }
 
 void Controller::start() {
-	if(!m_running) {
-		m_running = true;
-		m_thread = std::thread(_run, this, &m_running);
-		uav::thread::setPriority(m_thread, SCHED_FIFO, 98);
-		m_platform->start();
-	}
+	Clock::addObserver(this, 0.01);
+	Clock::start();
+	m_platform->start();
 }
 
 void Controller::stop() {
-	if(m_running) {
-		m_platform->stop();
-		m_running = false;
-		if(m_thread.joinable())
-			m_thread.join();
-	}
+	m_platform->stop();
+	Clock::stop();
+	Clock::removeObserver(this);
 }
 
 void Controller::setPlatform(uav::Platform* platform) {
@@ -65,7 +47,6 @@ void Controller::tick(double time) {
 	}
 	m_lastTickTime = time;
 	m_platform->setControlInput(input);
-	m_platform->update(time);
 }
 
 Controller::~Controller() {

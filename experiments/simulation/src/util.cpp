@@ -6,7 +6,7 @@
  */
 
 #include <iostream>
-#include <sys/time.h>
+#include <chrono>
 
 #include "uav.hpp"
 #include "util.hpp"
@@ -15,11 +15,99 @@ void uav::thread::setPriority(std::thread &th, int policy, int priority) {
 	sched_param sch_params;
 	sch_params.sched_priority = priority;
 	if(pthread_setschedparam(th.native_handle(), policy, &sch_params))
-		std::cerr << "Failed to set Thread scheduling : " << std::strerror(errno) << std::endl;
+		std::cerr << "Failed to set thread scheduling : " << std::strerror(errno) << "\n";
 }
 
+void uav::thread::setAffinity(std::thread &th, int core) {
+	pthread_t thread = th.native_handle();
+	cpu_set_t cpuset;
+
+	CPU_ZERO(&cpuset);
+	CPU_SET(core, &cpuset);
+
+	if(pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset))
+		std::cerr << "Failed to set thread affinity: " << std::strerror(errno) << "\n";
+}
 
 using namespace uav::util;
+
+ClockObserverItem::ClockObserverItem(ClockObserver* item, double delay) :
+		delay(delay), lastTick(-1), item(item)  {}
+
+void __clockRun(std::list<ClockObserverItem>* observers, bool* running, double* currentTime, double minStep) {
+	double time;
+
+	// Set the initial time on all observer items.
+	time = 0; // uavtime(); No need to start at UTC. Maybe can add another field later.
+	for(ClockObserverItem& item : *observers)
+		item.lastTick = time;
+
+	while(*running) {
+		time += minStep;
+		// Iterate over observer items, firing those whose tick delay has elapsed.
+		for(ClockObserverItem& item : *observers) {
+			if(item.delay < time - item.lastTick) {
+				item.item->tick(time);
+				item.lastTick = time;
+			}
+		}
+		*currentTime = time;
+		std::this_thread::yield();
+	}
+}
+
+Clock::Clock() :
+	m_running(false),
+	m_minStep(std::numeric_limits<double>::max()),
+	m_currentTime(-1) {
+}
+
+Clock& Clock::instance() {
+	static Clock inst;
+	return inst;
+}
+
+double Clock::currentTime() {
+	return Clock::instance().m_currentTime;
+}
+
+void Clock::addObserver(ClockObserver* obs, double delay) {
+	Clock& inst = Clock::instance();
+	for(ClockObserverItem& item : inst.m_observers) {
+		if(item.item == obs) {
+			item.delay = delay;
+			return;
+		}
+	}
+	inst.m_observers.emplace_back(obs, delay);
+	if(delay < inst.m_minStep)
+		inst.m_minStep = delay;
+}
+
+void Clock::removeObserver(ClockObserver* obs) {
+	Clock& inst = Clock::instance();
+	for(auto it = inst.m_observers.begin(); it != inst.m_observers.end(); ++it)
+		it = inst.m_observers.erase(it);
+}
+
+void Clock::start() {
+	Clock& inst = Clock::instance();
+	if(!inst.m_running) {
+		inst.m_running = true;
+		inst.m_thread = std::thread(__clockRun, &(inst.m_observers), &(inst.m_running), &(inst.m_currentTime), inst.m_minStep);
+		uav::thread::setAffinity(inst.m_thread, 0);
+	}
+}
+
+void Clock::stop() {
+	Clock& inst = Clock::instance();
+	if(inst.m_running) {
+		inst.m_running = false;
+		if(inst.m_thread.joinable())
+			inst.m_thread.join();
+	}
+}
+
 
 Poisson::Poisson() : Poisson(10) {}
 
@@ -43,9 +131,7 @@ double Poisson::nextCentered(double freq) {
 }
 
 double uav::util::uavtime() {
-	timeval time;
-	gettimeofday(&time, NULL);
-	return (double) time.tv_sec + ((double) time.tv_usec / 1000000);
+	return (double) std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000000000;
 }
 
 

@@ -10,6 +10,8 @@
 
 #include <Eigen/Core>
 
+#include "util.hpp"
+
 namespace uav {
 
 /**
@@ -23,7 +25,7 @@ namespace uav {
  * and its beam is aligned with the dynamic orientation. The gimbal itself is positioned
  * at the static orientation and aligned with the dynamic position.
  */
-class Gimbal {
+class Gimbal : public uav::util::ClockObserver {
 protected:
 
 	Gimbal() {}

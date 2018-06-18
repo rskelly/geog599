@@ -38,6 +38,7 @@ using namespace uav::util;
 
 
 Sim1Viewer::Sim1Viewer() :
+		m_running(false),
 		m_lastUpdate(0),
 		m_sim(nullptr),
 		m_form(nullptr) {
@@ -81,7 +82,47 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 
 void Sim1Viewer::setSimulator(Simulator& sim) {
 	m_sim = &sim;
-	m_sim->addObserver(this);
+}
+
+void __update(Sim1Viewer* viewer, bool* running) {
+	while(*running) {
+		viewer->update();
+		std::this_thread::sleep_for(std::chrono::milliseconds((int) (1.0 / 24.0 * 1000)));
+	}
+}
+
+void Sim1Viewer::start() {
+	if(!m_running) {
+		if(!m_sim)
+			throw std::runtime_error("Simulator not set.");
+		m_sim->setTerrainFile(m_settings.value(K_TERRAIN_FILE, "").toString().toStdString());
+		m_sim->setGimbalAngle(m_settings.value(K_GIMBAL_ANGLE, 0).toDouble() * PI / 180);
+
+		glPanel->setTerrain(m_sim->terrain());
+		glPanel->setPlatform(m_sim->platform());
+		glPanel->setSurface(m_sim->platform()->surface());
+
+		m_sim->start();
+
+		m_running = true;
+		m_thread = std::thread(__update, this, &m_running);
+
+		btnStart->setEnabled(false);
+		btnStop->setEnabled(true);
+	}
+}
+
+void Sim1Viewer::stop() {
+	if(m_running) {
+		m_running = false;
+		if(m_thread.joinable())
+			m_thread.join();
+
+		m_sim->stop();
+
+		btnStart->setEnabled(true);
+		btnStop->setEnabled(false);
+	}
 }
 
 void Sim1Viewer::updateInfo() {
@@ -91,13 +132,9 @@ void Sim1Viewer::updateInfo() {
 	txtPulseRate->setText(QString::number(prate, 'f', 2));
 }
 
-void Sim1Viewer::simUpdate(Simulator& sim) {
-	double t = uavtime();
-	if(t - m_lastUpdate > 0.05) {
-		glPanel->update();
-		updateInfo();
-		m_lastUpdate = t;
-	}
+void Sim1Viewer::update() {
+	glPanel->update();
+	updateInfo();
 }
 
 void Sim1Viewer::showForm() {
@@ -129,27 +166,13 @@ void Sim1Viewer::chkShowSettingsChanged(bool checked) {
 }
 
 void Sim1Viewer::btnStartClicked() {
-	if(!m_sim)
-		throw std::runtime_error("Simulator not set.");
-	m_sim->setTerrainFile(m_settings.value(K_TERRAIN_FILE, "").toString().toStdString());
-	m_sim->setGimbalAngle(m_settings.value(K_GIMBAL_ANGLE, 0).toDouble() * PI / 180);
-	m_sim->addObserver(this);
-	m_sim->start();
-
-	glPanel->setTerrain(m_sim->terrain());
-	glPanel->setPlatform(m_sim->platform());
-	glPanel->setSurface(m_sim->platform()->surface());
-
 	btnStart->setEnabled(false);
-	btnStop->setEnabled(true);
+	start();
 }
 
 void Sim1Viewer::btnStopClicked() {
-	if(m_sim) {
-		m_sim->stop();
-		btnStart->setEnabled(true);
-		btnStop->setEnabled(false);
-	}
+	btnStop->setEnabled(false);
+	stop();
 }
 
 void Sim1Viewer::btnTerrainFileClicked() {

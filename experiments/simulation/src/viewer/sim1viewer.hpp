@@ -21,21 +21,25 @@
 namespace uav {
 namespace viewer {
 
-class Sim1Viewer : public QDialog, public Ui::Sim1Viewer, public uav::sim::SimulatorObserver {
+class Sim1Viewer : public QDialog, public Ui::Sim1Viewer {
 	Q_OBJECT
 private:
+	QSettings m_settings;
+	std::thread m_thread;
+	bool m_running;
 	double m_lastUpdate; 		// The last update time.
 	uav::sim::Simulator* m_sim;
 	QDialog* m_form;
-	QSettings m_settings;
 
 public:
 	Sim1Viewer();
 	void showForm();
 	void setupUi(QDialog *Sim1Viewer);
 	void setSimulator(uav::sim::Simulator& sim);
-	void simUpdate(uav::sim::Simulator& sim);
+	void update();
 	void updateInfo();
+	void start();
+	void stop();
 	~Sim1Viewer();
 
 public slots:

@@ -29,15 +29,6 @@ using namespace uav::util;
 using namespace uav::sim;
 using namespace uav::surface;
 
-/**
- * Run the simulator in a thread.
- *
- * @param sim A pointer to the simulator.
- */
-void doRun(Simulator* sim) {
-	sim->run();
-}
-
 Simulator::Simulator() :
 	m_running(false) {
 
@@ -58,14 +49,14 @@ Simulator::Simulator() :
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
-	rangefinder->setPulseFrequency(500);
+	rangefinder->setPulseFrequency(500); // NOTE: The gimbal's update frequency must be higher than this.
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
 	rb1->setTerrain(m_terrain);
 	Rangefinder* nadirRangefinder = new Rangefinder();
 	nadirRangefinder->setRangeBridge(rb1);
-	nadirRangefinder->setPulseFrequency(1);
+	nadirRangefinder->setPulseFrequency(10);
 
 	// This is the surface reconstruction module.
 	DelaunaySurface* surface = new DelaunaySurface();
@@ -83,21 +74,19 @@ Simulator::Simulator() :
 	m_platform->setInitialPlatformState(state);
 
 	m_controller->setPlatform(m_platform);
+
 }
 
 void Simulator::start() {
 	if(!m_running) {
 		m_controller->start();
 		m_running = true;
-		m_thread = std::thread(doRun, this);
 	}
 }
 
 void Simulator::stop() {
 	if(m_running) {
 		m_running = false;
-		if(m_thread.joinable())
-			m_thread.join();
 		m_controller->stop();
 	}
 }
@@ -109,7 +98,7 @@ void Simulator::setTerrainFile(const std::string& file) {
 
 	// Start the vehicle off at 10cm above the terrain.
 	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
-	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 0.1));
+	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 10));
 	m_platform->setInitialPlatformState(state);
 }
 
@@ -125,20 +114,6 @@ uav::sim::Terrain* Simulator::terrain() {
 
 uav::Platform* Simulator::platform() {
 	return m_platform;
-}
-
-void Simulator::addObserver(SimulatorObserver* obs) {
-	m_obs.push_back(obs);
-}
-
-void Simulator::run() {
-	std::cerr << std::setprecision(12);
-	while(m_running) {
-		// Tell observers that the simulator has updated.
-		for(SimulatorObserver* obs : m_obs)
-			obs->simUpdate(*this);
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
 }
 
 Simulator::~Simulator() {

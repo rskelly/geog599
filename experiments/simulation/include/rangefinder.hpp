@@ -72,18 +72,6 @@ class Rangefinder {
 public:
 
 	/**
-	 * Adds the Range objects to the given vector. Since the rangefinder
-	 * generates ranges at its own pace, the platform may not be able to
-	 * request them faster than they're generated. These are all the ranges
-	 * generated between this call and the last.
-	 *
-	 * The caller is responsible for the Range objects and their destruction.
-	 *
-	 * @return The number of ranges generated.
-	 */
-	virtual int getRanges(std::vector<uav::Range*>& ranges) = 0;
-
-	/**
 	 * Set a pointer to an object that will listen to events from this
 	 * Rangefinder.
 	 *
