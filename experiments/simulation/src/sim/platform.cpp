@@ -140,10 +140,10 @@ void Platform::start() {
 }
 
 void Platform::stop() {
+	Clock::removeObserver(this);
 	m_gimbal->stop();
 	m_rangefinder->stop();
 	m_nadirRangefinder->stop();
-	Clock::removeObserver(this);
 }
 
 void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {

@@ -28,9 +28,9 @@ void Controller::start() {
 }
 
 void Controller::stop() {
-	m_platform->stop();
 	Clock::stop();
 	Clock::removeObserver(this);
+	m_platform->stop();
 }
 
 void Controller::setPlatform(uav::Platform* platform) {

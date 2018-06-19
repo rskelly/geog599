@@ -22,6 +22,7 @@
 
 using namespace uav::viewer;
 
+constexpr double VERT_EXAG = 0.3;
 
 RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
@@ -102,13 +103,13 @@ void RenderWidget::renderLaser() {
 
 	double x0 = std::abs(pos[0] - trans[0]) / width - 0.5;
 	double y0 = std::abs(pos[1] - trans[3]) / (height / width) * 0.5;
-	double z0 = (pos[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
+	double z0 = (pos[2] - minz) / (maxz - minz) * VERT_EXAG;
 
 	Eigen::Vector3d pos1 = pos + dir.normalized() * 100.0; // TODO: configure range.
 
 	double x1 = std::abs(pos1[0] - trans[0]) / width - 0.5;
 	double y1 = std::abs(pos1[1] - trans[3]) / (height / width) * 0.5;
-	double z1 = (pos1[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
+	double z1 = (pos1[2] - minz) / (maxz - minz) * VERT_EXAG;
 
 	glBegin(GL_LINES);
 	glColor3f(1.0, 0.0, 0.0);
@@ -128,7 +129,7 @@ void RenderWidget::renderPlatform() {
 
 	double x = std::abs(pos[0] - trans[0]) / width - 0.5;
 	double y = std::abs(pos[1] - trans[3]) / (height / width) * 0.5;
-	double z = (pos[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
+	double z = (pos[2] - minz) / (maxz - minz) * VERT_EXAG;
 
 	double size = 1 / width; // The vehicle is 1m square, scaled to the width of the scene.
 
@@ -195,7 +196,7 @@ void RenderWidget::renderTerrain() {
 	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
 		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
 		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - (height / width) * 0.5;
-		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
+		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz) * VERT_EXAG;
 		if(j % 3 == 2) {
 			glColor3f(0.0f, 0.3 + z[0] * 0.5, 0.0f);
 			glVertex3f(x[0], y[0], z[0] / 10 - offset); // Lower to make space for surface.
@@ -229,7 +230,7 @@ void RenderWidget::renderSurface() {
 	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
 		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
 		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - (height / width) * 0.5;
-		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
+		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz) * VERT_EXAG;
 		if(j % 3 == 2) {
 			double nx = y[0] * z[1] - z[0] * y[1];
 			double ny = z[0] * x[1] - x[0] * z[1];

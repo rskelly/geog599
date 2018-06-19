@@ -25,11 +25,12 @@
 #define K_GIMBAL_ANGLE "gimbalAngle"
 #define K_ORIGIN_X "originX"
 #define K_ORIGIN_Y "originY"
-#define K_EYEPOS_X "eyeRotX"
-#define K_EYEPOS_Y "eyeRotY"
-#define K_EYEPOS_Z "eyeRotZ"
-#define K_EYEROT_X "eyeRotY"
-#define K_EYEROT_Y "eyeRotZ"
+#define K_EYEPOS_X "eyePosX"
+#define K_EYEPOS_Y "eyePosY"
+#define K_EYEPOS_Z "eyePosZ"
+#define K_EYEROT_X "eyeRotX"
+#define K_EYEROT_Y "eyeRotY"
+#define K_EYEROT_Z "eyeRotZ"
 #define K_EYEDIST "eyeDist"
 
 using namespace uav::viewer;
@@ -63,7 +64,8 @@ void Sim1Viewer::applySettings() {
 			m_settings.value(K_EYEPOS_Z, 0.0).toDouble()));
 	glPanel->setEyeRotation(Eigen::Vector3d(
 			m_settings.value(K_EYEROT_X, -1.0).toDouble(),
-			m_settings.value(K_EYEROT_Y, -1.0).toDouble(), 0));
+			m_settings.value(K_EYEROT_Y, -1.0).toDouble(),
+			m_settings.value(K_EYEROT_Z, -1.0).toDouble()));
 	glPanel->setEyeDistance(m_settings.value(K_EYEDIST, 5).toDouble());
 }
 
@@ -214,6 +216,7 @@ Sim1Viewer::~Sim1Viewer() {
 	const Eigen::Vector3d eyeRot = glPanel->eyeRotation();
 	m_settings.setValue(K_EYEROT_X, eyeRot[0]);
 	m_settings.setValue(K_EYEROT_Y, eyeRot[1]);
+	m_settings.setValue(K_EYEROT_Z, eyeRot[2]);
 	m_settings.setValue(K_EYEDIST, glPanel->eyeDistance());
 	if(m_form)
 		delete m_form;
