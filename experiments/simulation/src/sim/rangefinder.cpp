@@ -101,6 +101,7 @@ void Rangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
 }
 
+int __pulse = 0;
 void Rangefinder::generatePulse() {
 	m_obs->rangeUpdate(this, new Range(m_bridge->getRange()  + m_gauss.next(), Clock::currentTime()));
 }

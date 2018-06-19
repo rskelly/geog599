@@ -34,7 +34,7 @@ using namespace uav::util;
 ClockObserverItem::ClockObserverItem(ClockObserver* item, double delay) :
 		delay(delay), lastTick(-1), item(item)  {}
 
-void __clockRun(std::list<ClockObserverItem>* observers, bool* running, double* currentTime, double minStep) {
+void __clockRun(std::list<ClockObserverItem>* observers, bool* running, double* currentTime, double* minStep) {
 	double time;
 
 	// Set the initial time on all observer items.
@@ -43,7 +43,8 @@ void __clockRun(std::list<ClockObserverItem>* observers, bool* running, double* 
 		item.lastTick = time;
 
 	while(*running) {
-		time += minStep;
+		time += *minStep;
+		*currentTime = time;
 		// Iterate over observer items, firing those whose tick delay has elapsed.
 		for(ClockObserverItem& item : *observers) {
 			if(item.delay < time - item.lastTick) {
@@ -51,8 +52,7 @@ void __clockRun(std::list<ClockObserverItem>* observers, bool* running, double* 
 				item.lastTick = time;
 			}
 		}
-		*currentTime = time;
-		std::this_thread::yield();
+		//std::this_thread::yield();
 	}
 }
 
@@ -73,15 +73,29 @@ double Clock::currentTime() {
 
 void Clock::addObserver(ClockObserver* obs, double delay) {
 	Clock& inst = Clock::instance();
+	bool found = false;
+
+	// Find the observer and modify it.
 	for(ClockObserverItem& item : inst.m_observers) {
 		if(item.item == obs) {
 			item.delay = delay;
-			return;
+			found = true;
+			break;
 		}
 	}
-	inst.m_observers.emplace_back(obs, delay);
-	if(delay < inst.m_minStep)
-		inst.m_minStep = delay;
+
+	// If no item was found, add it.
+	if(!found)
+		inst.m_observers.emplace_back(obs, delay);
+
+	// Reset minStep
+	double minStep = std::numeric_limits<double>::max();
+	for(ClockObserverItem& item : inst.m_observers) {
+		if(item.delay < minStep)
+			minStep = item.delay;
+	}
+	std::lock_guard<std::mutex> lk(inst.m_stepMtx);
+	inst.m_minStep = minStep;
 }
 
 void Clock::removeObserver(ClockObserver* obs) {
@@ -94,7 +108,7 @@ void Clock::start() {
 	Clock& inst = Clock::instance();
 	if(!inst.m_running) {
 		inst.m_running = true;
-		inst.m_thread = std::thread(__clockRun, &(inst.m_observers), &(inst.m_running), &(inst.m_currentTime), inst.m_minStep);
+		inst.m_thread = std::thread(__clockRun, &(inst.m_observers), &(inst.m_running), &(inst.m_currentTime), &(inst.m_minStep));
 		uav::thread::setAffinity(inst.m_thread, 0);
 	}
 }

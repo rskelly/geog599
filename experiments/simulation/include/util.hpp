@@ -9,6 +9,7 @@
 #define INCLUDE_UTIL_HPP_
 
 #include <random>
+#include <mutex>
 #include <thread>
 #include <iostream>
 #include <list>
@@ -77,6 +78,7 @@ private:
 	double m_currentTime;
 	std::thread m_thread;
 	std::list<ClockObserverItem> m_observers;
+	std::mutex m_stepMtx;
 
 	Clock();
 

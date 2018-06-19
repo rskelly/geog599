@@ -15,7 +15,7 @@
 using namespace uav::sim;
 using namespace uav::util;
 
-constexpr double G_CLOCK_DELAY = 1.0 / 500.0 / 10.0;
+constexpr double G_CLOCK_DELAY = 1.0 / 500.0 / 2.0;
 
 SinGimbal::SinGimbal(double sweepAngle, double sweepFrequency) :
 	m_position(Eigen::Vector3d(0, 0, -2)), // 2cm down
