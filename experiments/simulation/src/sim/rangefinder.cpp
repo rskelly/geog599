@@ -74,14 +74,22 @@ Rangefinder::Rangefinder() :
 	m_bridge(nullptr),
 	m_pulseFreq(5.0),
 	m_nextTime(0),
+	m_maxRange(100),
+	m_rangeError(1),
 	m_running(false) {
 
 	m_gauss.setMean(0);
-	m_gauss.setStdDev(0.1);
+	m_gauss.setStdDev(m_rangeError);
 }
 
 void Rangefinder::setObserver(uav::RangefinderObserver* obs) {
 	m_obs = obs;
+}
+
+void Rangefinder::setMaxRange(double range, double error) {
+	m_maxRange = range;
+	m_rangeError = error;
+	m_gauss.setStdDev(m_rangeError);
 }
 
 void Rangefinder::tick(double time) {
@@ -101,9 +109,16 @@ void Rangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
 }
 
-int __pulse = 0;
 void Rangefinder::generatePulse() {
-	m_obs->rangeUpdate(this, new Range(m_bridge->getRange()  + m_gauss.next(), Clock::currentTime()));
+	double range = m_bridge->getRange();
+	if(range <= m_maxRange) {
+		// If the range is within the max range, generate a pulse.
+		double time = Clock::currentTime();
+		// The error is scaled from zero at zero range, to 1*SD at max range.
+		double error = (range / m_maxRange) * m_gauss.next();
+		// Send the range update.
+		m_obs->rangeUpdate(this, new Range(range + error, time));
+	}
 }
 
 void Rangefinder::setRangeBridge(RangeBridge* bridge) {

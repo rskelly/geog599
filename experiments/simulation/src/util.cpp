@@ -72,7 +72,6 @@ double Clock::currentTime() {
 }
 
 void Clock::addObserver(ClockObserver* obs, double delay) {
-	std::cerr << "obs " << obs << " " << delay << "\n";
 	Clock& inst = Clock::instance();
 	bool found = false;
 
