@@ -44,9 +44,7 @@ Sim1Viewer::Sim1Viewer() :
 		m_form(nullptr) {
 }
 
-void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
-	Ui::Sim1Viewer::setupUi(Sim1Viewer);
-
+void Sim1Viewer::applySettings() {
 	// Set the terrain file on the text box from the settings map.
 	txtTerrainFile->setText(m_settings.value(K_TERRAIN_FILE, "").toString());
 	// Show whether terrain will be rendered.
@@ -67,6 +65,12 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
 			m_settings.value(K_EYEROT_X, -1.0).toDouble(),
 			m_settings.value(K_EYEROT_Y, -1.0).toDouble(), 0));
 	glPanel->setEyeDistance(m_settings.value(K_EYEDIST, 5).toDouble());
+}
+
+void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
+	Ui::Sim1Viewer::setupUi(Sim1Viewer);
+
+	applySettings();
 
 	// Connect events.
 	connect(txtTerrainFile, SIGNAL(textEdited(QString)), this, SLOT(terrainFileChanged(QString)));
@@ -74,6 +78,7 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(btnClose, SIGNAL(clicked()), this, SLOT(btnCloseFormClicked()));
     connect(btnStart, SIGNAL(clicked()), this, SLOT(btnStartClicked()));
     connect(btnStop, SIGNAL(clicked()), this, SLOT(btnStopClicked()));
+    connect(btnReset, SIGNAL(clicked()), this, SLOT(btnResetClicked()));
     connect(chkShowInfo, SIGNAL(toggled(bool)), SLOT(chkShowInfoChanged(bool)));
     connect(chkShowSettings, SIGNAL(toggled(bool)), SLOT(chkShowSettingsChanged(bool)));
     connect(chkShowTerrain, SIGNAL(toggled(bool)), SLOT(chkShowTerrainChanged(bool)));
@@ -173,6 +178,12 @@ void Sim1Viewer::btnStartClicked() {
 void Sim1Viewer::btnStopClicked() {
 	btnStop->setEnabled(false);
 	stop();
+}
+
+void Sim1Viewer::btnResetClicked() {
+	stop();
+	m_settings.clear();
+	applySettings();
 }
 
 void Sim1Viewer::btnTerrainFileClicked() {

@@ -21,6 +21,9 @@
 namespace uav {
 namespace viewer {
 
+/**
+ * A Simulation viewer.
+ */
 class Sim1Viewer : public QDialog, public Ui::Sim1Viewer {
 	Q_OBJECT
 private:
@@ -33,13 +36,46 @@ private:
 
 public:
 	Sim1Viewer();
+
+	/**
+	 * Make the form visible,
+	 */
 	void showForm();
+
 	void setupUi(QDialog *Sim1Viewer);
+
+	/**
+	 * Add the Simulator instance to the app.
+	 *
+	 * @param sim A Simulator instance.
+	 */
 	void setSimulator(uav::sim::Simulator& sim);
+
+	/**
+	 * Repaint the view.
+	 */
 	void update();
+
+	/**
+	 * Update the information view.
+	 */
 	void updateInfo();
+
+	/**
+	 * Applies the saved settings to the UI.
+	 */
+	void applySettings();
+
+	/**
+	 * Start the simulation and rendering.
+	 */
 	void start();
+
+	/**
+	 * Stop the simulation and rendering.
+	 */
 	void stop();
+
 	~Sim1Viewer();
 
 public slots:
@@ -51,6 +87,7 @@ public slots:
 	void btnCloseFormClicked();
 	void btnStopClicked();
 	void btnStartClicked();
+	void btnResetClicked();
 	void spnGimbalAngleChanged(double value);
 };
 
