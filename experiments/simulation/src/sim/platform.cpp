@@ -119,7 +119,7 @@ const Eigen::Vector3d& RangefinderState::laserDirection() const {
 	return m_direction;
 }
 
-constexpr double PF_CLOCK_DELAY = 0.01;
+constexpr double PF_CLOCK_DELAY = 1.0 / 500.0;
 
 Platform::Platform() :
 	m_gimbal(nullptr),
@@ -175,7 +175,7 @@ void Platform::tick(double time) {
 
 	const Eigen::Vector3d& lVel = m_platformState.linearVelocity();
 
-	Pp[0] += time * m_posPoisson.next(lVel[0] * PF_CLOCK_DELAY); // m/s multiplied by the delay
+	Pp[0] += m_posPoisson.next(lVel[0] * PF_CLOCK_DELAY); // m/s multiplied by the delay
 	Pp[1] += m_posPoisson.nextCentered();
 	Pp[2] += m_posPoisson.nextCentered();
 

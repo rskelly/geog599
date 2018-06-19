@@ -47,12 +47,12 @@ void __clockRun(std::list<ClockObserverItem>* observers, bool* running, double* 
 		*currentTime = time;
 		// Iterate over observer items, firing those whose tick delay has elapsed.
 		for(ClockObserverItem& item : *observers) {
-			if(item.delay < time - item.lastTick) {
+			if(item.delay <= time - item.lastTick) {
 				item.item->tick(time);
 				item.lastTick = time;
 			}
 		}
-		//std::this_thread::yield();
+		std::this_thread::sleep_for(std::chrono::nanoseconds((int) (*minStep * 1000000000)));
 	}
 }
 
@@ -72,6 +72,7 @@ double Clock::currentTime() {
 }
 
 void Clock::addObserver(ClockObserver* obs, double delay) {
+	std::cerr << "obs " << obs << " " << delay << "\n";
 	Clock& inst = Clock::instance();
 	bool found = false;
 
@@ -109,7 +110,6 @@ void Clock::start() {
 	if(!inst.m_running) {
 		inst.m_running = true;
 		inst.m_thread = std::thread(__clockRun, &(inst.m_observers), &(inst.m_running), &(inst.m_currentTime), &(inst.m_minStep));
-		uav::thread::setAffinity(inst.m_thread, 0);
 	}
 }
 
