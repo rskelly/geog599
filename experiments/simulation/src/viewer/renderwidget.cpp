@@ -64,8 +64,9 @@ void RenderWidget::paintGL() {
 
 	Eigen::Matrix3d rotz = uav::util::rotateZ(m_eyeRot[0] * PI * 2 - PI);
 	Eigen::Matrix3d roty = uav::util::rotateY(m_eyeRot[1] * PI / 3);
+	Eigen::Matrix3d rotz2 = uav::util::rotateY(m_eyeRot[2] * PI / 3);
 	// The eye position needs to be reversed from looking out from origin to looking back to origin.
-	Eigen::Vector3d eyePos = (rotz * roty) * Eigen::Vector3d(m_eyeDist, 0, 0) * -1;
+	Eigen::Vector3d eyePos = (rotz * roty * rotz2) * Eigen::Vector3d(m_eyeDist, 0, 0) * -1;
 
 	// Need to rotate the translation according to the eye position.
 	double eyeEngleZ = uav::util::angle(m_eyePos[0], m_eyePos[1]);
@@ -96,16 +97,17 @@ void RenderWidget::renderLaser() {
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
 	double width = m_terrain->width();
+	double height = m_terrain->height();
 	const double* trans = m_terrain->transform();
 
 	double x0 = std::abs(pos[0] - trans[0]) / width - 0.5;
-	double y0 = std::abs(pos[1] - trans[3]) / width - 0.5;
+	double y0 = std::abs(pos[1] - trans[3]) / (height / width) * 0.5;
 	double z0 = (pos[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
 
 	Eigen::Vector3d pos1 = pos + dir.normalized() * 100.0; // TODO: configure range.
 
 	double x1 = std::abs(pos1[0] - trans[0]) / width - 0.5;
-	double y1 = std::abs(pos1[1] - trans[3]) / width - 0.5;
+	double y1 = std::abs(pos1[1] - trans[3]) / (height / width) * 0.5;
 	double z1 = (pos1[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
 
 	glBegin(GL_LINES);
@@ -121,10 +123,11 @@ void RenderWidget::renderPlatform() {
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
 	double width = m_terrain->width();
+	double height = m_terrain->height();
 	const double* trans = m_terrain->transform();
 
 	double x = std::abs(pos[0] - trans[0]) / width - 0.5;
-	double y = std::abs(pos[1] - trans[3]) / width - 0.5;
+	double y = std::abs(pos[1] - trans[3]) / (height / width) * 0.5;
 	double z = (pos[2] - minz) / (maxz - minz) / 10.0; // Reduce vertical exaggeration; negate (up is negative).
 
 	double size = 1 / width; // The vehicle is 1m square, scaled to the width of the scene.
@@ -176,6 +179,7 @@ void RenderWidget::renderTerrain() {
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
 	double width = m_terrain->width();
+	double height = m_terrain->height();
 	const double* trans = m_terrain->transform();
 	std::vector<double> vertices;
 	m_terrain->getVertices(vertices);
@@ -190,7 +194,7 @@ void RenderWidget::renderTerrain() {
 
 	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
 		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
-		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - 0.5;
+		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - (height / width) * 0.5;
 		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
 		if(j % 3 == 2) {
 			glColor3f(0.0f, 0.3 + z[0] * 0.5, 0.0f);
@@ -213,6 +217,7 @@ void RenderWidget::renderSurface() {
 	double minz = m_terrain->minz();
 	double maxz = m_terrain->maxz();
 	double width = m_terrain->width();
+	double height = m_terrain->height();
 	const double* trans = m_terrain->transform();
 	std::vector<double> vertices;
 	dynamic_cast<uav::surface::DelaunaySurface*>(m_surface)->getVertices(vertices);
@@ -223,7 +228,7 @@ void RenderWidget::renderSurface() {
 
 	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
 		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
-		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - 0.5;
+		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - (height / width) * 0.5;
 		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz); // Reduce vertical exaggeration; negate (up is negative).
 		if(j % 3 == 2) {
 			double nx = y[0] * z[1] - z[0] * y[1];
@@ -243,7 +248,7 @@ void RenderWidget::renderSurface() {
 
 void RenderWidget::rotate(double dx, double dy) {
 	m_eyeRot[0] = std::max(-1.0, std::min(1.0, m_eyeRot[0] + dx));
-	m_eyeRot[1] = std::max(-1.0, std::min(1.0, m_eyeRot[1] + dy));
+	m_eyeRot[2] = std::max(-1.0, std::min(1.0, m_eyeRot[2] + dy));
 }
 
 void RenderWidget::translate(double dx, double dy) {
