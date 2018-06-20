@@ -20,6 +20,15 @@
 namespace uav {
 namespace viewer {
 
+struct RenderParams {
+	double minz;
+	double maxz;
+	double width;
+	double height;
+	double ratio;
+	const double* trans;
+};
+
 class RenderWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 private:
 	bool m_initialized;
@@ -38,22 +47,22 @@ private:
 	/**
 	 * Called on paint to render the terrain.
 	 */
-	void renderTerrain();
+	void renderTerrain(const RenderParams& params);
 
 	/**
 	 * Called on paint to render the platform.
 	 */
-	void renderPlatform();
+	void renderPlatform(const RenderParams& params);
 
 	/**
 	 * Called on paint to render the laser beam.
 	 */
-	void renderLaser();
+	void renderLaser(const RenderParams& params);
 
 	/**
 	 * Called on paint to render the reconstructed surface.
 	 */
-	void renderSurface();
+	void renderSurface(const RenderParams& params);
 
 	/**
 	 * Rotate the view.

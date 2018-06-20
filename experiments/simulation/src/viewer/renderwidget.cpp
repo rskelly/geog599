@@ -22,7 +22,9 @@
 
 using namespace uav::viewer;
 
-constexpr double VERT_EXAG = 0.3;
+// The elevation is metres, but we can't scale down by map units because
+// the relief would disappear. This value is a compromise.
+constexpr double VERT_EXAG = 0.05;
 
 RenderWidget::RenderWidget(QWidget* parent) :
 	QOpenGLWidget(parent),
@@ -78,11 +80,21 @@ void RenderWidget::paintGL() {
 
 	glEnable(GL_COLOR_MATERIAL);
 
-	renderTerrain();
-	renderPlatform();
-	renderLaser();
-	renderSurface();
+	struct RenderParams rp = {
+		m_terrain->minz(),
+		m_terrain->maxz(),
+		m_terrain->width(),
+		m_terrain->height(),
+		m_terrain->height() / m_terrain->width(),
+		m_terrain->transform()
+	};
+
+	renderTerrain(rp);
+	renderPlatform(rp);
+	renderLaser(rp);
+	renderSurface(rp);
 }
+
 
 void RenderWidget::initializeGL() {
 	initializeOpenGLFunctions();
@@ -91,25 +103,19 @@ void RenderWidget::initializeGL() {
 	m_initialized = true;
 }
 
-void RenderWidget::renderLaser() {
+void RenderWidget::renderLaser(const RenderParams& params) {
 	const Eigen::Vector3d& dir = m_platform->rangefinderState().laserDirection();
 	const Eigen::Vector3d& pos = m_platform->rangefinderState().laserPosition();
 
-	double minz = m_terrain->minz();
-	double maxz = m_terrain->maxz();
-	double width = m_terrain->width();
-	double height = m_terrain->height();
-	const double* trans = m_terrain->transform();
-
-	double x0 = std::abs(pos[0] - trans[0]) / width - 0.5;
-	double y0 = std::abs(pos[1] - trans[3]) / width - (height / width) * 0.5;
-	double z0 = (pos[2] - minz) / (maxz - minz) * VERT_EXAG;
+	double x0 = std::abs(pos[0] - params.trans[0]) / params.width - 0.5;
+	double y0 = std::abs(pos[1] - params.trans[3]) / params.width - params.ratio * 0.5;
+	double z0 = (pos[2] - params.minz) / (params.maxz - params.minz) * VERT_EXAG;
 
 	Eigen::Vector3d pos1 = pos + dir.normalized() * 100.0; // TODO: configure range.
 
-	double x1 = std::abs(pos1[0] - trans[0]) / width - 0.5;
-	double y1 = std::abs(pos1[1] - trans[3]) / width - (height / width) * 0.5;
-	double z1 = (pos1[2] - minz) / (maxz - minz) * VERT_EXAG;
+	double x1 = std::abs(pos1[0] - params.trans[0]) / params.width - 0.5;
+	double y1 = std::abs(pos1[1] - params.trans[3]) / params.width - params.ratio * 0.5;
+	double z1 = (pos1[2] - params.minz) / (params.maxz - params.minz) * VERT_EXAG;
 
 	glBegin(GL_LINES);
 	glColor3f(1.0, 0.0, 0.0);
@@ -118,20 +124,14 @@ void RenderWidget::renderLaser() {
 	glEnd();
 }
 
-void RenderWidget::renderPlatform() {
+void RenderWidget::renderPlatform(const RenderParams& params) {
 	const Eigen::Vector3d& pos = m_platform->platformState().position();
 
-	double minz = m_terrain->minz();
-	double maxz = m_terrain->maxz();
-	double width = m_terrain->width();
-	double height = m_terrain->height();
-	const double* trans = m_terrain->transform();
+	double x = std::abs(pos[0] - params.trans[0]) / params.width - 0.5;
+	double y = std::abs(pos[1] - params.trans[3]) / params.width - params.ratio * 0.5;
+	double z = (pos[2] - params.minz) / (params.maxz - params.minz) * VERT_EXAG;
 
-	double x = std::abs(pos[0] - trans[0]) / width - 0.5;
-	double y = std::abs(pos[1] - trans[3]) / width - (height / width) * 0.5;
-	double z = (pos[2] - minz) / (maxz - minz) * VERT_EXAG;
-
-	double size = 1 / width; // The vehicle is 1m square, scaled to the width of the scene.
+	double size = 1 / params.width; // The vehicle is 1m square, scaled to the width of the scene.
 
 	glBegin(GL_QUADS);
 
@@ -171,55 +171,44 @@ void RenderWidget::renderPlatform() {
 	glEnd();
 }
 
-void RenderWidget::renderTerrain() {
+void RenderWidget::renderTerrain(const RenderParams& params) {
 	if(!m_showTerrain)
 		return;
 
 	glBegin(GL_TRIANGLES);
 
-	double minz = m_terrain->minz();
-	double maxz = m_terrain->maxz();
-	double width = m_terrain->width();
-	double height = m_terrain->height();
-	const double* trans = m_terrain->transform();
 	std::vector<double> vertices;
 	m_terrain->getVertices(vertices);
-
-	// TODO: Fix and use normals from terrain.
 
 	double x[3];
 	double y[3];
 	double z[3];
-
+	double c[3]; // color
 	double offset = 0.001;
 
 	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
-		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
-		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - (height / width) * 0.5;
-		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz) * VERT_EXAG;
+		x[j % 3] = std::abs(vertices[i + 0] - params.trans[0]) / params.width - 0.5;
+		y[j % 3] = std::abs(vertices[i + 1] - params.trans[3]) / params.width - params.ratio * 0.5;
+		c[j % 3] = (vertices[i + 2] - params.minz) / (params.maxz - params.minz);
+		z[j % 3] = c[j % 3] * VERT_EXAG;
 		if(j % 3 == 2) {
-			glColor3f(0.0f, 0.3 + z[0] * 0.5, 0.0f);
-			glVertex3f(x[0], y[0], z[0] / 10 - offset); // Lower to make space for surface.
-			glColor3f(0.0f, 0.3 + z[1] * 0.5, 0.0f);
-			glVertex3f(x[1], y[1], z[1] / 10 - offset);
-			glColor3f(0.0f, 0.3 + z[2] * 0.5, 0.0f);
-			glVertex3f(x[2], y[2], z[2] / 10 - offset);
+			glColor3f(0.0f, 0.3 + c[0] * 0.5, 0.0f);
+			glVertex3f(x[0], y[0], z[0] - offset); // Lower to make space for surface.
+			glColor3f(0.0f, 0.3 + c[1] * 0.5, 0.0f);
+			glVertex3f(x[1], y[1], z[1] - offset);
+			glColor3f(0.0f, 0.3 + c[2] * 0.5, 0.0f);
+			glVertex3f(x[2], y[2], z[2] - offset);
 		}
 	}
 
 	glEnd();
 }
 
-void RenderWidget::renderSurface() {
+void RenderWidget::renderSurface(const RenderParams& params) {
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glBegin(GL_TRIANGLES);
 
-	double minz = m_terrain->minz();
-	double maxz = m_terrain->maxz();
-	double width = m_terrain->width();
-	double height = m_terrain->height();
-	const double* trans = m_terrain->transform();
 	std::vector<double> vertices;
 	dynamic_cast<uav::surface::DelaunaySurface*>(m_surface)->getVertices(vertices);
 
@@ -228,17 +217,17 @@ void RenderWidget::renderSurface() {
 	double z[3];
 
 	for(size_t i = 0, j = 0; i < vertices.size(); i += 3, ++j) {
-		x[j % 3] = std::abs(vertices[i + 0] - trans[0]) / width - 0.5;
-		y[j % 3] = std::abs(vertices[i + 1] - trans[3]) / width - (height / width) * 0.5;
-		z[j % 3] = (vertices[i + 2] - minz) / (maxz - minz) * VERT_EXAG;
+		x[j % 3] = std::abs(vertices[i + 0] - params.trans[0]) / params.width - 0.5;
+		y[j % 3] = std::abs(vertices[i + 1] - params.trans[3]) / params.width - params.ratio * 0.5;
+		z[j % 3] = (vertices[i + 2] - params.minz) / (params.maxz - params.minz) * VERT_EXAG;
 		if(j % 3 == 2) {
 			double nx = y[0] * z[1] - z[0] * y[1];
 			double ny = z[0] * x[1] - x[0] * z[1];
 			double nz = x[0] * y[1] - y[0] * x[1];
 			glNormal3f(nx, ny, nz);
-			glVertex3f(x[0], y[0], z[0] / 10);
-			glVertex3f(x[1], y[1], z[1] / 10);
-			glVertex3f(x[2], y[2], z[2] / 10);
+			glVertex3f(x[0], y[0], z[0]);
+			glVertex3f(x[1], y[1], z[1]);
+			glVertex3f(x[2], y[2], z[2]);
 		}
 	}
 
