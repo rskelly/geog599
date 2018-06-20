@@ -12,7 +12,7 @@
 #include <mutex>
 #include <thread>
 #include <iostream>
-#include <list>
+#include <unordered_map>
 
 #include <Eigen/Core>
 
@@ -55,6 +55,8 @@ public:
 	double lastTick;		///<! The time of the last tick.
 	ClockObserver* item;	///<! A pointer to the ClockObserver. This instance is not the owner.
 
+	ClockObserverItem();
+
 	/**
 	 * Build a ClockObserverItem using the given pointer and tick frequency (per second.)
 	 * The tick frequency is converted to a time delay.
@@ -77,8 +79,8 @@ private:
 	double m_minStep;
 	double m_currentTime;
 	std::thread m_thread;
-	std::list<ClockObserverItem> m_observers;
-	std::mutex m_stepMtx;
+	std::unordered_map<ClockObserver*, ClockObserverItem> m_observers;
+	std::mutex m_mtx;
 
 	Clock();
 

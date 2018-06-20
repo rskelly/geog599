@@ -31,25 +31,35 @@ void uav::thread::setAffinity(std::thread &th, int core) {
 
 using namespace uav::util;
 
+ClockObserverItem::ClockObserverItem() :
+		ClockObserverItem(nullptr, -1) {}
+
 ClockObserverItem::ClockObserverItem(ClockObserver* item, double delay) :
 		delay(delay), lastTick(-1), item(item)  {}
 
-void __clockRun(std::list<ClockObserverItem>* observers, bool* running, double* currentTime, double* minStep) {
+void __clockRun(std::unordered_map<ClockObserver*, ClockObserverItem>* observers,
+		bool* running, double* currentTime, double* minStep, std::mutex* mtx) {
 	double time;
 
-	// Set the initial time on all observer items.
-	time = 0; // uavtime(); No need to start at UTC. Maybe can add another field later.
-	for(ClockObserverItem& item : *observers)
-		item.lastTick = time;
+	{
+		std::lock_guard<std::mutex> lk(*mtx);
+		// Set the initial time on all observer items.
+		time = 0; // uavtime(); No need to start at UTC. Maybe can add another field later.
+		for(auto& item : *observers)
+			item.second.lastTick = time;
+	}
 
 	while(*running) {
 		time += *minStep;
 		*currentTime = time;
-		// Iterate over observer items, firing those whose tick delay has elapsed.
-		for(ClockObserverItem& item : *observers) {
-			if(item.delay <= time - item.lastTick) {
-				item.item->tick(time);
-				item.lastTick = time;
+		{
+			std::lock_guard<std::mutex> lk(*mtx);
+			// Iterate over observer items, firing those whose tick delay has elapsed.
+			for(auto& item : *observers) {
+				if(item.second.delay <= time - item.second.lastTick) {
+					item.second.item->tick(time);
+					item.second.lastTick = time;
+				}
 			}
 		}
 		std::this_thread::sleep_for(std::chrono::nanoseconds((int) (*minStep * 1000000000)));
@@ -73,42 +83,58 @@ double Clock::currentTime() {
 
 void Clock::addObserver(ClockObserver* obs, double delay) {
 	Clock& inst = Clock::instance();
-	bool found = false;
+	std::unordered_map<ClockObserver*, ClockObserverItem>& items = inst.m_observers;
 
-	// Find the observer and modify it.
-	for(ClockObserverItem& item : inst.m_observers) {
-		if(item.item == obs) {
+	{
+		std::lock_guard<std::mutex> lk(inst.m_mtx);
+		if(items.find(obs) == items.end()) {
+			ClockObserverItem& item = items[obs];
+			item.item = obs;
 			item.delay = delay;
-			found = true;
-			break;
+		} else {
+			items[obs].delay = delay;
 		}
 	}
 
-	// If no item was found, add it.
-	if(!found)
-		inst.m_observers.emplace_back(obs, delay);
-
 	// Reset minStep
 	double minStep = std::numeric_limits<double>::max();
-	for(ClockObserverItem& item : inst.m_observers) {
-		if(item.delay < minStep)
-			minStep = item.delay;
+	for(const auto& item : items) {
+		if(item.second.delay < minStep)
+			minStep = item.second.delay;
 	}
-	std::lock_guard<std::mutex> lk(inst.m_stepMtx);
 	inst.m_minStep = minStep;
 }
 
 void Clock::removeObserver(ClockObserver* obs) {
 	Clock& inst = Clock::instance();
-	for(auto it = inst.m_observers.begin(); it != inst.m_observers.end(); ++it)
-		it = inst.m_observers.erase(it);
+	std::unordered_map<ClockObserver*, ClockObserverItem>& items = inst.m_observers;
+	bool found = false;
+
+	{
+		std::lock_guard<std::mutex> lk(inst.m_mtx);
+		if(items.find(obs) != items.end()) {
+			items.erase(obs);
+			found = true;
+		}
+	}
+
+	if(found) {
+		// Reset minStep
+		double minStep = std::numeric_limits<double>::max();
+		for(auto& item : items) {
+			if(item.second.delay < minStep)
+				minStep = item.second.delay;
+		}
+		inst.m_minStep = minStep;
+	}
 }
 
 void Clock::start() {
 	Clock& inst = Clock::instance();
 	if(!inst.m_running) {
 		inst.m_running = true;
-		inst.m_thread = std::thread(__clockRun, &(inst.m_observers), &(inst.m_running), &(inst.m_currentTime), &(inst.m_minStep));
+		inst.m_thread = std::thread(__clockRun, &(inst.m_observers),
+				&(inst.m_running), &(inst.m_currentTime), &(inst.m_minStep), &(inst.m_mtx));
 	}
 }
 
