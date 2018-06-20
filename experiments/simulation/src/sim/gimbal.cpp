@@ -18,7 +18,10 @@ using namespace uav::util;
 constexpr double G_CLOCK_DELAY = 1.0 / 10000.0;
 
 SinGimbal::SinGimbal(double sweepAngle, double sweepFrequency) :
+	m_orientation(Eigen::Vector3d(0, 0, 0)),
 	m_position(Eigen::Vector3d(0, 0, -2)), // 2cm down
+	m_staticOrientation(Eigen::Vector3d(0, 0, 0)),
+	m_staticPosition(Eigen::Vector3d(0, 0, 0)),
 	m_running(false),
 	m_sweepAngle(sweepAngle), m_sweepFrequency(sweepFrequency) {
 
