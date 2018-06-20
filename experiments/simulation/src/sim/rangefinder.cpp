@@ -111,7 +111,7 @@ void Rangefinder::setPulseFrequency(double freq) {
 
 void Rangefinder::generatePulse() {
 	double range = m_bridge->getRange();
-	if(range <= m_maxRange) {
+	if(!std::isnan(range) && range <= m_maxRange) {
 		// If the range is within the max range, generate a pulse.
 		double time = Clock::currentTime();
 		// The error is scaled from zero at zero range, to 1*SD at max range.
