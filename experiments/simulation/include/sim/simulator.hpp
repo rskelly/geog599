@@ -31,7 +31,7 @@ public:
 	Simulator();
 	void start();
 	void stop();
-	void setTerrainFile(const std::string& file);
+	void setTerrainFile(const std::string& file, int band);
 	void setGimbalAngle(double angle);
 	uav::sim::Terrain* terrain();
 	uav::Platform* platform();

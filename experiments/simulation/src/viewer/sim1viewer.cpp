@@ -21,6 +21,7 @@
 #include "util.hpp"
 
 #define K_TERRAIN_FILE "terrainFile"
+#define K_TERRAIN_BAND "terrainBand"
 #define K_SHOW_TERRAIN "showTerrain"
 #define K_GIMBAL_ANGLE "gimbalAngle"
 #define K_ORIGIN_X "originX"
@@ -48,6 +49,7 @@ Sim1Viewer::Sim1Viewer() :
 void Sim1Viewer::applySettings() {
 	// Set the terrain file on the text box from the settings map.
 	txtTerrainFile->setText(m_settings.value(K_TERRAIN_FILE, "").toString());
+	spnBand->setValue(m_settings.value(K_TERRAIN_BAND, 1).toInt());
 	// Show whether terrain will be rendered.
 	chkShowTerrain->setChecked(m_settings.value(K_SHOW_TERRAIN, true).toBool());
 	// Show the gimbal angle.
@@ -81,10 +83,11 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(btnStart, SIGNAL(clicked()), this, SLOT(btnStartClicked()));
     connect(btnStop, SIGNAL(clicked()), this, SLOT(btnStopClicked()));
     connect(btnReset, SIGNAL(clicked()), this, SLOT(btnResetClicked()));
-    connect(chkShowInfo, SIGNAL(toggled(bool)), SLOT(chkShowInfoChanged(bool)));
-    connect(chkShowSettings, SIGNAL(toggled(bool)), SLOT(chkShowSettingsChanged(bool)));
-    connect(chkShowTerrain, SIGNAL(toggled(bool)), SLOT(chkShowTerrainChanged(bool)));
-    connect(spnGimbalAngle, SIGNAL(valueChanged(double)), SLOT(spnGimbalAngleChanged(double)));
+    connect(chkShowInfo, SIGNAL(toggled(bool)), this, SLOT(chkShowInfoChanged(bool)));
+    connect(chkShowSettings, SIGNAL(toggled(bool)), this, SLOT(chkShowSettingsChanged(bool)));
+    connect(chkShowTerrain, SIGNAL(toggled(bool)), this, SLOT(chkShowTerrainChanged(bool)));
+    connect(spnGimbalAngle, SIGNAL(valueChanged(double)), this, SLOT(spnGimbalAngleChanged(double)));
+    connect(spnBand, SIGNAL(valueChanged(int)), this, SLOT(spnBandChanged(int)));
 }
 
 void Sim1Viewer::setSimulator(Simulator& sim) {
@@ -102,7 +105,10 @@ void Sim1Viewer::start() {
 	if(!m_running) {
 		if(!m_sim)
 			throw std::runtime_error("Simulator not set.");
-		m_sim->setTerrainFile(m_settings.value(K_TERRAIN_FILE, "").toString().toStdString());
+		m_sim->setTerrainFile(
+			m_settings.value(K_TERRAIN_FILE, "").toString().toStdString(),
+			m_settings.value(K_TERRAIN_BAND, 1).toInt()
+		);
 		m_sim->setGimbalAngle(m_settings.value(K_GIMBAL_ANGLE, 0).toDouble() * PI / 180);
 
 		glPanel->setTerrain(m_sim->terrain());
@@ -194,15 +200,15 @@ void Sim1Viewer::btnTerrainFileClicked() {
 }
 
 void Sim1Viewer::btnCloseFormClicked() {
-	if(m_form) {
-		m_form->close();
-		delete m_form;
-		m_form = nullptr;
-	}
+	m_form->close();
 }
 
 void Sim1Viewer::spnGimbalAngleChanged(double value) {
 	m_settings.setValue(K_GIMBAL_ANGLE, QString::number(value));
+}
+
+void Sim1Viewer::spnBandChanged(int value) {
+	m_settings.setValue(K_TERRAIN_BAND, value);
 }
 
 Sim1Viewer::~Sim1Viewer() {
@@ -218,7 +224,5 @@ Sim1Viewer::~Sim1Viewer() {
 	m_settings.setValue(K_EYEROT_Y, eyeRot[1]);
 	m_settings.setValue(K_EYEROT_Z, eyeRot[2]);
 	m_settings.setValue(K_EYEDIST, glPanel->eyeDistance());
-	if(m_form)
-		delete m_form;
 }
 

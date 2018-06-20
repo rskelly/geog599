@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <string>
 
 #include <gdal_priv.h>
 
@@ -18,23 +19,27 @@ Terrain::Terrain() :
 	m_width(0), m_height(0),
 	m_minz(0), m_maxz(0) {}
 
-Terrain::Terrain(const std::string& demfile) {
-	load(demfile);
+Terrain::Terrain(const std::string& demfile, int band) {
+	load(demfile, band);
 }
 
-void Terrain::load(const std::string& demfile) {
+void Terrain::load(const std::string& demfile, int band) {
 	GDALAllRegister();
 	GDALDataset* ds = (GDALDataset*) GDALOpen(demfile.c_str(), GA_ReadOnly);
+	if(!ds)
+		throw std::runtime_error("Failed to load file: " + demfile);
 	int cols = ds->GetRasterXSize();
 	int rows = ds->GetRasterYSize();
 	ds->GetGeoTransform(m_trans);
 	m_width = std::abs(m_trans[1]) * ds->GetRasterXSize();
 	m_height = std::abs(m_trans[5]) * ds->GetRasterYSize();
-	GDALRasterBand* band = ds->GetRasterBand(2);
-	double nodata = band->GetNoDataValue();
+	GDALRasterBand* bnd = ds->GetRasterBand(band);
+	if(!bnd)
+		throw std::runtime_error("Failed to retrieve band: " + std::to_string(band));
+	double nodata = bnd->GetNoDataValue();
 
 	std::vector<float> data(cols * rows);
-	if(CE_None != band->RasterIO(GF_Read, 0, 0, cols, rows, data.data(), cols, rows, GDT_Float32, 0, 0, 0))
+	if(CE_None != bnd->RasterIO(GF_Read, 0, 0, cols, rows, data.data(), cols, rows, GDT_Float32, 0, 0, 0))
 		throw std::runtime_error("Failed to load raster.");
 
 	std::vector<Point> pts;

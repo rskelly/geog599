@@ -89,6 +89,7 @@ public slots:
 	void btnStartClicked();
 	void btnResetClicked();
 	void spnGimbalAngleChanged(double value);
+	void spnBandChanged(int value);
 };
 
 

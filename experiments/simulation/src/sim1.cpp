@@ -91,8 +91,8 @@ void Simulator::stop() {
 	}
 }
 
-void Simulator::setTerrainFile(const std::string& file) {
-	m_terrain->load(file);
+void Simulator::setTerrainFile(const std::string& file, int band) {
+	m_terrain->load(file, band);
 	double x = m_terrain->minx() + 10;
 	double y = m_terrain->miny() + m_terrain->height() / 2.0;
 
@@ -130,7 +130,7 @@ int runWithGui(int argc, char **argv) {
 		Sim1Application(int &argc, char **argv) : QApplication(argc, argv) {
 			QCoreApplication::setOrganizationName("dijital.ca");
 			QCoreApplication::setOrganizationDomain("dijital.ca");
-			QCoreApplication::setApplicationName("UAVSimulator1");
+			QCoreApplication::setApplicationName("uavsim1");
 		}
 
 		bool notify(QObject *receiver, QEvent *e) {
