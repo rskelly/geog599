@@ -175,13 +175,13 @@ void Platform::tick(double time) {
 
 	const Eigen::Vector3d& lVel = m_platformState.linearVelocity();
 
-	Pp[0] += m_posPoisson.next(lVel[0] * PF_CLOCK_DELAY); // m/s multiplied by the delay
-	Pp[1] += m_posPoisson.nextCentered();
-	Pp[2] += m_posPoisson.nextCentered();
+	Pp[0] += lVel[0] * PF_CLOCK_DELAY; // m_posPoisson.next(lVel[0] * PF_CLOCK_DELAY); // m/s multiplied by the delay
+	//Pp[1] += m_posPoisson.nextCentered();
+	//Pp[2] += m_posPoisson.nextCentered();
 
-	Po[0] += 0; //m_rotPoisson.nextCentered();
-	Po[1] += 0; //m_rotPoisson.nextCentered();
-	Po[2] += 0; //m_rotPoisson.nextCentered();
+	//Po[0] += m_rotPoisson.nextCentered();
+	//Po[1] += m_rotPoisson.nextCentered();
+	//Po[2] += m_rotPoisson.nextCentered();
 
 	m_platformState.setPosition(Pp);
 	m_platformState.setOrientation(Po);
