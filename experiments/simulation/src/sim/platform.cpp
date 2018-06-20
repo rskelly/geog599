@@ -17,6 +17,7 @@
 #include "surface.hpp"
 #include "util.hpp"
 
+constexpr double PF_CLOCK_DELAY = 1.0 / 500.0;
 
 using namespace uav::sim;
 using namespace uav::surface;
@@ -119,7 +120,6 @@ const Eigen::Vector3d& RangefinderState::laserDirection() const {
 	return m_direction;
 }
 
-constexpr double PF_CLOCK_DELAY = 1.0 / 500.0;
 
 Platform::Platform() :
 	m_gimbal(nullptr),
