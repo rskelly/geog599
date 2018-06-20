@@ -9,6 +9,7 @@
 #define INCLUDE_SURFACE_HPP_
 
 #include <memory>
+#include <mutex>
 
 #include <Eigen/Core>
 
@@ -44,6 +45,8 @@ public:
 class DelaunaySurface : public Surface {
 private:
 	std::unique_ptr<Delaunay> m_tri;
+	std::unordered_map<size_t, std::vector<Delaunay::Point> > m_pts;
+	std::mutex m_mtx;
 
 public:
 
