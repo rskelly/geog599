@@ -102,13 +102,13 @@ void RenderWidget::renderLaser() {
 	const double* trans = m_terrain->transform();
 
 	double x0 = std::abs(pos[0] - trans[0]) / width - 0.5;
-	double y0 = std::abs(pos[1] - trans[3]) / (height / width) * 0.5;
+	double y0 = std::abs(pos[1] - trans[3]) / width - (height / width) * 0.5;
 	double z0 = (pos[2] - minz) / (maxz - minz) * VERT_EXAG;
 
 	Eigen::Vector3d pos1 = pos + dir.normalized() * 100.0; // TODO: configure range.
 
 	double x1 = std::abs(pos1[0] - trans[0]) / width - 0.5;
-	double y1 = std::abs(pos1[1] - trans[3]) / (height / width) * 0.5;
+	double y1 = std::abs(pos1[1] - trans[3]) / width - (height / width) * 0.5;
 	double z1 = (pos1[2] - minz) / (maxz - minz) * VERT_EXAG;
 
 	glBegin(GL_LINES);
@@ -128,7 +128,7 @@ void RenderWidget::renderPlatform() {
 	const double* trans = m_terrain->transform();
 
 	double x = std::abs(pos[0] - trans[0]) / width - 0.5;
-	double y = std::abs(pos[1] - trans[3]) / (height / width) * 0.5;
+	double y = std::abs(pos[1] - trans[3]) / width - (height / width) * 0.5;
 	double z = (pos[2] - minz) / (maxz - minz) * VERT_EXAG;
 
 	double size = 1 / width; // The vehicle is 1m square, scaled to the width of the scene.
