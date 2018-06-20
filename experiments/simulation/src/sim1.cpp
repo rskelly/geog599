@@ -49,7 +49,7 @@ Simulator::Simulator() :
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
-	rangefinder->setPulseFrequency(500); // NOTE: The gimbal's update frequency must be higher than this.
+	rangefinder->setPulseFrequency(50); // NOTE: The gimbal's update frequency must be higher than this.
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
