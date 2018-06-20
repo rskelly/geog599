@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 
 #include <QtWidgets/QFileDialog>
 #include <QtGui/QKeyEvent>
@@ -20,19 +21,22 @@
 #include "platform.hpp"
 #include "util.hpp"
 
-#define K_TERRAIN_FILE "terrainFile"
-#define K_TERRAIN_BAND "terrainBand"
-#define K_SHOW_TERRAIN "showTerrain"
-#define K_GIMBAL_ANGLE "gimbalAngle"
-#define K_ORIGIN_X "originX"
-#define K_ORIGIN_Y "originY"
-#define K_EYEPOS_X "eyePosX"
-#define K_EYEPOS_Y "eyePosY"
-#define K_EYEPOS_Z "eyePosZ"
-#define K_EYEROT_X "eyeRotX"
-#define K_EYEROT_Y "eyeRotY"
-#define K_EYEROT_Z "eyeRotZ"
-#define K_EYEDIST "eyeDist"
+constexpr char K_TERRAIN_FILE[] = "terrainFile";
+constexpr char K_TERRAIN_BAND[] = "terrainBand";
+constexpr char K_SHOW_TERRAIN[] = "showTerrain";
+constexpr char K_GIMBAL_ANGLE[] = "gimbalAngle";
+constexpr char K_ORIGIN_X[] = "originX";
+constexpr char K_ORIGIN_Y[] = "originY";
+constexpr char K_EYEPOS_X[] = "eyePosX";
+constexpr char K_EYEPOS_Y[] = "eyePosY";
+constexpr char K_EYEPOS_Z[] = "eyePosZ";
+constexpr char K_EYEROT_X[] = "eyeRotX";
+constexpr char K_EYEROT_Y[] = "eyeRotY";
+constexpr char K_EYEROT_Z[] = "eyeRotZ";
+constexpr char K_EYEDIST[] = "eyeDist";
+
+constexpr double D_GIMBAL_ANGLE = 45;
+constexpr int D_TERRAIN_BAND = 1;
 
 using namespace uav::viewer;
 using namespace uav::sim;
@@ -49,11 +53,11 @@ Sim1Viewer::Sim1Viewer() :
 void Sim1Viewer::applySettings() {
 	// Set the terrain file on the text box from the settings map.
 	txtTerrainFile->setText(m_settings.value(K_TERRAIN_FILE, "").toString());
-	spnBand->setValue(m_settings.value(K_TERRAIN_BAND, 1).toInt());
+	spnBand->setValue(m_settings.value(K_TERRAIN_BAND, D_TERRAIN_BAND).toInt());
 	// Show whether terrain will be rendered.
 	chkShowTerrain->setChecked(m_settings.value(K_SHOW_TERRAIN, true).toBool());
 	// Show the gimbal angle.
-	spnGimbalAngle->setValue(m_settings.value(K_GIMBAL_ANGLE, QVariant(45.0)).toDouble());
+	spnGimbalAngle->setValue(m_settings.value(K_GIMBAL_ANGLE, D_GIMBAL_ANGLE).toDouble());
 
 	glPanel->showTerrain(m_settings.value(K_SHOW_TERRAIN, true).toBool());
 
@@ -105,11 +109,11 @@ void Sim1Viewer::start() {
 	if(!m_running) {
 		if(!m_sim)
 			throw std::runtime_error("Simulator not set.");
-		m_sim->setTerrainFile(
-			m_settings.value(K_TERRAIN_FILE, "").toString().toStdString(),
-			m_settings.value(K_TERRAIN_BAND, 1).toInt()
-		);
-		m_sim->setGimbalAngle(m_settings.value(K_GIMBAL_ANGLE, 0).toDouble() * PI / 180);
+		std::string file = m_settings.value(K_TERRAIN_FILE, "").toString().toStdString();
+		int band = m_settings.value(K_TERRAIN_BAND, 1).toInt();
+		m_sim->setTerrainFile(file, band);
+		double angle = m_settings.value(K_GIMBAL_ANGLE, D_GIMBAL_ANGLE).toDouble();
+		m_sim->setGimbalAngle(angle * PI / 180);
 
 		glPanel->setTerrain(m_sim->terrain());
 		glPanel->setPlatform(m_sim->platform());
@@ -204,7 +208,7 @@ void Sim1Viewer::btnCloseFormClicked() {
 }
 
 void Sim1Viewer::spnGimbalAngleChanged(double value) {
-	m_settings.setValue(K_GIMBAL_ANGLE, QString::number(value));
+	m_settings.setValue(K_GIMBAL_ANGLE, value);
 }
 
 void Sim1Viewer::spnBandChanged(int value) {
