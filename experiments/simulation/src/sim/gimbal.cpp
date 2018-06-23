@@ -23,12 +23,19 @@ SinGimbal::SinGimbal(double sweepAngle, double sweepFrequency) :
 	m_staticOrientation(Eigen::Vector3d(0, 0, 0)),
 	m_staticPosition(Eigen::Vector3d(0, 0, 0)),
 	m_running(false),
-	m_sweepAngle(sweepAngle), m_sweepFrequency(sweepFrequency) {
+	m_sweepAngle(sweepAngle / 2), m_sweepFrequency(sweepFrequency) {
+}
 
+void SinGimbal::setSweepAngle(double sweepAngle) {
+	m_sweepAngle = sweepAngle / 2;
+}
+
+void SinGimbal::setSweepFrequency(double sweepFrequency) {
+	m_sweepFrequency = sweepFrequency;
 }
 
 void SinGimbal::tick(double time) {
-	double a = std::sin(time * PI * 2) * (PI / 9);
+	double a = std::sin(time * PI * 2 * m_sweepFrequency) * m_sweepAngle;
 	m_orientation[2] = a; // around z-axis (side to side)
 }
 

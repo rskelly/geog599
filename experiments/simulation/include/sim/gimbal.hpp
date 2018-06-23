@@ -43,10 +43,14 @@ public:
 	 * Construct a SinGimbal instance, optionally with
 	 * a sweep angle and frequency.
 	 *
-	 * @param sweepAngle The angle of sweep in radians. Default pi / 2.
+	 * @param sweepAngle The total angle of sweep in radians. Default pi / 2.
 	 * @param sweepFrequency The freequency of sweep, as the number of full cycles per second.
 	 */
 	SinGimbal(double sweepAngle = PI / 2, double sweepFrequency = 1);
+
+	void setSweepAngle(double sweepAngle);
+
+	void setSweepFrequency(double sweepFrequency);
 
 	void start();
 

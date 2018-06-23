@@ -96,6 +96,20 @@ public:
 	virtual const Eigen::Vector3d& staticPosition() const = 0;
 
 	/**
+	 * Set the sweep angle in radians.
+	 *
+	 * @param sweepAngle The sweep angle in radians.
+	 */
+	virtual void setSweepAngle(double sweepAngle) = 0;
+
+	/**
+	 * Set the sweep frequency in cycles per second.
+	 *
+	 * @param sweepFrequency The sweep frequency in cycles per second.
+	 */
+	virtual void setSweepFrequency(double sweepFrequency) = 0;
+
+	/**
 	 * Start the gimbal's operation.
 	 */
 	virtual void start() = 0;

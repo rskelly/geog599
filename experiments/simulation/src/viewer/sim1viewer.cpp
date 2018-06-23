@@ -16,6 +16,7 @@
 #include "uav.hpp"
 #include "viewer/sim1viewer.hpp"
 #include "viewer/renderwidget.hpp"
+#include "sim/rangefinder.hpp"
 #include "geometry.hpp"
 #include "rangefinder.hpp"
 #include "platform.hpp"
@@ -34,9 +35,15 @@ constexpr char K_EYEROT_X[] = "eyeRotX";
 constexpr char K_EYEROT_Y[] = "eyeRotY";
 constexpr char K_EYEROT_Z[] = "eyeRotZ";
 constexpr char K_EYEDIST[] = "eyeDist";
+constexpr char K_SWEEP_ANGLE[] = "sweepAngle";
+constexpr char K_SWEEP_FREQ[] = "sweepFreq";
+constexpr char K_PULSE_FREQ[] = "pulseFreq";
 
 constexpr double D_GIMBAL_ANGLE = 45;
 constexpr int D_TERRAIN_BAND = 1;
+constexpr double D_SWEEP_ANGLE = 45;
+constexpr double D_SWEEP_FREQ = 2;
+constexpr double D_PULSE_FREQ = 50;
 
 using namespace uav::viewer;
 using namespace uav::sim;
@@ -58,6 +65,9 @@ void Sim1Viewer::applySettings() {
 	chkShowTerrain->setChecked(m_settings.value(K_SHOW_TERRAIN, true).toBool());
 	// Show the gimbal angle.
 	spnGimbalAngle->setValue(m_settings.value(K_GIMBAL_ANGLE, D_GIMBAL_ANGLE).toDouble());
+	spnSweepFrequency->setValue(m_settings.value(K_SWEEP_FREQ, D_SWEEP_FREQ).toDouble());
+	spnSweepAngle->setValue(m_settings.value(K_SWEEP_ANGLE, D_SWEEP_ANGLE).toDouble());
+	spnPulseFrequency->setValue(m_settings.value(K_PULSE_FREQ, D_PULSE_FREQ).toDouble());
 
 	glPanel->showTerrain(m_settings.value(K_SHOW_TERRAIN, true).toBool());
 
@@ -92,6 +102,9 @@ void Sim1Viewer::setupUi(QDialog *Sim1Viewer) {
     connect(chkShowTerrain, SIGNAL(toggled(bool)), this, SLOT(chkShowTerrainChanged(bool)));
     connect(spnGimbalAngle, SIGNAL(valueChanged(double)), this, SLOT(spnGimbalAngleChanged(double)));
     connect(spnBand, SIGNAL(valueChanged(int)), this, SLOT(spnBandChanged(int)));
+    connect(spnSweepAngle, SIGNAL(valueChanged(double)), this, SLOT(spnSweepAngleChanged(double)));
+    connect(spnSweepFrequency, SIGNAL(valueChanged(double)), this, SLOT(spnSweepFrequencyChanged(double)));
+    connect(spnPulseFrequency, SIGNAL(valueChanged(double)), this, SLOT(spnPulseFrequencyChanged(double)));
 }
 
 void Sim1Viewer::setSimulator(Simulator& sim) {
@@ -112,8 +125,13 @@ void Sim1Viewer::start() {
 		std::string file = m_settings.value(K_TERRAIN_FILE, "").toString().toStdString();
 		int band = m_settings.value(K_TERRAIN_BAND, 1).toInt();
 		m_sim->setTerrainFile(file, band);
-		double angle = m_settings.value(K_GIMBAL_ANGLE, D_GIMBAL_ANGLE).toDouble();
-		m_sim->setGimbalAngle(angle * PI / 180);
+
+		Eigen::Vector3d go = m_sim->platform()->gimbal()->staticOrientation();
+		go[1] = m_settings.value(K_GIMBAL_ANGLE, D_GIMBAL_ANGLE).toDouble() * PI / 180;
+		m_sim->platform()->gimbal()->setStaticOrientation(go);
+		m_sim->platform()->gimbal()->setSweepFrequency(m_settings.value(K_SWEEP_FREQ, D_SWEEP_FREQ).toDouble());
+		m_sim->platform()->gimbal()->setSweepAngle(m_settings.value(K_SWEEP_ANGLE, D_SWEEP_ANGLE).toDouble() * PI / 180);
+		dynamic_cast<uav::sim::Rangefinder*>(m_sim->platform()->rangefinder())->setPulseFrequency(m_settings.value(K_PULSE_FREQ, D_PULSE_FREQ).toDouble());
 
 		glPanel->setTerrain(m_sim->terrain());
 		glPanel->setPlatform(m_sim->platform());
@@ -144,9 +162,7 @@ void Sim1Viewer::stop() {
 
 void Sim1Viewer::updateInfo() {
 	double elev = m_sim->platform()->platformState().altitude();
-	double prate = m_sim->platform()->platformState().pulseRate();
 	txtElevation->setText(QString::number(elev, 'f', 2));
-	txtPulseRate->setText(QString::number(prate, 'f', 2));
 }
 
 void Sim1Viewer::update() {
@@ -163,6 +179,21 @@ void Sim1Viewer::showForm() {
 
 
 // slots
+
+void Sim1Viewer::spnPulseFrequencyChanged(double value) {
+	m_settings.setValue(K_PULSE_FREQ, value);
+	dynamic_cast<uav::sim::Rangefinder*>(m_sim->platform()->rangefinder())->setPulseFrequency(value);
+}
+
+void Sim1Viewer::spnSweepFrequencyChanged(double value) {
+	m_settings.setValue(K_SWEEP_FREQ, value);
+	m_sim->platform()->gimbal()->setSweepFrequency(value);
+}
+
+void Sim1Viewer::spnSweepAngleChanged(double value) {
+	m_settings.setValue(K_SWEEP_ANGLE, value);
+	m_sim->platform()->gimbal()->setSweepAngle(value * PI / 180);
+}
 
 void Sim1Viewer::terrainFileChanged(QString file) {
 	m_settings.setValue(K_TERRAIN_FILE, file);
@@ -209,6 +240,9 @@ void Sim1Viewer::btnCloseFormClicked() {
 
 void Sim1Viewer::spnGimbalAngleChanged(double value) {
 	m_settings.setValue(K_GIMBAL_ANGLE, value);
+	Eigen::Vector3d go = m_sim->platform()->gimbal()->staticOrientation();
+	go[1] = value * PI / 180;
+	m_sim->platform()->gimbal()->setStaticOrientation(go);
 }
 
 void Sim1Viewer::spnBandChanged(int value) {

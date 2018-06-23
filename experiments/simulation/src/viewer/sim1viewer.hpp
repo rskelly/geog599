@@ -90,6 +90,9 @@ public slots:
 	void btnResetClicked();
 	void spnGimbalAngleChanged(double value);
 	void spnBandChanged(int value);
+	void spnSweepAngleChanged(double value);
+	void spnSweepFrequencyChanged(double value);
+	void spnPulseFrequencyChanged(double value);
 };
 
 

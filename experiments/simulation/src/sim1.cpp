@@ -39,7 +39,7 @@ Simulator::Simulator() :
 
 	// These are parameters that organize the components of the laser system w/r/t the
 	// UAV platform.
-	SinGimbal* gimbal = new SinGimbal(1, 1);
+	SinGimbal* gimbal = new SinGimbal(PI / 2, 4);
 	gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
 	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
 	gimbal->setStaticOrientation(Eigen::Vector3d(0, 0, 0)); // down (around the y axis.) TODO: This seems to be upside-down...
@@ -49,7 +49,7 @@ Simulator::Simulator() :
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
-	rangefinder->setPulseFrequency(50); // NOTE: The gimbal's update frequency must be higher than this.
+	rangefinder->setPulseFrequency(866); // NOTE: The gimbal's update frequency must be higher than this.
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
@@ -100,12 +100,6 @@ void Simulator::setTerrainFile(const std::string& file, int band) {
 	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
 	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 10));
 	m_platform->setInitialPlatformState(state);
-}
-
-void Simulator::setGimbalAngle(double angle) {
-	Eigen::Vector3d rot = m_platform->gimbal()->staticOrientation();
-	rot[1] = angle;
-	m_platform->gimbal()->setStaticOrientation(rot);
 }
 
 uav::sim::Terrain* Simulator::terrain() {

@@ -97,16 +97,24 @@ void Rangefinder::tick(double time) {
 }
 
 void Rangefinder::start() {
-	Clock::addObserver(this, 1.0 / m_pulseFreq);
+	if(!m_running) {
+		m_running = true;
+		Clock::addObserver(this, 1.0 / m_pulseFreq);
+	}
 }
 
 void Rangefinder::stop() {
-	Clock::removeObserver(this);
+	if(m_running) {
+		m_running = false;
+		Clock::removeObserver(this);
+	}
 }
 
 
 void Rangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
+	if(m_running)
+		Clock::addObserver(this, 1.0 / m_pulseFreq);
 }
 
 void Rangefinder::generatePulse() {
