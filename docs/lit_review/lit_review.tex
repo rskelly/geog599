@@ -46,11 +46,13 @@ Naturally, there are compromises to be made between traditional aerial remote-se
 
 Traditional aerial surveys have the advantage that, at typical survey elevations of $\SI{250}\m-\SI{1000}\m$, variations in terrain relief and vegetation canopy height are insignificant relative to the overall elevation -- except in extreme cases, such as alpine terrain -- with minimal scale distortion in the resulting imagery. Low-elevation UAV surveys, which may take place at $\SI{10}\m-\SI{50}\m$ elevation above the surface, encounter much larger relative variations in relief and so must follow the terrain, both to maintain the scale and quality of the data they collect, and to avoid colliding with it. In addition, because there are many structures, both natural and manmade, that may project above the elevation of the UAV's trajectory, the vehicle must have the ability to detect and avoid hazards. Manned aircraft, with an alert pilot and high elevation, rarely face such obstacles.
 
-The \emph{quality} of remotely-sensed data is defined in many ways. For example, the density of a LiDAR point cloud contributes to the statistical power of any statistical derivatives, so the consistency of the point density across the campaign is desireable. Hyperspectral imagery can be affected by variations in atmospheric attenuation due to variations in platorm elevation, scale distortions of various kinds, and signal-to-noise fluctuations due to variations in dwell time. As the instruments are generally fixed to the platform, these characteristics must be maintained by through careful management of the vehicle's vertical trajectory.
+The \emph{quality} of remotely-sensed data can be quantified in many ways. For example, the density of a LiDAR point cloud contributes to the power of any statistical derivatives, so the consistency of the point density and accuracy across the campaign is desireable. Hyperspectral imagery can be affected by variations in atmospheric attenuation due to variations in platorm elevation, scale distortions of various kinds, and signal-to-noise fluctuations due to variations in dwell time. As the instruments are generally fixed to the platform, these characteristics must be maintained by careful management of the vehicle's altitude.
 
 Another important aspect of data quality is time-of-collection. A hyperspectral survey is ideally conducted during solar noon under stable atmospheric conditions, but interrupting the survey to change batteries may delay the completion of the survey or limit the size of the study site. The vertical trajectory has a direct effect on power consumption and flight duration, so the calculation of the trajectory must take power consumption into account.
 
-So, in order to use a small, low-elevation UAV for remote sensing, the vehicle must be capable of maintaining a relatively constant elevation of flight above the terrain, and must do this in a manner that maximizes image quality while minimizing the consumption of power. Because the pilot cannot be present to monitor the terrain ahead of the vehicle, make desicions about what the terrain \emph{is} (the forest canopy? the ground?) and whether it should be followed, calculate a trajectory and adjust the altitude to follow it, an autonomous terrain-following control system is required.
+So, in order to use a small, low-elevation UAV for remote sensing, the vehicle must be capable of maintaining a relatively constant elevation of flight above the terrain, and must do this in a manner that maximizes image quality while minimizing the consumption of power. Because the pilot cannot be present to monitor the terrain ahead of the vehicle, make decisions about what the terrain \emph{is} (the forest canopy? the ground?) and whether it should be followed, calculate a trajectory and adjust the altitude to follow it, an autonomous terrain-following control system is required.
+
+The obvious question is, how can the optimal trajectory -- the one that safely satisfies operational and physical constraints -- be computed, and how can its optimality be proven? Every measure of data quality and battery life, can be modelled by a function which given a set of flight parameters as inputs. These functions can be taken together to maximize the overall quality of a trajectory.
 
 The justification, design and construction of such a system touches on many different fields in remote-sensing, earth science and engineering. The principle topics covered here are as follows:
 
@@ -99,13 +101,35 @@ This research considers two types of remote sensing instruments typically used b
 
 Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Goetz1985}. This is particularly important to researchers in agriculture, minerology and other fields where the discrimination of extremely narrow spectral features is necessary \cite{Goetz1985}. There is a tradeoff between the fine spectral and spatial resolution of modern scanners: as the spectral response of a sensor is narrowed, the number of reflected photons corresponding to that wavelength decreases. Similarly, as the spatial resolution increases, the relative size of the reflector, and therefore the number of reflected photons, also decreases. This decrease in intensity increases the relative fraction of noise in the measurement \cite{Moses2012}.
 
-The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. Pushbroom scanners have an additional advantage over the ``whiskbroom'' type in that each \emph{across-track} pixel is associated with a single detector element, giving a longer \emph{dwell time} \cite{Goetz1985}. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a swath perpendicular to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands over an \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved to a single picture element, or pixel, which spatially referenced to the target itself. 
+The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. Pushbroom scanners have an additional advantage over the ``whiskbroom'' type in that each \emph{across-track} pixel is associated with a single detector element, giving a longer \emph{dwell time} \cite{Goetz1985}. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a swath perpendicular to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands over an \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved as a single picture element, or pixel, which is spatially referenced to the target itself. 
 
-The elevation of the platform above the target determines the \emph{across-track} (lateral) scale of the resulting image, the forward velocity determines the \emph{along-track} (longitudinal) scale, and the velocity coupled with the \emph{integration time} determines the resolution. If the \emph{integration time} is too short, the scanner will only record within a small portion of the cell. If it is  too long, the cells will ``smear'' together. Most importantly, the \emph{integration time} and velocity together determine the \emph{dwell time} -- the time that a scanner element spends recording any part of the target. 
+\subsubsection{Noise}
+
+There are several sources of noise in hyperspectral imagery. 
+
+\begin{itemize}
+\item Shot noise \cite{Barducci2007} is due to the natural variability of photon flux -- the number of photons passing through a given area -- which follows a Poisson distribution;
+\item thermal noise \cite{Barducci2007}, or dark current \cite{Rogass2011}, results from variability in the number of electrons generated spontaneously within the photosensitive material, as opposed to those activated by the interaction with a photon;
+\item read noise \cite{Barducci2007} is produced during the generation of a charge from the instrument, and during analog-to-digital conversion;
+\item charge transfer errors \cite{Barducci2007} result from defects in the sensor material;
+\item round-off error \cite{Barducci2007}, or quantization error, which results when real numbers are represented in binary form with limited precision, and;
+\item "smearing" \cite{Barducci2007,Ruyten1999}, which occurs as the photosensor remains active during charge transfer.
+\end{itemize}
+
+These sources have in common that they are not easily manageable by the user, but intrinsic to the instrument. However, by increasing the magnitude of the signal, the relative influence of noise can be reduced \cite{Dor2012}. Of course, the strength of the signal is determined by several factors, including atmospheric attenuation and irradiant intensity, the optical properties of the instrument and the reflectivity of the target, which cannot be directly controlled, and several that can. The most direct way to increase the strength of the signal is to extend the time interval during which photons are collected by the instrument, the \emph{integration time}. 
+
+Because instrument is generally in motion, the \emph{integration time} must be carefully considered in relation to the platform altitude and velocity. For an ideal push-broom spectrometer, with an along-track IFOV of zero, the integration time and velocity determine the along-track spatial resolution. That is, at $\SI{1}\metre/\second$, with an integration time of $\SI{1}\second$, the spatial resolution is 1m. 
+
+
+[Fix the above gibberish.]
+
+
+
+The elevation of the platform above the target determines the \emph{across-track} (lateral) scale of the resulting image, the forward velocity determines the \emph{along-track} (longitudinal) scale, and the velocity coupled with the \emph{integration time} determines the resolution. If the \emph{integration time} is too short, the scanner will only record within a small portion of the pixel. If it is  too long, the cells will ``smear'' together. Most importantly, the \emph{integration time} and velocity together determine the \emph{dwell time} -- the time that a scanner element spends recording any part of the target. 
 
 As the \emph{dwell time} increases, the contribution of background (additive) noise, relative to the signal and multiplicative noise, decreases. Thus \emph{dwell time} is critical to the maintenance of an acceptably high signal to noise ratio \cite{F.MarkDanson1996,Avery1992,Rogass2014}. 
 
-There are many contributing factors to the degradation of the signal to noise ratio. Some of these (focal length, subject reflectivity, electronic bandwidth, etc.) \cite{Gupta2018} are held constant for a given instrument configuration, but some are manageable by an altitude control system. \cite{Gupta2018} gives a fundamental equation for the estimation of signal-to-noise over a range of wavelengths, given the set of operating parameters as, 
+There are many contributing factors to the degradation of the signal to noise ratio. Some of these (focal length, subject reflectivity, electronic bandwidth, etc.) \cite{Gupta2018} are held constant for a given instrument configuration, but some are manageable by an altitude control system. \cite{Gupta2018} gives a fundamental equation for the estimation of signal-to-noise over a contiguous range of wavelengths, given the set of operating parameters as, 
 
 \begin{equation}
 \frac{S}{N} = \int_{\lambda_1}^{\lambda_2} \frac{ 
@@ -127,12 +151,12 @@ with inputs:
 \item $A_O$ -- the effective area of the collector optic system; 
 \item $H$ -- the instrument-target distance;
 \item $D_{\lambda}^*$ -- the spectral detectivity of the sensor material; 
-\item $d_{\lambda}$ -- ?;
+\item $d_{\lambda}$ -- the \emph{dark current};
 \item $f$ -- the focal length of the optical system and 
 \item $\Delta f$ -- the electronic bandwidth, the speed with which electrons can be carried away from the sensor.
 \end{itemize} 
 
-Most of the above inputs are intrinsic to the imaging system and are thus held constant, or to the target and light source which cannot be controller, but $H$, $A_s$ and $T_{a(\lambda)}$ vary with the motion of the platform. This function can therefore be used to optimize the trajectory to minimize the variability of the signal-to-noise ratio. $A_s$ is also related to scale distortion, which can be minimized both \emph{along-track} with elevation and velocity, and \emph{across-track} with elevation and platform orientation. The $A_s$ term is related to the trade-off between spatial resolution and signal-to-noise ratio. Generally, the cell size and resolution are dictated by the survey specification so optimality implies minimizing the deviation from the specified spatial resolution, and minimizing the absolute signal-to-noise ratio, as well as its variability.
+Most of the above inputs are intrinsic to the imaging system and are thus held constant, or to the target and light source which cannot be controlled, but $H$, $A_s$ and $T_{a(\lambda)}$ vary with the motion of the platform. This function can therefore be used to optimize the trajectory to minimize the variability of the signal-to-noise ratio. $A_s$ is also related to scale distortion, which can be minimized both \emph{along-track} with elevation and velocity, and \emph{across-track} with elevation and platform orientation. The $A_s$ term is related to the trade-off between spatial resolution and signal-to-noise ratio. Generally, the cell size and resolution are dictated by the survey specification so optimality implies minimizing the deviation from the specified spatial resolution, and minimizing the absolute signal-to-noise ratio, as well as its variability.
 
 It should be noted that this function does not separate out the contribubutions of atmospheric reflectance or specific sources of attenuation, nor does the present research require it. Calibration and correction are not within the scope of the project; rather, the goal is to minimize the variation in signal-to-noise ratio \emph{posterior} to the selection of an ideal survey altitude (in consideration of atmospheric effects), under the assumption that only the depth of the atmosphere (i.e. altitude) can be controlled.
 
@@ -208,8 +232,8 @@ An optimal trajectory would minimize these rotations, but in the attempt to mini
  \cite{Gupta2018}. 
 Quality in the geometric sense is determined by a series of identities relating to the characteristics of a sensor, its orientation, motion, distance from the target and the characteristics of the medium between the sensor and the target.
 
-\cite{Avery2007}
-Avery, T. E., \& Berlin, G. L. (2007). Fundamentals of Remote Sensing and Airphoto Interpretation (6th ed.).
+\cite{Avery1992}
+Avery, T. E., \& Berlin, G. L. (1992). Fundamentals of Remote Sensing and Airphoto Interpretation (5th ed.).
 
 Camera viewing angles.
 Ground distance
@@ -389,6 +413,6 @@ Soediono, B., \& Visioli, A. (2006). Practical PID Control. (Intergovernmental P
 
 \newpage
 \bibliographystyle{plain}
-\bibliography{/home/rob/Documents/bibtex/library.bib}
+\bibliography{/home/rob/Documents/bibtex/library}
 
 \end{document}
