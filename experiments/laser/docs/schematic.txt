@@ -1,0 +1,16 @@
+# wires - pins
+
+ads1115 -> pi
+-brn - 5v (also, wht jumper to a1)
+-red - SDA
+-grn - SCL
+-org - GND
+-yel - GND
+
+encoder -> pi/ads1115
+-gry - GND (pi)
+-blu - 5v
+-ppl - a0
+
+
+
