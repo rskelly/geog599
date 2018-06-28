@@ -44,9 +44,9 @@ In the scientific remote-sensing field, where the execution of an aerial survey 
 
 Naturally, there are compromises to be made between traditional aerial remote-sensing and the use of UAVs. UAVs tend to be limited to low elevations, short flight times and small site sizes. The instrumentation -- specifically multi- and hyperspectral imagers and LiDAR -- has only recently achieved a level of quality sufficient for research and form factor small and light enough for inclusion on a UAV. Additionally, many of these instruments are designed for uses other than remote sensing, in particular LiDAR devices, which are often designed for the automotive market. However, with the drawbacks come advantages. The level of detail attainable with a low-elevation UAV survey would be impossible with a traditional aerial campaign and the cost, danger and disruption of a traditional campaign could be prohibitive.
 
-Traditional aerial surveys have the advantage that, at typical survey elevations of $\SI{250}\m-\SI{1000}\m$, variations in terrain relief and vegetation canopy height are insignificant relative to the overall elevation -- except in extreme cases, such as alpine terrain -- with minimal scale distortion in the resulting imagery. Low-elevation UAV surveys, which may take place at $\SI{10}\m-\SI{50}\m$ elevation above the surface, encounter much larger relative variations in relief and so must follow the terrain, both to maintain the scale and quality of the data they collect, and to avoid colliding with it. In addition, because there are many structures, both natural and manmade, that may project above the elevation of the UAV's trajectory, the vehicle must have the ability to detect and avoid hazards. Manned aircraft, with an alert pilot and high elevation, rarely face such obstacles.
+Traditional aerial surveys have the advantage that, at typical survey elevations of $\SI{250}\m-\SI{1000}\m$, variations in terrain relief and vegetation canopy height are insignificant relative to the overall elevation -- except in extreme cases, such as alpine terrain -- with minimal scale distortion in the resulting imagery. Low-elevation UAV surveys, which may take place at $\SI{10}\m-\SI{50}\m$ elevation above the surface, encounter much larger relative variations in relief and so must follow the terrain, both to maintain the scale and quality of the data they collect, and to avoid colliding with it. In addition, because there are many structures, both natural and human-made, that may project above the elevation of the UAV's trajectory, the vehicle must have the ability to detect and avoid hazards. Manned aircraft, with an alert pilot and high elevation, rarely face such obstacles.
 
-The \emph{quality} of remotely-sensed data can be quantified in many ways. For example, the density of a LiDAR point cloud contributes to the power of any statistical derivatives, so the consistency of the point density and accuracy across the campaign is desireable. Hyperspectral imagery can be affected by variations in atmospheric attenuation due to variations in platorm elevation, scale distortions of various kinds, and signal-to-noise fluctuations due to variations in dwell time. As the instruments are generally fixed to the platform, these characteristics must be maintained by careful management of the vehicle's altitude.
+The \emph{quality} of remotely-sensed data can be quantified in many ways. For example, the density of a LiDAR point cloud contributes to the power of any statistical derivatives, so the consistency of the point density and accuracy across the campaign is desirable. Hyperspectral imagery can be affected by variations in atmospheric attenuation due to variations in platform elevation, scale distortions of various kinds, and signal-to-noise fluctuations due to variations in dwell time. As the instruments are generally fixed to the platform, these characteristics must be maintained by careful management of the vehicle's altitude.
 
 Another important aspect of data quality is time-of-collection. A hyperspectral survey is ideally conducted during solar noon under stable atmospheric conditions, but interrupting the survey to change batteries may delay the completion of the survey or limit the size of the study site. The vertical trajectory has a direct effect on power consumption and flight duration, so the calculation of the trajectory must take power consumption into account.
 
@@ -54,46 +54,14 @@ So, in order to use a small, low-elevation UAV for remote sensing, the vehicle m
 
 The obvious question is, how can the optimal trajectory -- the one that safely satisfies operational and physical constraints -- be computed, and how can its optimality be proven? Every measure of data quality and battery life, can be modelled by a function which given a set of flight parameters as inputs. These functions can be taken together to maximize the overall quality of a trajectory.
 
-The justification, design and construction of such a system touches on many different fields in remote-sensing, earth science and engineering. The principle topics covered here are as follows:
+The justification, design and construction of such a system touches on many different fields in remote-sensing, earth science and engineering. This review will summarize research into a variety of disparate fields, insofar as they contribute to the development of the terrain-following system.
 
-\begin{enumerate}
-\item Ethics
-\item Remote Sensing
-\begin{enumerate}
-\item Data Quality
-\end{enumerate}
-\item Surface Reconstruction
-	\begin{enumerate}
-	\item Computational Geometry
-	\end{enumerate}
-\item Trajectory Estimation
-\item Control Systems
-	\begin{enumerate}
-	\item Control Theory
-	\item Kinematics and Dynamics
-	\item PID Controllers
-	\end{enumerate}
-\end{enumerate}
-
-
-This review will summarize research into a variety of disparate fields, insofar as they contribute to the development of the terrain-following system.
-
-
-\section{Ethics}
-
-Clearly, a project that seeks to wrest control from an autonomous aerial platform, with the potiential to harm humans and animals and damage property, must justifiable on ethical grounds. The ``Handbook of Unmanned Aerial Vehicles'' \cite{Valavanis2015j} contains several chapters by different authors on the subject of ethics and autonomous, or semi-autonomous, machines. These are discussed mostly in the context of warfare, using the ethical frameworks developed by scholars of war.
-
-The chapter, ``Ethics and UAVs'' \cite{Valavanis2015bz} begins by addressing the employment of UAVs as weapons. (In this context, UAVs are often pejoratively called ``drones'', to distinguish them from more neutral scientific uses, though the names given to these machines -- ``Predator,'' ``Reaper'' and ``Crusher'' \cite{Lucas2011} -- leave little doubt as to their purpose.) So long as UAVs continue to be controlled, remotely, by a human operator, the ethical landscape remains more-or-less unchanged, versus more hands-on methods of waging war, with several exceptions relating to the feasibility of missions that would not be otherwise possible if an on-site human operator were required. This includes targeted assasinations, which entail the risk of mis-identifying civilians as targets (a possible war crime) and of conducting missions in regions which are not theaters of war. In addition, the accessibility of this technology enables non-state actors (private companies, individuals and militias) to engage in remote warfare \cite[p.2867]{Valavanis2015bz}. 
-
-The inevitable advent of total autonomy muddies the water further: when a machine commits what would otherwise be considered a war crime, who is accountable? Lucas calls this proposition ``preposterous'', arguing that machines are incapable of forming intentions and are therefore incapable of committing crimes \cite[p.2868]{Valavanis2015bz}. This criticism seems to beg the question, however, as a human being \emph{is} a sort of machine and is clearly capable of having intention. Less controversially, perhaps, humans also routinely invest their prejudices into the machines they build \cite{Greenwald1998,Caliskan2017}. 
-
-The chapter becomes a philosophical digressesion into the ethics of autonomous machines but resolves with a meditation on the ethical responsibility of engineers \cite[p.2873]{Valavanis2015bz} revolving around Michael Waltzer's notion of ``double intention'' \cite{Waltzer}. Under this rubric, originally intended to articulate the ethical responsibilities of soldiers, an engineer has the duty not only to \emph{intend} to do no harm, but to exercise \emph{due care} \cite{Lucas2011} -- to take all reasonable steps necessary to ensure that no harm occurs. The chapter ends with an admonishment to engineers to become aware of and center their ethical responsibilities \cite[p.2974]{Valavanis2015bz}.
 
 \section{Remote Sensing}
 
-Remote sensing is the acquisition of information about an object without the necessity of physical contact between the object and the observer \cite{Gupta2018}. The human eyes, nose and ears are remote sensing instruments, collecting the electro-magnetic, chemical and mechanical signals that comprise sight, smell and hearing, respectively.
+Remote sensing is the acquisition of information about an object without the necessity of physical contact between the object and the observer \cite{Gupta2018}. The human eyes, nose and ears are remote sensing instruments, collecting the electromagnetic, chemical and mechanical signals that comprise sight, smell and hearing, respectively.
 
-In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electro-magnetic or gravitational emissions from the Earth. Electro-magnetic instruments may be further broken down into active instruments, such as light detection and ranging (LiDAR) and radio detection and ranging (RADAR) which emit a pulse of radiation, then measure the temporal delay and intensity of the return; and passive instruments which measure the reflected energy emitted by natural sources such as the sun, or endogenous energy, such as thermal infrared radiation (i.e. heat).
+In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electromagnetic or gravitational emissions from the Earth. Electromagnetic instruments may be further categorized as \emph{active}, such as LiDAR and RADAR which emit a pulse of radiation, then measure the temporal delay and intensity of the return; and \emph{passive}, which measure the reflected energy emitted by natural sources such as the sun, or endogenous energy, such as thermal infrared radiation (i.e. heat).
 
 This research considers two types of remote sensing instruments typically used by UAV surveys, a ``pushbroom''-type hyperspectral imaging spectrometer (passive) and a scanning LiDAR device (active). 
 
@@ -101,130 +69,125 @@ This research considers two types of remote sensing instruments typically used b
 
 Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Goetz1985}. This is particularly important to researchers in agriculture, minerology and other fields where the discrimination of extremely narrow spectral features is necessary \cite{Goetz1985}. There is a tradeoff between the fine spectral and spatial resolution of modern scanners: as the spectral response of a sensor is narrowed, the number of reflected photons corresponding to that wavelength decreases. Similarly, as the spatial resolution increases, the relative size of the reflector, and therefore the number of reflected photons, also decreases. This decrease in intensity increases the relative fraction of noise in the measurement \cite{Moses2012}.
 
-The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. Pushbroom scanners have an additional advantage over the ``whiskbroom'' type in that each \emph{across-track} pixel is associated with a single detector element, giving a longer \emph{dwell time} \cite{Goetz1985}. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a swath perpendicular to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands over an \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved as a single picture element, or pixel, which is spatially referenced to the target itself. 
+The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a continuous line parallel to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands during its \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved as a single picture element, or pixel, which is spatially referenced to the target itself. 
 
-\subsubsection{Noise}
+The integration time of a scanner is related to another important quantity, \emph{dwell time}, by the platform velocity and field of view. Dwell time is the time during which a hypothetical target is recorded by the instrument. For a stationary instrument the dwell time and integration time are identical. For a moving instrument, 
+
+\subsubsection{Signal-to-Noise Ratio}
 
 There are several sources of noise in hyperspectral imagery. 
 
 \begin{itemize}
-\item Shot noise \cite{Barducci2007} is due to the natural variability of photon flux -- the number of photons passing through a given area -- which follows a Poisson distribution;
-\item thermal noise \cite{Barducci2007}, or dark current \cite{Rogass2011}, results from variability in the number of electrons generated spontaneously within the photosensitive material, as opposed to those activated by the interaction with a photon;
+\item Shot noise \cite{Barducci2007} is due to the natural variability in the photon flux -- the number of photons passing through a given area -- which follows a Poisson distribution;
+\item thermal noise \cite{Barducci2007}, or dark current \cite{Rogass2011}, results from electrons generated spontaneously within the photosensitive material, as opposed to those activated by the interaction with a photon;
 \item read noise \cite{Barducci2007} is produced during the generation of a charge from the instrument, and during analog-to-digital conversion;
 \item charge transfer errors \cite{Barducci2007} result from defects in the sensor material;
-\item round-off error \cite{Barducci2007}, or quantization error, which results when real numbers are represented in binary form with limited precision, and;
+\item round-off error \cite{Barducci2007}, or quantization error, which results when real numbers are rounded or truncated during conversion to a computer-representable form, and;
 \item "smearing" \cite{Barducci2007,Ruyten1999}, which occurs as the photosensor remains active during charge transfer.
 \end{itemize}
 
-These sources have in common that they are not easily manageable by the user, but intrinsic to the instrument. However, by increasing the magnitude of the signal, the relative influence of noise can be reduced \cite{Dor2012}. Of course, the strength of the signal is determined by several factors, including atmospheric attenuation and irradiant intensity, the optical properties of the instrument and the reflectivity of the target, which cannot be directly controlled, and several that can. The most direct way to increase the strength of the signal is to extend the time interval during which photons are collected by the instrument, the \emph{integration time}. 
+These sources have in common that they cannot not easily be mitigated by the user, but are intrinsic to the instrument. However, by increasing the magnitude of the signal, or photon flux, the relative influence of noise can be reduced \cite{Dor2012}. Of course, some of the factors affecting the strength of the signal cannot be directly controlled -- atmospheric attenuation and irradiant intensity, the optical properties of the instrument and the reflectivity of the target, etc. -- but there are others that can, namely, to perform the survey during solar noon, the period of most intense solar irradiation, to extend the time interval during which photons are recorded by the instrument, the \emph{dwell time} \cite{Gupta2018,Goetz1985,Dor2012} and to increase the surface area of the target scanned during one integration.
 
-Because instrument is generally in motion, the \emph{integration time} must be carefully considered in relation to the platform altitude and velocity. For an ideal push-broom spectrometer, with an along-track IFOV of zero, the integration time and velocity determine the along-track spatial resolution. That is, at $\SI{1}\metre/\second$, with an integration time of $\SI{1}\second$, the spatial resolution is 1m. 
-
-
-[Fix the above gibberish.]
-
-
-
-The elevation of the platform above the target determines the \emph{across-track} (lateral) scale of the resulting image, the forward velocity determines the \emph{along-track} (longitudinal) scale, and the velocity coupled with the \emph{integration time} determines the resolution. If the \emph{integration time} is too short, the scanner will only record within a small portion of the pixel. If it is  too long, the cells will ``smear'' together. Most importantly, the \emph{integration time} and velocity together determine the \emph{dwell time} -- the time that a scanner element spends recording any part of the target. 
+The integration time of an instrument is analogous to the shutter of a photographic camera -- it is the interval during which light is recorded by the photo-sensitive medium. Dwell time is related but slightly different -- it is the time during which the target is being recorded and may be equal to or less than, but not greater than the integration time. In the case of a stationary instrument, the integration time and dwell time are identical. On the other hand, if a moving instrument with a narrow IFOV passes over a target area, discrete objects within the area may pass into and out of the instrument's field of view during its integration time. Then the dwell time for such an object will be less than the integration time.
 
 As the \emph{dwell time} increases, the contribution of background (additive) noise, relative to the signal and multiplicative noise, decreases. Thus \emph{dwell time} is critical to the maintenance of an acceptably high signal to noise ratio \cite{F.MarkDanson1996,Avery1992,Rogass2014}. 
 
-There are many contributing factors to the degradation of the signal to noise ratio. Some of these (focal length, subject reflectivity, electronic bandwidth, etc.) \cite{Gupta2018} are held constant for a given instrument configuration, but some are manageable by an altitude control system. \cite{Gupta2018} gives a fundamental equation for the estimation of signal-to-noise over a contiguous range of wavelengths, given the set of operating parameters as, 
+\cite{Gupta2018} gives a fundamental equation for that relates various operating parameters of a sensor to signal-to-noise over a contiguous range of wavelengths as, 
 
 \begin{equation}
 \frac{S}{N} = \int_{\lambda_1}^{\lambda_2} \frac{ 
-	I_{\lambda} \cdot T_{a(\lambda)} \cdot T_{o(\lambda)} \cdot A_s \cdot A_{O}D_{\lambda}^*
+	I_{\lambda} \cdot T_{a(\lambda)} \cdot T_{o(\lambda)} \cdot \beta \cdot A_{O}D_{\lambda}^*
 } {
-	H^2 f\sqrt{A_d \cdot \Delta f}
+	f \sqrt{\Delta f}
 } \cdot d_{\lambda},
-\end{equation}
-
-with inputs:
-
-\begin{itemize}
-\item $\lambda$ -- the wavelength; 
-\item $I_{\lambda}$ -- the spectral radiance of the source as $\SI{} \watt \cm^{-2} sr^{-1} \micm^{-1} $; 
-\item $T_{a(\lambda)}$ -- the spectral transmittance of the atmosphere; 
-\item $T_{o(\lambda)}$ -- the spectral transmittance of the optical system; 
-\item $A_s$ -- the surface area of the target under view;
-\item $A_d$ -- the surface area of the detector;
-\item $A_O$ -- the effective area of the collector optic system; 
-\item $H$ -- the instrument-target distance;
-\item $D_{\lambda}^*$ -- the spectral detectivity of the sensor material; 
-\item $d_{\lambda}$ -- the \emph{dark current};
-\item $f$ -- the focal length of the optical system and 
-\item $\Delta f$ -- the electronic bandwidth, the speed with which electrons can be carried away from the sensor.
-\end{itemize} 
-
-Most of the above inputs are intrinsic to the imaging system and are thus held constant, or to the target and light source which cannot be controlled, but $H$, $A_s$ and $T_{a(\lambda)}$ vary with the motion of the platform. This function can therefore be used to optimize the trajectory to minimize the variability of the signal-to-noise ratio. $A_s$ is also related to scale distortion, which can be minimized both \emph{along-track} with elevation and velocity, and \emph{across-track} with elevation and platform orientation. The $A_s$ term is related to the trade-off between spatial resolution and signal-to-noise ratio. Generally, the cell size and resolution are dictated by the survey specification so optimality implies minimizing the deviation from the specified spatial resolution, and minimizing the absolute signal-to-noise ratio, as well as its variability.
-
-It should be noted that this function does not separate out the contribubutions of atmospheric reflectance or specific sources of attenuation, nor does the present research require it. Calibration and correction are not within the scope of the project; rather, the goal is to minimize the variation in signal-to-noise ratio \emph{posterior} to the selection of an ideal survey altitude (in consideration of atmospheric effects), under the assumption that only the depth of the atmosphere (i.e. altitude) can be controlled.
-
-
-
-Sources of Noise
-
-\begin{itemize}
-\item photon (shot) noise
-\item dark noise
-\item readout noise
-\item digitization noise
-\end{itemize}
-
-The total signal is given by the function,
-
-\begin{equation}
-S = \frac{\lambda}{hc} L_{\Delta \lambda} \frac{\pi}{4} \frac{ D^2}{f^2} p^2 T \eta_{sys},
 \end{equation}
 
 where,
 
 \begin{itemize}
-\item $\lambda$ -- the wavelength;
-\item $h$ -- Planck's constant;
-\item $c$ -- the speed of light ($\SI{}\m \s^{-1}$);
-\item $L_{\Delta \lambda}$ -- the incoming radiance in the waveband $\Delta \lambda$ ($\SI{} \watt \cm^{-2} sr^{-1} \micm^{-1} $);
-\item $D$ -- the diameter of the aperture ($\SI{}\m$);
-\item $f$ -- the focal length ($\SI{}\m$);
-\item $p$ -- the spatial width of a detector pixel ($\SI{}\m$);
-\item $T$ -- the exposure (integration) time ($\SI{}\s$);
-\item $\eta_{sys}$ -- the overall system efficiency.
+\item $\lambda$ is the wavelength; 
+\item $I_{\lambda}$ is the spectral radiance of the source as $\SI{} \watt \cm^{-2} sr^{-1} \micm^{-1} $; 
+\item $T_{a(\lambda)}$ is the spectral transmittance of the atmosphere; 
+\item $T_{o(\lambda)}$ is the spectral transmittance of the optical system; 
+%\item $A_s$ -- the surface area of the target under view;
+%\item $A_d$ -- the surface area of the detector;
+\item $A_O$ is the effective area of the collector optic system; 
+%\item $H$ -- the instrument-target distance;
+\item $D_{\lambda}^*$ is the spectral detectivity of the sensor material; 
+\item $d_{\lambda}$ is the \emph{dark current};
+%\item $f$ -- the focal length of the optical system and ;
+\item $\beta$ is the instantaneous field of view and;
+\item $\Delta f$ is the electronic bandwidth, the speed with which electrons are carried away from the sensor.
+\end{itemize} 
+
+Here, $\beta$ can be further represented as, 
+
+\begin{equation}
+\beta_2 = \frac{A_s}{H_2},
+\end{equation}
+
+where, 
+
+\begin{itemize}
+\item $A_s$ is the surface area of the target under view and;
+\item $H$ is the instrument-target distance.
 \end{itemize}
 
-[See \cite{Moses2012} for more about this]
+It is clear that the signal-to-noise ratio, all other parameters held constant, is directly proportional to the platform height, as it effects the surface area of the target and thus the raw count of photons entering the instrument \cite{Gupta2018}. Though it is not possible to control the signal-to-noise ratio directly, it is possible to minimize it by careful selection of flight altitude, and to stabilize it by careful maintenance of the latter. For the purposes of this research, then, the goal is to treat the flight altitude as a proxy for signal-to-noise and to minimize the error between the planned trajectory altitude and the actual altitude.
+
+
+%Most of the above inputs are intrinsic to the imaging system and are thus held constant, or to the target and light source which cannot be controlled, but $H$, $A_s$ and $T_{a(\lambda)}$ vary with the motion of the platform. This function can therefore be used to optimize the trajectory to minimize the variability of the signal-to-noise ratio. $A_s$ is also related to scale distortion, which can be minimized both \emph{along-track} with elevation and velocity, and \emph{across-track} with elevation and platform orientation. The $A_s$ term is related to the trade-off between spatial resolution and signal-to-noise ratio. Generally, the cell size and resolution are dictated by the survey specification so optimality implies minimizing the deviation from the specified spatial resolution, and minimizing the absolute signal-to-noise ratio, as well as its variability.
+
+%It should be noted that this function does not separate out the contribubutions of atmospheric reflectance or specific sources of attenuation, nor does the present research require it. Calibration and correction are not within the scope of the project; rather, the goal is to minimize the variation in signal-to-noise ratio \emph{posterior} to the selection of an ideal survey altitude (in consideration of atmospheric effects), under the assumption that only the depth of the atmosphere (i.e. altitude) can be controlled.
 
 
 
-\subsection{LiDAR}
+%The total signal is given by the function,
 
-DEnsity
-Overlap
+%\begin{equation}
+%S = \frac{\lambda}{hc} L_{\Delta \lambda} \frac{\pi}{4} \frac{ D^2}{f^2} p^2 T \eta_{sys},
+%\end{equation}
+
+%where,
+
+%\begin{itemize}
+%\item $\lambda$ -- the wavelength;
+%\item $h$ -- Planck's constant;
+%\item $c$ -- the speed of light ($\SI{}\m \s^{-1}$);
+%\item $L_{\Delta \lambda}$ -- the incoming radiance in the waveband $\Delta \lambda$ ($\SI{} \watt \cm^{-2} sr^{-1} \micm^{-1} $);
+%\item $D$ -- the diameter of the aperture ($\SI{}\m$);
+%\item $f$ -- the focal length ($\SI{}\m$);
+%\item $p$ -- the spatial width of a detector pixel ($\SI{}\m$);
+%\item $T$ -- the exposure (integration) time ($\SI{}\s$);
+%\item $\eta_{sys}$ -- the overall system efficiency.
+%\end{itemize}
+
+%[See \cite{Moses2012} for more about this]
+
+\subsubsection{Geometric Distortion}
 
 
-\subsubsection{Geometric Effects on Image Quality}
+The elevation of the platform above the target determines the \emph{across-track} (lateral) scale of the resulting image, the forward velocity determines the \emph{along-track} (longitudinal) scale, and the velocity coupled with the \emph{integration time} determines the resolution. If the \emph{integration time} is too short, the scanner will only record within a small portion of the pixel. If it is  too long, the cells will ``smear'' together. Most importantly, the \emph{integration time} and velocity together determine the \emph{dwell time} -- the time that a scanner element spends recording any part of the target. 
 
-[Tangent plane assumption of earth geometry -- ignore geodetic distortions]
+%[Tangent plane assumption of earth geometry -- ignore geodetic distortions]
 
-``Remote Sensing Geology'' \cite{Gupta2018} provides an extensive survey of the geometric causes of spectral image quality degradation. Geometric causes of degradation are grouped into two categories: systematic and non-systematic. Non-systematic distortions are due to variable or unpredictable factors such as airframe perturbation due to wind, while systematic distortions are those caused by fixed or planned effects, such as sensor-craft altitude and relief displacement.
+\cite{Gupta2018} provides an extensive survey of the geometric causes of spectral image quality degradation. Geometric causes of degradation are grouped into two categories: systematic and non-systematic. Non-systematic distortions are due to variable or unpredictable factors such as airframe perturbation due to wind, while systematic distortions are those caused by fixed or planned effects, such as sensor-craft altitude and relief displacement.
 
-Some variations in the velocity and attitude of the airframe and instruments are induced by forces (e.g. wind) which are stochastic in time and space and so not easily predicted. Others are induced by phenomena which are stochastic in space but constant in time and therefore predictable. Terrain relief is one of these. Variations in terrain relief induce changes in target distance for a platform and instrument travelling at a constant absolute elevation, which in turn induces geometric distortions. Gupta \cite{Gupta2018} considers these disturbances to be non-systematic, but for the purposes of this research, they will be considered systematic and therefore addressable.
+Some variations in the velocity and attitude of the airframe and instruments are induced by forces (e.g. wind) which are stochastic in time and space and so not easily predicted. Others are induced by phenomena which are stochastic in space but constant in time and therefore predictable. Terrain relief is one of these. Variations in terrain relief induce changes in target distance for a platform and instrument travelling at a constant absolute elevation, which in turn induces geometric distortions in the imagery. Gupta \cite{Gupta2018} considers these disturbances to be non-systematic, but for the purposes of this research, they will be considered systematic and therefore addressable.
 
-Scale
+\subsubsection*{Spectral Mixing}
 
-As the target distance increases, with a constant instantaneous field of view, the surface area of the target captured in a single cell increases. In a digital image, a cell is a region with a constant area and a single value representing a measured value over the target area contained within the spatial extent of the cell. A image, or raster, is made up of a grid of cells. As a cell is the smallest unit that can be discriminated in a digital image, any objects within the cell will be impossible to isolate. Information about discrete objects within the cell is mixed together. As the distance decreases, the target area within a cell decreases, enhancing the contribution of any individual object to the overall cell's value. At a certain point, an object may not fit into a single cell and will occupy, at least in part, several cells. 
+As the target distance increases, with a constant IFOV, the surface area of the target captured in a single cell increases in proportion as, 
 
+\begin{equation}
+a\prime = a h^2,
+\end{equation}
 
-, Scale distortions have two important effects on the quality of image data. First, changes in target distance induce changes in image scale and resolution. As the distance increases, the ability of the image to resolve objects of a particular size decreases -- the size of physical objects decreases relative to the size of an image cell. This phenomenon leads to spectral mixing, where radiant intensities of distinct physical objects are mixed within the same image pixel, reducing a researcher's ability to discriminate the phenomena under study.
+where $h$ is the platform altitude, $a$ is the target area and $a\prime$ is the final target area given a change in $h$. 
 
-The most directly addressable non-systematic (or semi-systematic) effect is caused by unwanted changes in platform orientation, specifically pitch. A multi-copter UAV moves horizontally by changing its thrust vector from vertical. Since the rotors are generally fixed to the airframe, the platform itself must assume a non-vertical pose during image acquisition. This is undesireable but unavoidable. However, in order to adjust its altitude or maintain horizontal velocity in the presence head- or tailwinds, the UAV may rotate further, causing geometric distortions in the imagery. 
+In a digital image, a cell, or pixel, has a constant area and a single value per band representing the measured radiance over the area contained within the spatial extent of the cell. A image, or raster, is a grid of cells. As a cell is the smallest unit that can be discriminated in a digital image, any objects within the cell will be impossible to isolate due to mixing. As the subject distance decreases, the target area within a cell decreases, enhancing the contribution of any individual object to the cell's overall value. At extremely high resolution, an object may fully occupy one or more cells. This is the essence of spatial resolution, and instrument and flight parameters are carefully chosen to optimize it to satisfy specific research objectives. 
 
-Mixing and Signal to Noise Ratio
-
-These distortions have two sources, first, the as the vehicle rotates forward on the y (\emph{across-track}) axis, the ground speed of the scanner footprint slows down. As the vehicle rotates to the rear, the footprint speeds up. This alters the \emph{dwell time} of the scanner and leads to over- and under-sampling, respectively \cite{Gupta2018}. When he vehicle rotates either to the fore or the rear, the scanner axis rotates away from nadir, increasing its effective footprint, reducing its spatial resolution \cite{Gupta2018} and increasing the effects of spectral mixing. 
-
-An important consequence of variation in \emph{dwell time} is the effect on the signal to noise ratio. The longer the \emph{dwell time}, the more light is measured by the instrument relative to the background noise \cite{Rogass2014}.
-
-An optimal trajectory would minimize these rotations, but in the attempt to minimize fore-aft platform rotation, it must be remembered that changes in velocity also affect \emph{dwell time}.
+An important consequence of spatial resolution is the phenomenon of ``spectral mixing'' whereby discrete objects within a pixel each contribute their spectra to an mixed spectrum within the pixel. Increasing the spatial resolution reduces aereal or linear mixing \cite{Gupta2018} while also increasing the signal-to-noise ratio: a cell, fully-occupied by an object of interest, is said to have a ``pure'' spectrum, which is considered to be desirable \cite{Gupta2018}. If a researcher is interested in the health of a particular plant, for example, she would not wish the reflected leaf spectra to be mixed with the spectra of soil or other objects. It is important that spectral mixing be held reasonably constant across the study area so that any results derived from the imagery can be considered to apply everywhere. ``Spectral unmixing'' is applicable as a post-processing step, but requires \emph{a priori} knowledge of the spectral signatures of the constituent objects in the scene, and the availability of a spectral library \cite{Adams1986,Smith1990,Gupta2018}.
 
 
 
@@ -239,7 +202,34 @@ Camera viewing angles.
 Ground distance
 
 
+
+
+
+\subsection{LiDAR}
+
+DEnsity
+Overlap
+
+
+\subsubsection{Geometric Effects on Image Quality}
+
+
 \section{Kinematics and Dynamics}
+
+%The ideal trajectory would follow the terrain at a precise positive offset, but this is impossible for two reasons. First, if the terrain were to transition abruptly from one gradient to another, a discontinuity in the trajectory occurs, which, if the gradient increases, implies an infinite throttle input. This is obviously impossible, so the trajectory must be smoothed to such a degree that the vehicle's change in direction is achievable within the dynamical constraints on the vehicle, including the amount of available thrust. Second, it may not be desirable to follow the surface exactly, as navigating the vehicle into gaps between trees, for example, would be undesirable. In any case, the researcher has no interest in maintaining data quality between targets.
+
+
+
+%The most directly addressable non-systematic (or semi-systematic) effect is caused by unwanted changes in platform orientation, specifically pitch. A multi-copter UAV moves horizontally by changing its thrust vector from vertical. Since the rotors are generally fixed to the airframe, the platform itself must assume a non-vertical pose during image acquisition. This is undesirable but unavoidable. However, in order to adjust its altitude or maintain horizontal velocity in the presence head- or tailwinds, the UAV may rotate further, causing geometric distortions in the imagery. 
+
+%Mixing and Signal to Noise Ratio
+
+%These distortions have two sources, first, the as the vehicle rotates forward on the y (\emph{across-track}) axis, the ground speed of the scanner footprint slows down. As the vehicle rotates to the rear, the footprint speeds up. This alters the \emph{dwell time} of the scanner and leads to over- and under-sampling, respectively \cite{Gupta2018}. When he vehicle rotates either to the fore or the rear, the scanner axis rotates away from nadir, increasing its effective footprint, inducing ``smear,'' reducing its spatial resolution \cite{Gupta2018} and increasing the effects of spectral mixing. 
+
+%An important consequence of variation in \emph{dwell time} is the effect on the signal to noise ratio. The longer the \emph{dwell time}, the more light is measured by the instrument relative to the background noise \cite{Rogass2014}.
+
+%An optimal trajectory would minimize these rotations, but in the attempt to minimize fore-aft platform rotation, it must be remembered that changes in velocity also affect \emph{dwell time}.
+
 
 \subsubsection{Vehicle Dynamics}
 
@@ -409,6 +399,16 @@ Sánchez, J., Visioli, A., \& Dormido, S. (2012). PID Control in the third mille
 
 \cite{Soediono1989}
 Soediono, B., \& Visioli, A. (2006). Practical PID Control. (Intergovernmental Panel on Climate Change, Ed.), Climate Change 2013 - The Physical Science Basis (Vol. 53). Cambridge: Springer London. https://doi.org/10.1007/1-84628-586-0
+
+\section{Ethics}
+
+Clearly, a project that seeks to wrest control from an autonomous aerial platform, with the potiential to harm humans and animals and damage property, must justifiable on ethical grounds. The ``Handbook of Unmanned Aerial Vehicles'' \cite{Valavanis2015j} contains several chapters by different authors on the subject of ethics and autonomous, or semi-autonomous, machines. These are discussed mostly in the context of warfare, using the ethical frameworks developed by scholars of war.
+
+The chapter, ``Ethics and UAVs'' \cite{Valavanis2015bz} begins by addressing the employment of UAVs as weapons. (In this context, UAVs are often pejoratively called ``drones'', to distinguish them from more neutral scientific uses, though the names given to these machines -- ``Predator,'' ``Reaper'' and ``Crusher'' \cite{Lucas2011} -- leave little doubt as to their purpose.) So long as UAVs continue to be controlled, remotely, by a human operator, the ethical landscape remains more-or-less unchanged, versus more hands-on methods of waging war, with several exceptions relating to the feasibility of missions that would not be otherwise possible if an on-site human operator were required. This includes targeted assasinations, which entail the risk of mis-identifying civilians as targets (a possible war crime) and of conducting missions in regions which are not theaters of war. In addition, the accessibility of this technology enables non-state actors (private companies, individuals and militias) to engage in remote warfare \cite[p.2867]{Valavanis2015bz}. 
+
+The inevitable advent of total autonomy muddies the water further: when a machine commits what would otherwise be considered a war crime, who is accountable? Lucas calls this proposition ``preposterous'', arguing that machines are incapable of forming intentions and are therefore incapable of committing crimes \cite[p.2868]{Valavanis2015bz}. This criticism seems to beg the question, however, as a human being \emph{is} a sort of machine and is clearly capable of having intention. Less controversially, perhaps, humans also routinely invest their prejudices into the machines they build \cite{Greenwald1998,Caliskan2017}. 
+
+The chapter becomes a philosophical digressesion into the ethics of autonomous machines but resolves with a meditation on the ethical responsibility of engineers \cite[p.2873]{Valavanis2015bz} revolving around Michael Waltzer's notion of ``double intention'' \cite{Waltzer}. Under this rubric, originally intended to articulate the ethical responsibilities of soldiers, an engineer has the duty not only to \emph{intend} to do no harm, but to exercise \emph{due care} \cite{Lucas2011} -- to take all reasonable steps necessary to ensure that no harm occurs. The chapter ends with an admonishment to engineers to become aware of and center their ethical responsibilities \cite[p.2974]{Valavanis2015bz}.
 
 
 \newpage
