@@ -82,3 +82,57 @@ const Eigen::Vector3d& SinGimbal::staticPosition() const {
 SinGimbal::~SinGimbal() {
 	stop();
 }
+
+
+NetGimbal::NetGimbal(const std::string& addr) :
+	m_addr(addr),
+	m_running(false) {
+}
+
+void NetGimbal::start() {
+
+}
+
+void NetGimbal::stop() {
+
+}
+
+void NetGimbal::setOrientation(const Eigen::Vector3d& orientation) {
+	m_orientation = orientation;
+}
+
+const Eigen::Vector3d& NetGimbal::orientation() const {
+	return m_orientation;
+}
+
+void NetGimbal::setPosition(const Eigen::Vector3d& position) {
+	m_position = position;
+}
+
+const Eigen::Vector3d& NetGimbal::position() const {
+	return m_position;
+}
+
+void NetGimbal::setStaticOrientation(const Eigen::Vector3d& mtx) {
+	m_staticOrientation = mtx;
+}
+
+const Eigen::Vector3d& NetGimbal::staticOrientation() const {
+	return m_staticOrientation;
+}
+
+void NetGimbal::setStaticPosition(const Eigen::Vector3d& mtx) {
+	m_staticPosition = mtx;
+}
+
+const Eigen::Vector3d& NetGimbal::staticPosition() const {
+	return m_staticPosition;
+}
+
+void NetGimbal::tick(double tick) {
+
+}
+
+NetGimbal::~NetGimbal() {
+
+}

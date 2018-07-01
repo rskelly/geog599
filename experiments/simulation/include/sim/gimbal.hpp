@@ -77,6 +77,59 @@ public:
 	~SinGimbal();
 };
 
+
+/**
+ * The NetGimbal class carries a rangefinder, sweeping
+ * back and forth, driven by an angle received through
+ * a network socket from the flight controller computer.
+ */
+class NetGimbal : public uav::Gimbal {
+private:
+	Eigen::Vector3d m_orientation;
+	Eigen::Vector3d m_position;
+	Eigen::Vector3d m_staticOrientation;
+	Eigen::Vector3d m_staticPosition;
+	std::string m_addr;
+
+	std::thread m_thread;					///!< The update thread.
+	bool m_running;
+
+public:
+
+	/**
+	 * Construct a NetGimbal instance, with an IP to connect to
+	 * the angle server.
+	 *
+	 * @param addr The server address.
+	 */
+	NetGimbal(const std::string& addr);
+
+	void start();
+
+	void stop();
+
+	void setOrientation(const Eigen::Vector3d& orientation);
+
+	const Eigen::Vector3d& orientation() const;
+
+	void setPosition(const Eigen::Vector3d& position);
+
+	const Eigen::Vector3d& position() const;
+
+	void setStaticOrientation(const Eigen::Vector3d& mtx);
+
+	const Eigen::Vector3d& staticOrientation() const;
+
+	void setStaticPosition(const Eigen::Vector3d& mtx);
+
+	const Eigen::Vector3d& staticPosition() const;
+
+	void tick(double tick);
+
+	~NetGimbal();
+};
+
+
 } // sim
 } // uav
 
