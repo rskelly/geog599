@@ -17,6 +17,7 @@
 #include "surface.hpp"
 #include "util.hpp"
 
+constexpr double PF_CLOCK_DELAY = 1.0 / 500.0;
 
 using namespace uav::sim;
 using namespace uav::surface;
@@ -27,7 +28,8 @@ PlatformState::PlatformState() :
 		m_batteryLevel(0),
 		m_mass(0),
 		m_altitude(0),
-		m_altitudeTime(0) {
+		m_altitudeTime(0),
+		m_pulseRate(0) {
 }
 
 const Eigen::Vector3d& PlatformState::position() const {
@@ -94,6 +96,14 @@ void PlatformState::setAltitudeTime(double time) {
 	m_altitudeTime = time;
 }
 
+double PlatformState::pulseRate() const {
+	return m_pulseRate;
+}
+
+void PlatformState::setPulseRate(double rate) {
+	m_pulseRate = rate;
+}
+
 void RangefinderState::setLaserPosition(const Eigen::Vector3d& position) {
 	m_position = position;
 }
@@ -119,15 +129,18 @@ Platform::Platform() :
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
+
 }
 
 void Platform::start() {
+	Clock::addObserver(this, PF_CLOCK_DELAY);
 	m_gimbal->start();
 	m_rangefinder->start();
 	m_nadirRangefinder->start();
 }
 
 void Platform::stop() {
+	Clock::removeObserver(this);
 	m_gimbal->stop();
 	m_rangefinder->stop();
 	m_nadirRangefinder->stop();
@@ -148,7 +161,7 @@ void Platform::rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range) {
 	delete range;
 }
 
-void Platform::update(double time) {
+void Platform::tick(double time) {
 
 	Eigen::Vector3d Pp(m_platformState.position());
 	Eigen::Vector3d Po(m_platformState.orientation());
@@ -162,13 +175,13 @@ void Platform::update(double time) {
 
 	const Eigen::Vector3d& lVel = m_platformState.linearVelocity();
 
-	Pp[0] += time * m_posPoisson.next(lVel[0]);
-	Pp[1] += m_posPoisson.nextCentered();
-	Pp[2] += m_posPoisson.nextCentered();
+	Pp[0] += lVel[0] * PF_CLOCK_DELAY; // m_posPoisson.next(lVel[0] * PF_CLOCK_DELAY); // m/s multiplied by the delay
+	//Pp[1] += m_posPoisson.nextCentered();
+	//Pp[2] += m_posPoisson.nextCentered();
 
-	Po[0] += 0; //m_rotPoisson.nextCentered();
-	Po[1] += 0; //m_rotPoisson.nextCentered();
-	Po[2] += 0; //m_rotPoisson.nextCentered();
+	//Po[0] += m_rotPoisson.nextCentered();
+	//Po[1] += m_rotPoisson.nextCentered();
+	//Po[2] += m_rotPoisson.nextCentered();
 
 	m_platformState.setPosition(Pp);
 	m_platformState.setOrientation(Po);

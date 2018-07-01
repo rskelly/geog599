@@ -10,6 +10,8 @@
 
 #include <Eigen/Core>
 
+#include "util.hpp"
+
 namespace uav {
 
 /**
@@ -23,7 +25,7 @@ namespace uav {
  * and its beam is aligned with the dynamic orientation. The gimbal itself is positioned
  * at the static orientation and aligned with the dynamic position.
  */
-class Gimbal {
+class Gimbal : public uav::util::ClockObserver {
 protected:
 
 	Gimbal() {}
@@ -92,6 +94,20 @@ public:
 	 * @return The static position of the gimbal.
 	 */
 	virtual const Eigen::Vector3d& staticPosition() const = 0;
+
+	/**
+	 * Set the sweep angle in radians.
+	 *
+	 * @param sweepAngle The sweep angle in radians.
+	 */
+	virtual void setSweepAngle(double sweepAngle) = 0;
+
+	/**
+	 * Set the sweep frequency in cycles per second.
+	 *
+	 * @param sweepFrequency The sweep frequency in cycles per second.
+	 */
+	virtual void setSweepFrequency(double sweepFrequency) = 0;
 
 	/**
 	 * Start the gimbal's operation.

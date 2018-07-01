@@ -29,15 +29,6 @@ using namespace uav::util;
 using namespace uav::sim;
 using namespace uav::surface;
 
-/**
- * Run the simulator in a thread.
- *
- * @param sim A pointer to the simulator.
- */
-void doRun(Simulator* sim) {
-	sim->run();
-}
-
 Simulator::Simulator() :
 	m_running(false) {
 
@@ -48,7 +39,7 @@ Simulator::Simulator() :
 
 	// These are parameters that organize the components of the laser system w/r/t the
 	// UAV platform.
-	SinGimbal* gimbal = new SinGimbal(1, 1);
+	SinGimbal* gimbal = new SinGimbal(PI / 2, 4);
 	gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
 	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
 	gimbal->setStaticOrientation(Eigen::Vector3d(0, 0, 0)); // down (around the y axis.) TODO: This seems to be upside-down...
@@ -58,7 +49,7 @@ Simulator::Simulator() :
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
-	rangefinder->setPulseFrequency(100);
+	rangefinder->setPulseFrequency(866); // NOTE: The gimbal's update frequency must be higher than this.
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
@@ -83,40 +74,32 @@ Simulator::Simulator() :
 	m_platform->setInitialPlatformState(state);
 
 	m_controller->setPlatform(m_platform);
+
 }
 
 void Simulator::start() {
 	if(!m_running) {
 		m_controller->start();
 		m_running = true;
-		m_thread = std::thread(doRun, this);
 	}
 }
 
 void Simulator::stop() {
 	if(m_running) {
 		m_running = false;
-		if(m_thread.joinable())
-			m_thread.join();
 		m_controller->stop();
 	}
 }
 
-void Simulator::setTerrainFile(const std::string& file) {
-	m_terrain->load(file);
+void Simulator::setTerrainFile(const std::string& file, int band) {
+	m_terrain->load(file, band);
 	double x = m_terrain->minx() + 10;
 	double y = m_terrain->miny() + m_terrain->height() / 2.0;
 
 	// Start the vehicle off at 10cm above the terrain.
 	uav::sim::PlatformState state(dynamic_cast<const uav::sim::PlatformState&>(m_platform->platformState()));
-	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 0.1));
+	state.setPosition(Eigen::Vector3d(x, y, m_terrain->sample(x, y) + 10));
 	m_platform->setInitialPlatformState(state);
-}
-
-void Simulator::setGimbalAngle(double angle) {
-	Eigen::Vector3d rot = m_platform->gimbal()->staticOrientation();
-	rot[1] = angle;
-	m_platform->gimbal()->setStaticOrientation(rot);
 }
 
 uav::sim::Terrain* Simulator::terrain() {
@@ -125,20 +108,6 @@ uav::sim::Terrain* Simulator::terrain() {
 
 uav::Platform* Simulator::platform() {
 	return m_platform;
-}
-
-void Simulator::addObserver(SimulatorObserver* obs) {
-	m_obs.push_back(obs);
-}
-
-void Simulator::run() {
-	std::cerr << std::setprecision(12);
-	while(m_running) {
-		// Tell observers that the simulator has updated.
-		for(SimulatorObserver* obs : m_obs)
-			obs->simUpdate(*this);
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
-	}
 }
 
 Simulator::~Simulator() {
@@ -155,7 +124,7 @@ int runWithGui(int argc, char **argv) {
 		Sim1Application(int &argc, char **argv) : QApplication(argc, argv) {
 			QCoreApplication::setOrganizationName("dijital.ca");
 			QCoreApplication::setOrganizationDomain("dijital.ca");
-			QCoreApplication::setApplicationName("UAVSimulator1");
+			QCoreApplication::setApplicationName("uavsim1");
 		}
 
 		bool notify(QObject *receiver, QEvent *e) {

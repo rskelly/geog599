@@ -72,6 +72,7 @@ private:
 	double m_mass;
 	double m_altitude;
 	double m_altitudeTime;
+	double m_pulseRate;
 
 public:
 
@@ -109,6 +110,9 @@ public:
 
 	double altitudeTime() const;
 
+	void setPulseRate(double rate);
+
+	double pulseRate() const;
 };
 
 /**
@@ -134,7 +138,7 @@ public:
  * A platform simulation. The platform is roughly autonomous, so everything
  * about its state originates here, other than the instruction to update.
  */
-class Platform : public uav::Platform,	public uav::RangefinderObserver {
+class Platform : public uav::RangefinderObserver, public uav::Platform {
 private:
 	uav::sim::PlatformState m_platformState;
 	uav::sim::RangefinderState m_rangefinderState;
@@ -159,14 +163,7 @@ public:
 
 	void rangeUpdate(uav::Rangefinder* rangefinder, uav::Range* range);
 
-	/**
-	 * Update the state of the platform. This is the "tick" that
-	 * advances the platforms state, meaning its position, attitude, etc.
-	 * according to its flight plan. Presumably driven by a Controller.
-	 *
-	 * @param time A double, representing the time in seconds.
-	 */
-	void update(double time);
+	void tick(double time);
 
 	/**
 	 * Set the initial platform state for simulation.

@@ -11,35 +11,34 @@
 
 using namespace uav::surface;
 
-std::unordered_map<size_t, std::vector<Delaunay::Point> > __pts;
-size_t __last = 0;
-
 DelaunaySurface::DelaunaySurface() :
 	m_tri(new Delaunay()) {
 }
 
 void DelaunaySurface::addPoint(const Eigen::Vector3d& point, double time) {
 	Delaunay::Point pt(point[0], point[1], point[2]);
+
+	std::lock_guard<std::mutex> lk(m_mtx);
 	m_tri->insert(pt);
 
-	// Cull the oldest 20s of points from the surface triangulation.
+	// Cull any point older than 10s.
 	// TODO: This should be a spatial filter, not a temporal one. Works for now.
 	size_t t = (size_t) time;
-	__pts[t].push_back(pt);
-	if(__last == 0) {
-		__last = t;
-	} else if(t - __last > 20) {
-		size_t t0 = __last;
-		for(; t0 < t - 10; ++t0) {
-			for(Delaunay::Point& pt0 : __pts[t0])
+	m_pts[t].push_back(pt);
+	auto it = m_pts.begin();
+	while(it != m_pts.end()) {
+		if(t - it->first > 10) {
+			for(Delaunay::Point& pt0 : it->second)
 				m_tri->remove(m_tri->nearest_vertex(pt0));
-			__pts.erase(t0);
+			it = m_pts.erase(it);
+		} else {
+			++it;
 		}
-		__last = t0;
 	}
 }
 
 void DelaunaySurface::getVertices(std::vector<double>& vertices) {
+	std::lock_guard<std::mutex> lk(m_mtx);
 	for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
 			it != m_tri->finite_faces_end(); ++it){
 		Delaunay::Triangle t = m_tri->triangle(it);

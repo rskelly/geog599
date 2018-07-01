@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>765</width>
-    <height>518</height>
+    <height>555</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,7 +31,7 @@ QCheckBox::indicator::unchecked {
 	background: none;
 }
 
-QLineEdit, QDoubleSpinBox {
+QLineEdit, QDoubleSpinBox,QSpinBox {
   background: #222;
   border-color: #666;
 }
@@ -81,16 +81,6 @@ QPushButton::enabled {
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Velocity</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="QLineEdit" name="txtVelocity"/>
-      </item>
      </layout>
     </widget>
    </item>
@@ -110,25 +100,83 @@ QPushButton::enabled {
         </property>
        </widget>
       </item>
-      <item row="0" column="3">
-       <widget class="QToolButton" name="btnTerrainFile">
-        <property name="text">
-         <string>...</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QLabel" name="lblGimbalAngle">
         <property name="text">
          <string>Gimbal Static Angle (°)</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QDoubleSpinBox" name="spnGimbalAngle"/>
       </item>
-      <item row="0" column="1" colspan="2">
-       <widget class="QLineEdit" name="txtTerrainFile"/>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Sweep Angle (°)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QDoubleSpinBox" name="spnSweepAngle"/>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>Sweep Frequency (cps)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QDoubleSpinBox" name="spnSweepFrequency">
+        <property name="minimum">
+         <double>0.100000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>100.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="3">
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLineEdit" name="txtTerrainFile"/>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="spnBand">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="value">
+           <number>1</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="btnTerrainFile">
+          <property name="text">
+           <string>...</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item row="2" column="3">
+       <widget class="QDoubleSpinBox" name="spnPulseFrequency">
+        <property name="minimum">
+         <double>1.000000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>100000.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>Pulse Frequency (pps)</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -162,6 +210,13 @@ QPushButton::enabled {
        </property>
        <property name="checked">
         <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnReset">
+       <property name="text">
+        <string>Reset</string>
        </property>
       </widget>
      </item>

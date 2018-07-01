@@ -49,30 +49,8 @@ RangeBridge::RangeBridge() :
 }
 
 double RangeBridge::getRange() {
-	m_lastTime = uavtime();
+	m_lastTime = Clock::currentTime();
 	return m_terrain->range(m_position, m_direction);
-}
-
-void RangeBridge::getInterpRanges(int pulseCount, std::vector<double>& ranges, std::vector<double>& times) {
-	double time = uavtime();
-	if(m_lastTime == 0) {
-		m_lastTime = time;
-		return;
-	} else {
-		int count = (int) std::max(1.0, (time - m_lastTime) * pulseCount);
-		Eigen::Vector3d posStep = (m_position - m_prevPosition) / count;
-		Eigen::Vector3d dirStep = (m_direction - m_prevDirection) / count;
-		double timeStep = (time - m_lastTime) / count;
-		for(int i = 0; i < count; ++i) {
-			double r = m_terrain->range(m_prevPosition + posStep * i, m_prevDirection + dirStep * i);
-			if(r > 100.0) // TODO: Configurable max range.
-				continue;
-			double t = time + timeStep + i;
-			ranges.push_back(r);
-			times.push_back(t);
-		}
-		m_lastTime = time;
-	}
 }
 
 void RangeBridge::setLaser(const Eigen::Vector3d& position, const Eigen::Vector3d& direction) {
@@ -91,60 +69,64 @@ Terrain* RangeBridge::terrain() {
 }
 
 
-void __runRangefinder(Rangefinder* rangefinder, double freq, bool* running) {
-	int sleep = 1.0 / freq * 1000000.0;
-	while(*running) {
-		rangefinder->generatePulse();
-		std::this_thread::sleep_for(std::chrono::microseconds(sleep));
-	}
-}
-
 Rangefinder::Rangefinder() :
 	m_obs(nullptr),
 	m_bridge(nullptr),
 	m_pulseFreq(5.0),
 	m_nextTime(0),
+	m_maxRange(100),
+	m_rangeError(1),
 	m_running(false) {
 
 	m_gauss.setMean(0);
-	m_gauss.setStdDev(0.1);
+	m_gauss.setStdDev(m_rangeError);
 }
 
 void Rangefinder::setObserver(uav::RangefinderObserver* obs) {
 	m_obs = obs;
 }
 
+void Rangefinder::setMaxRange(double range, double error) {
+	m_maxRange = range;
+	m_rangeError = error;
+	m_gauss.setStdDev(m_rangeError);
+}
+
+void Rangefinder::tick(double time) {
+	generatePulse();
+}
+
 void Rangefinder::start() {
 	if(!m_running) {
 		m_running = true;
-		m_thread = std::thread(__runRangefinder, this, m_pulseFreq, &m_running);
+		Clock::addObserver(this, 1.0 / m_pulseFreq);
 	}
 }
 
 void Rangefinder::stop() {
 	if(m_running) {
 		m_running = false;
-		if(m_thread.joinable())
-			m_thread.join();
+		Clock::removeObserver(this);
 	}
 }
 
 
 void Rangefinder::setPulseFrequency(double freq) {
 	m_pulseFreq = freq;
+	if(m_running)
+		Clock::addObserver(this, 1.0 / m_pulseFreq);
 }
 
 void Rangefinder::generatePulse() {
-	m_obs->rangeUpdate(this, new Range(m_bridge->getRange()  + m_gauss.next(), uavtime()));
-}
-
-int Rangefinder::getRanges(std::vector<uav::Range*>& ranges) {
-	std::vector<double> r;
-	std::vector<double> t;
-	m_bridge->getInterpRanges((int) m_pulseFreq, r, t);
-	for(size_t i = 0; i < r.size(); ++i)
-		ranges.push_back(new Range(r[i], t[i]));
-	return ranges.size();
+	double range = m_bridge->getRange();
+	if(!std::isnan(range) && range <= m_maxRange) {
+		// If the range is within the max range, generate a pulse.
+		double time = Clock::currentTime();
+		// The error is scaled from zero at zero range, to 1*SD at max range.
+		double error = (range / m_maxRange) * m_gauss.next();
+		// Send the range update.
+		m_obs->rangeUpdate(this, new Range(range + error, time));
+	}
 }
 
 void Rangefinder::setRangeBridge(RangeBridge* bridge) {

@@ -20,31 +20,18 @@
 namespace uav {
 namespace sim {
 
-class Simulator;
-
-class SimulatorObserver {
-public:
-	virtual void simUpdate(Simulator& sim) = 0;
-	virtual ~SimulatorObserver() {}
-};
-
 class Simulator {
 private:
 	bool m_running;
 	uav::sim::Terrain* m_terrain;
 	uav::sim::Platform* m_platform;
 	uav::Controller* m_controller;
-	std::thread m_thread;
-	std::vector<uav::sim::SimulatorObserver*> m_obs;
 
 public:
 	Simulator();
-	void run();
 	void start();
 	void stop();
-	void setTerrainFile(const std::string& file);
-	void setGimbalAngle(double angle);
-	void addObserver(SimulatorObserver* obs);
+	void setTerrainFile(const std::string& file, int band);
 	uav::sim::Terrain* terrain();
 	uav::Platform* platform();
 	~Simulator();

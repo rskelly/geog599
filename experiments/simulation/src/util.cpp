@@ -6,12 +6,147 @@
  */
 
 #include <iostream>
-#include <sys/time.h>
+#include <chrono>
 
 #include "uav.hpp"
 #include "util.hpp"
 
+void uav::thread::setPriority(std::thread &th, int policy, int priority) {
+	sched_param sch_params;
+	sch_params.sched_priority = priority;
+	if(pthread_setschedparam(th.native_handle(), policy, &sch_params))
+		std::cerr << "Failed to set thread scheduling : " << std::strerror(errno) << "\n";
+}
+
+void uav::thread::setAffinity(std::thread &th, int core) {
+	pthread_t thread = th.native_handle();
+	cpu_set_t cpuset;
+
+	CPU_ZERO(&cpuset);
+	CPU_SET(core, &cpuset);
+
+	if(pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset))
+		std::cerr << "Failed to set thread affinity: " << std::strerror(errno) << "\n";
+}
+
 using namespace uav::util;
+
+ClockObserverItem::ClockObserverItem() :
+		ClockObserverItem(nullptr, -1) {}
+
+ClockObserverItem::ClockObserverItem(ClockObserver* item, double delay) :
+		delay(delay), lastTick(-1), item(item)  {}
+
+void __clockRun(std::unordered_map<ClockObserver*, ClockObserverItem>* observers,
+		bool* running, double* currentTime, double* minStep, std::mutex* mtx) {
+	double time;
+
+	{
+		std::lock_guard<std::mutex> lk(*mtx);
+		// Set the initial time on all observer items.
+		time = 0; // uavtime(); No need to start at UTC. Maybe can add another field later.
+		for(auto& item : *observers)
+			item.second.lastTick = time;
+	}
+
+	while(*running) {
+		time += *minStep;
+		*currentTime = time;
+		{
+			std::lock_guard<std::mutex> lk(*mtx);
+			// Iterate over observer items, firing those whose tick delay has elapsed.
+			for(auto& item : *observers) {
+				if(item.second.delay <= time - item.second.lastTick) {
+					item.second.item->tick(time);
+					item.second.lastTick = time;
+				}
+			}
+		}
+		std::this_thread::sleep_for(std::chrono::nanoseconds((int) (*minStep * 1000000000)));
+	}
+}
+
+Clock::Clock() :
+	m_running(false),
+	m_minStep(std::numeric_limits<double>::max()),
+	m_currentTime(-1) {
+}
+
+Clock& Clock::instance() {
+	static Clock inst;
+	return inst;
+}
+
+double Clock::currentTime() {
+	return Clock::instance().m_currentTime;
+}
+
+void Clock::addObserver(ClockObserver* obs, double delay) {
+	Clock& inst = Clock::instance();
+	std::unordered_map<ClockObserver*, ClockObserverItem>& items = inst.m_observers;
+
+	{
+		std::lock_guard<std::mutex> lk(inst.m_mtx);
+		if(items.find(obs) == items.end()) {
+			ClockObserverItem& item = items[obs];
+			item.item = obs;
+			item.delay = delay;
+		} else {
+			items[obs].delay = delay;
+		}
+	}
+
+	// Reset minStep
+	double minStep = std::numeric_limits<double>::max();
+	for(const auto& item : items) {
+		if(item.second.delay < minStep)
+			minStep = item.second.delay;
+	}
+	inst.m_minStep = minStep;
+}
+
+void Clock::removeObserver(ClockObserver* obs) {
+	Clock& inst = Clock::instance();
+	std::unordered_map<ClockObserver*, ClockObserverItem>& items = inst.m_observers;
+	bool found = false;
+
+	{
+		std::lock_guard<std::mutex> lk(inst.m_mtx);
+		if(items.find(obs) != items.end()) {
+			items.erase(obs);
+			found = true;
+		}
+	}
+
+	if(found) {
+		// Reset minStep
+		double minStep = std::numeric_limits<double>::max();
+		for(auto& item : items) {
+			if(item.second.delay < minStep)
+				minStep = item.second.delay;
+		}
+		inst.m_minStep = minStep;
+	}
+}
+
+void Clock::start() {
+	Clock& inst = Clock::instance();
+	if(!inst.m_running) {
+		inst.m_running = true;
+		inst.m_thread = std::thread(__clockRun, &(inst.m_observers),
+				&(inst.m_running), &(inst.m_currentTime), &(inst.m_minStep), &(inst.m_mtx));
+	}
+}
+
+void Clock::stop() {
+	Clock& inst = Clock::instance();
+	if(inst.m_running) {
+		inst.m_running = false;
+		if(inst.m_thread.joinable())
+			inst.m_thread.join();
+	}
+}
+
 
 Poisson::Poisson() : Poisson(10) {}
 
@@ -35,9 +170,7 @@ double Poisson::nextCentered(double freq) {
 }
 
 double uav::util::uavtime() {
-	timeval time;
-	gettimeofday(&time, NULL);
-	return (double) time.tv_sec + ((double) time.tv_usec / 1000000);
+	return (double) std::chrono::high_resolution_clock::now().time_since_epoch().count() / 1000000000;
 }
 
 

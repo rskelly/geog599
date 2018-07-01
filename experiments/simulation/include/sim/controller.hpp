@@ -12,15 +12,14 @@
 
 #include "../controller.hpp"
 #include "../platform.hpp"
+#include "util.hpp"
 
 namespace uav {
 namespace sim {
 
-class Controller : public uav::Controller {
+class Controller : public uav::util::ClockObserver, public uav::Controller {
 private:
 	uav::Platform* m_platform;
-	std::thread m_thread;
-	bool m_running;
 	double m_lastTickTime;
 	double m_lastAltitudeTime;
 

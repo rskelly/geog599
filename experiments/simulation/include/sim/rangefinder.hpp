@@ -85,7 +85,7 @@ public:
  * rangefinder gets the calculated range from the RangeBridge class which
  * is a singleton.
  */
-class Rangefinder : public uav::Rangefinder {
+class Rangefinder : public uav::util::ClockObserver, public uav::Rangefinder {
 private:
 	uav::util::Poisson m_poisson;
 	uav::util::Gaussian m_gauss;
@@ -93,6 +93,8 @@ private:
 	uav::sim::RangeBridge* m_bridge;
 	double m_pulseFreq;
 	double m_nextTime;
+	double m_maxRange;
+	double m_rangeError;
 	bool m_running;
 	std::thread m_thread;
 
@@ -116,6 +118,16 @@ public:
 	 * Generate a pulse.
 	 */
 	void generatePulse();
+
+	/**
+	 * Set the maximum range of the instrument and the error SD at the
+	 * range limit. The error will increase as the range increases up to
+	 * the limit, when no value will be returned.
+	 *
+	 * @param range The maximum range of the instrument.
+	 * @param error The SD of the error at the limit.
+	 */
+	void setMaxRange(double range, double error = 1.0);
 
 	/**
 	 * Set the measurement frequency. This should have noise added.
@@ -145,7 +157,7 @@ public:
 
 	void stop();
 
-	int getRanges(std::vector<uav::Range*>& ranges);
+	void tick(double time);
 
 	~Rangefinder();
 };

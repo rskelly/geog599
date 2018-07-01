@@ -9,10 +9,119 @@
 #define INCLUDE_UTIL_HPP_
 
 #include <random>
+#include <mutex>
+#include <thread>
+#include <iostream>
+#include <unordered_map>
+
 #include <Eigen/Core>
 
 namespace uav {
+
+namespace thread {
+
+void setPriority(std::thread &th, int policy, int priority);
+void setAffinity(std::thread &th, int core);
+
+} // thread
+
 namespace util {
+
+/**
+ * Classes that implement ClockObserver receive
+ * ticks from a Clock instance which can be used as
+ * a time-based driver. The time is the Clock's elapsed
+ * time, not the wall time.
+ */
+class ClockObserver {
+public:
+
+	/**
+	 * Called by a Clock at a specified interval. The time is the
+	 * Clock's elapsed time, not wall time.
+	 */
+	virtual void tick(double time) = 0;
+
+	virtual ~ClockObserver() {}
+};
+
+/**
+ * Maintains a pointer to a ClockObserver and information
+ * about its tick frequency.
+ */
+class ClockObserverItem {
+public:
+	double delay;			///<! The delay between one tick and the next.
+	double lastTick;		///<! The time of the last tick.
+	ClockObserver* item;	///<! A pointer to the ClockObserver. This instance is not the owner.
+
+	ClockObserverItem();
+
+	/**
+	 * Build a ClockObserverItem using the given pointer and tick frequency (per second.)
+	 * The tick frequency is converted to a time delay.
+	 *
+	 * @param item The ClockObserver item.
+	 * @param delay The delay in seconds between ticks.
+	 */
+	ClockObserverItem(ClockObserver* item, double delay);
+};
+
+/**
+ * The Clock provides a means of driving processes by "ticking"
+ * at a configured frequency. This is not a real-time clock, with every
+ * tick, the time advances according to the configured frequency, not
+ * the actual wall time.
+ */
+class Clock {
+private:
+	bool m_running;
+	double m_minStep;
+	double m_currentTime;
+	std::thread m_thread;
+	std::unordered_map<ClockObserver*, ClockObserverItem> m_observers;
+	std::mutex m_mtx;
+
+	Clock();
+
+public:
+
+	static Clock& instance();
+
+	/**
+	 * Return the current clock time.
+	 *
+	 * @return The current clock time.
+	 */
+	static double currentTime();
+
+	/**
+	 * Add an observer to the clock. The caller maintains ownership
+	 * of the pointer. If the observer exists, will overwrite the tick frequency.
+	 *
+	 * @param obs A pointer to a ClockObserver.
+	 * @param delay The delay in seconds between ticks.
+	 */
+	static void addObserver(ClockObserver* obs, double delay);
+
+	/**
+	 * Remove an observer.
+	 *
+	 * @param obs A pointer to the ClockObserver.
+	 */
+	static void removeObserver(ClockObserver* obs);
+
+	/**
+	 * Start the clock.
+	 */
+	static void start();
+
+	/**
+	 * Stop the clock.
+	 */
+	static void stop();
+};
+
 
 /**
  * Provides a simple method for retrieving a poisson-distributed

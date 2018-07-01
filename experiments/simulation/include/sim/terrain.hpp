@@ -39,15 +39,17 @@ public:
 	 * Create a terrain from the given raster.
 	 *
 	 * @param demfile A terrain raster.
+	 * @param band The raster band (1-n).
 	 */
-	Terrain(const std::string& demfile);
+	Terrain(const std::string& demfile, int band);
 
 	/**
 	 * Load a terrain DEM.
 	 *
 	 * @param demfile A terrain raster.
+	 * @param band The band number (1-n).
 	 */
-	void load(const std::string& demfile);
+	void load(const std::string& demfile, int band);
 
 	/**
 	 * Sample the terrain using the ray originating at origin

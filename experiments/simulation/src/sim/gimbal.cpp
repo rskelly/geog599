@@ -15,43 +15,38 @@
 using namespace uav::sim;
 using namespace uav::util;
 
-/**
- * Updates the gimbal's dynamic orientation in a separate thread.
- * TODO: This should be configurable to test different sweep rates, etc.
- *
- * @param orientation The gimbal's dynamic orientation vector (Euler angles).
- */
-void updateGimbal(Eigen::Vector3d* orientation, bool* running) {
-	double t = uavtime();
-	while(*running) {
-		double t0 = uavtime();
-		// Every second, performs a full rotation of 2PI, with a +-20 degree sweep.
-		double a = std::sin((t0 - t) * PI * 2) * (PI / 9);
-		(*orientation)[2] = a; // around z-axis (side to side)
-		std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(10));
-	}
-}
+constexpr double G_CLOCK_DELAY = 1.0 / 10000.0;
 
 SinGimbal::SinGimbal(double sweepAngle, double sweepFrequency) :
-	m_position(Eigen::Vector3d(0, 0, -2)), // 2cm down
+	m_orientation(Eigen::Vector3d(0, 0, 0)),
+	m_position(Eigen::Vector3d(0, 0, 0)),
+	m_staticOrientation(Eigen::Vector3d(0, 0, 0)),
+	m_staticPosition(Eigen::Vector3d(0, 0, 0)),
 	m_running(false),
-	m_sweepAngle(sweepAngle), m_sweepFrequency(sweepFrequency) {
+	m_sweepAngle(sweepAngle / 2), m_sweepFrequency(sweepFrequency) {
+}
+
+void SinGimbal::setSweepAngle(double sweepAngle) {
+	m_sweepAngle = sweepAngle / 2;
+}
+
+void SinGimbal::setSweepFrequency(double sweepFrequency) {
+	m_sweepFrequency = sweepFrequency;
+}
+
+void SinGimbal::tick(double time) {
+	double a = std::sin(time * PI * 2 * m_sweepFrequency) * m_sweepAngle;
+	m_orientation[2] = a; // around z-axis (side to side)
 }
 
 void SinGimbal::start() {
-	if(!m_running) {
-		m_running = true;
-		m_thread = std::thread(updateGimbal, &m_orientation, &m_running);
-	}
+	Clock::addObserver(this, G_CLOCK_DELAY);
 }
 
 void SinGimbal::stop() {
-	if(m_running) {
-		m_running = false;
-		if(m_thread.joinable())
-			m_thread.join();
-	}
+	Clock::removeObserver(this);
 }
+
 void SinGimbal::setOrientation(const Eigen::Vector3d& orientation) {
 	m_orientation = orientation;
 }
@@ -86,4 +81,58 @@ const Eigen::Vector3d& SinGimbal::staticPosition() const {
 
 SinGimbal::~SinGimbal() {
 	stop();
+}
+
+
+NetGimbal::NetGimbal(const std::string& addr) :
+	m_addr(addr),
+	m_running(false) {
+}
+
+void NetGimbal::start() {
+
+}
+
+void NetGimbal::stop() {
+
+}
+
+void NetGimbal::setOrientation(const Eigen::Vector3d& orientation) {
+	m_orientation = orientation;
+}
+
+const Eigen::Vector3d& NetGimbal::orientation() const {
+	return m_orientation;
+}
+
+void NetGimbal::setPosition(const Eigen::Vector3d& position) {
+	m_position = position;
+}
+
+const Eigen::Vector3d& NetGimbal::position() const {
+	return m_position;
+}
+
+void NetGimbal::setStaticOrientation(const Eigen::Vector3d& mtx) {
+	m_staticOrientation = mtx;
+}
+
+const Eigen::Vector3d& NetGimbal::staticOrientation() const {
+	return m_staticOrientation;
+}
+
+void NetGimbal::setStaticPosition(const Eigen::Vector3d& mtx) {
+	m_staticPosition = mtx;
+}
+
+const Eigen::Vector3d& NetGimbal::staticPosition() const {
+	return m_staticPosition;
+}
+
+void NetGimbal::tick(double tick) {
+
+}
+
+NetGimbal::~NetGimbal() {
+
 }
