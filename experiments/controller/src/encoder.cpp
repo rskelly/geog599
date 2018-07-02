@@ -121,6 +121,8 @@ void Encoder::start() {
 		}
 		// Configure to read the angle continuously.
 		configure(100, 0);
+
+		m_running = true;
 		//m_thread = std::thread(_run, this, m_fd, &m_value, &m_running);
 		_run(this, m_fd, &m_value, &m_running);
 	}
