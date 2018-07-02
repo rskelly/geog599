@@ -8,6 +8,8 @@
 #include <chrono>
 #include <iostream>
 
+#include <asio.hpp>
+
 #include "uav.hpp"
 #include "util.hpp"
 #include "sim/gimbal.hpp"
@@ -84,17 +86,53 @@ SinGimbal::~SinGimbal() {
 }
 
 
-NetGimbal::NetGimbal(const std::string& addr) :
+using asio::ip::udp;
+
+void _netrun(const std::string* addr, int port, Eigen::Vector3d* orientation, bool* running) {
+
+	asio::io_service svc;
+	udp::resolver res(svc);
+	udp::resolver::query query(udp::v4(), *addr, std::to_string(port));
+	udp::endpoint endpoint = *res.resolve(query);
+
+	udp::socket sock(svc);
+	sock.open(udp::v4());
+
+	std::vector<char> send(1);
+	sock.send_to(asio::buffer(send), endpoint);
+
+	std::vector<char> recv(128);
+	udp::endpoint sender;
+	while(*running) {
+		size_t len = sock.receive_from(asio::buffer(recv), sender);
+		for(size_t i = 0; i < len; i += 8) {
+			double angle = *((double*) recv.data() + i) * PI / 180.0;
+			(*orientation)[1] = angle;
+		}
+		std::this_thread::yield();
+	}
+
+}
+
+NetGimbal::NetGimbal(const std::string& addr, int port) :
 	m_addr(addr),
+	m_port(port),
 	m_running(false) {
 }
 
 void NetGimbal::start() {
-
+	if(!m_running) {
+		m_running = true;
+		m_thread = std::thread(_netrun, &m_addr, m_port, &m_orientation, &m_running);
+	}
 }
 
 void NetGimbal::stop() {
-
+	if(m_running) {
+		m_running = false;
+		if(m_thread.joinable())
+			m_thread.join();
+	}
 }
 
 void NetGimbal::setOrientation(const Eigen::Vector3d& orientation) {

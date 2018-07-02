@@ -90,6 +90,7 @@ private:
 	Eigen::Vector3d m_staticOrientation;
 	Eigen::Vector3d m_staticPosition;
 	std::string m_addr;
+	int m_port;
 
 	std::thread m_thread;					///!< The update thread.
 	bool m_running;
@@ -102,7 +103,7 @@ public:
 	 *
 	 * @param addr The server address.
 	 */
-	NetGimbal(const std::string& addr);
+	NetGimbal(const std::string& addr, int port);
 
 	void start();
 
