@@ -24,7 +24,7 @@ void _run(Encoder* enc, int fd, double* value, bool* running) {
 	int port = 13;
 	asio::io_service svc;
 	udp::socket sock(svc, udp::endpoint(udp::v4(), port));
-
+        // TODO: There's no way to stop this.
 	while(*running) {
 
 		udp::endpoint remote;
