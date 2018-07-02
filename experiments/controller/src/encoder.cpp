@@ -29,11 +29,13 @@ void _run(Encoder* enc, int fd, double* value, bool* running) {
 
 		udp::endpoint remote;
 		asio::error_code err;
-		std::vector<char> recv;
+		std::vector<char> recv(128);
 		sock.receive_from(asio::buffer(recv), remote, 0, err);
 
 		if(err && err != asio::error::message_size)
 			throw std::runtime_error(err.message());
+
+                printf("%d\n", recv[0]);
 
 		std::vector<double> send(1);
 
@@ -48,6 +50,7 @@ void _run(Encoder* enc, int fd, double* value, bool* running) {
 			if(val > max) max = val;
 			// Compute the output value.
 			*value = (double) val / max * 360.0;
+                        printf("%f\n", *value);
 
 			send[0] = *value;
 			sock.send_to(asio::buffer(send), remote, 0, err);
