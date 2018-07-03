@@ -107,7 +107,7 @@ void _netrun(const std::string* addr, int port, Eigen::Vector3d* orientation, bo
 		size_t len = sock.receive_from(asio::buffer(recv), sender);
 		for(size_t i = 0; i < len; i += 8) {
 			double angle = *((double*) recv.data() + i) * PI / 180.0;
-			(*orientation)[1] = angle;
+			(*orientation)[2] = angle;
 		}
 		std::this_thread::yield();
 	}
