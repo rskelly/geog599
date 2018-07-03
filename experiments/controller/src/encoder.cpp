@@ -19,9 +19,8 @@ using asio::ip::udp;
 
 bool __quit = false;
 
-void _run(Encoder* enc, int fd, double* value, bool* running) {
+void _run(Encoder* enc, int fd, double* value, bool* running, int port) {
 	int max = 0;
-	int port = 13;
 	asio::io_service svc;
 	udp::socket sock(svc, udp::endpoint(udp::v4(), port));
         // TODO: There's no way to stop this.
@@ -110,7 +109,7 @@ Encoder::Encoder() :
 	signal(SIGINT, sigintHandler);
 }
 
-void Encoder::start() {
+void Encoder::start(int port) {
 	if(!m_running) {
 		// Open the device with fd as the handle.
 		if((m_fd = open("/dev/i2c-1", O_RDWR)) < 0) {
@@ -127,7 +126,7 @@ void Encoder::start() {
 
 		m_running = true;
 		//m_thread = std::thread(_run, this, m_fd, &m_value, &m_running);
-		_run(this, m_fd, &m_value, &m_running);
+		_run(this, m_fd, &m_value, &m_running, port);
 	}
 }
 
@@ -143,7 +142,11 @@ void Encoder::stop() {
 
 int main(int argc, char** argv) {
 
+        int port = 9000;
+        if(argc > 1)
+          port = atoi(argv[1]);
+
 	Encoder enc;
-	enc.start();
+	enc.start(port);
 
 }

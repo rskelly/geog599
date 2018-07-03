@@ -40,9 +40,12 @@ public:
 	Encoder();
 
 	/**
-	 * Start reading from the device.
+	 * Start reading from the device and start
+         * the udp service.
+         *
+         * @param port The UDP port to listen on.
 	 */
-	void start();
+	void start(int port);
 
 	/**
 	 * Stop reading from the device.
