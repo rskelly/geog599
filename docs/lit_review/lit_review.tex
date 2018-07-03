@@ -370,24 +370,55 @@ Fairly technical.
 
 \section{Control Systems}
 
-There are two primary fields of control system development, model-based and reactive. Model-based systems attempt to re-create the physical forces and control inputs acting upon a vehicle in order to calculate the control inputs required to maintain a stable state. Reactive controls, on the other hand, use sensor inputs to determine the amount of error between the desired and actual states, and compute the control inputs required to reduce the error.
+%There are two primary fields of control system development, model-based and reactive. Model-based systems attempt to re-create the physical forces and control inputs acting upon a vehicle in order to calculate the control inputs required to maintain a stable state. Reactive controls, on the other hand, use sensor inputs to determine the amount of error between the desired and actual states, and compute the control inputs required to reduce the error.
 
 \subsubsection{PID Controllers}
 
 [discuss actuator saturation and control input singularity for hard-angled trajectories, etc.]
 
 
-The \emph{proportional-integral-derivative} controller (PID) is widely used in industry \cite{Soediono1989} to maintain the stability of, for example, chemical processes by measuring process outputs, calculating the error with regards to a target metric and feeding the measurements back into the controller which adjusts the input actuators. This paradigm has the advantage that it doesn’t necessarily require a comprehensive physical model of the process to succeed, only a desired outcome and the possibility of achieving that outcome by adjusting the available inputs (a closed-loop system) 	\cite{Soediono1989}. A significant advantage of PID controllers are often self-training and can be considered a form of primitive artificial intelligence.
+The \emph{proportional-integral-derivative} controller (PID) is widely used in industry \cite{Soediono1989} to maintain the stability of, for example, chemical processes by measuring process outputs, calculating the error with regards to a target metric and feeding the measurements back into the controller which adjusts the input actuators. This paradigm has the advantage that it doesn’t necessarily require a comprehensive physical model of the process to succeed, only a desired outcome and the possibility of achieving that outcome by adjusting the available inputs (a closed-loop system) \cite{Soediono1989}. PID controllers are often self-training and can be considered a form of primitive artificial intelligence.
 
-PID controllers are ideally suited to the complex state-management tasks that face a multi-rotor UAV. In fact, controlling such an inherently-unstable vehicle would be nearly impossible without the assistance of some sort of reactive controller, even if the main controller were model based. However, it is not always possible, given changing payloads, environmental conditions, terrains and flight plans -- not to mention the availability of comprehensive models and computing power -- to accurately model a vehicle’s dynamics.
+PID controllers are ideally suited to the complex state-management tasks that face a multi-rotor UAV. In fact, controlling such an inherently-unstable vehicle would be nearly impossible without the assistance of some sort of automated controller. It is not always possible, given changing payloads, environmental conditions, terrains and flight plans -- not to mention the availability of comprehensive models and computing power -- to accurately model a vehicle’s dynamics ahead of time. 
 
-There are many books dedicated to the subject of industrial process control using PIDs which offer a grounding in the fundamental operating principles. ``ractical PID Control'' \cite{Soediono1989}, 
+PID control originated early in the 20th century when it was found that the work of properly managing the stability of industrial manufacturing processes was too difficult for an individual worker \cite{Bennett2001}. Numerous firms and individuals worked on the development of pneumatic linear-feedback systems which used the flapper nozzle mechanism as a kind of gain amplifier, which could sense changes in a system and actuate a response. It was not until 1939 that a true PID emerged.
+
+Per \cite{Soediono1989}, the PID control law consists of the sum of three control actions:
 
 \begin{itemize}
-\item the proportional control action;
-\item the integral action; and
-\item the derivative action.
+\item The proportional action $K_p$ is proportional to the control error as, 
+
+\begin{equation}
+u(t) = K_p e(t) = K_p(r(t) - y(t)),
+\end{equation}
+
+where $u$ is the output, or controlled variable and $e$ is the control error (the difference between the reference signal and the output signal). 
+
+\item The integral action $K_i$ relates to integral gain, 
+
+\begin{equation}
+u(t) = K_i \int_0^t e(\tau) d\tau,
+\end{equation}
+
+or the sum of errors over time. 
+
+\item The derivative action $K_d$, 
+
+\begin{equation}
+u(t) = K_d \frac{de(t)}{dt},
+\end{equation}
+
+relates to the slope of trend in error over time.
 \end{itemize}
+
+The proportional term can be understood as the current error state; the integral term is over the sum of past states and the derivative term is a prediction of future states \cite{Soediono1989}. The control system is then the sum of the three terms, 
+
+\begin{equation}
+u(t) = K_p + K_i + K_d,
+\end{equation}
+
+
+
 
 General PID for Industrial Processes:
 \cite{Saxena}
