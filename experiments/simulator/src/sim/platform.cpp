@@ -129,7 +129,6 @@ Platform::Platform() :
 
 	m_posPoisson.setMean(1000);
 	m_rotPoisson.setMean(1000);
-
 }
 
 void Platform::start() {

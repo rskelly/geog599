@@ -18,7 +18,6 @@ Controller::Controller() :
 		m_platform(nullptr),
 		m_lastTickTime(0),
 		m_lastAltitudeTime(0) {
-
 }
 
 void Controller::start() {
