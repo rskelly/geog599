@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+
+	class UAV {
+
+		constructor() {
+			this._mass = 1.0;
+			this._thrust = 0.0;
+			this._y = 0;
+		}
+
+		set y(y) {
+			this._y = y;
+		}
+
+		get y() {
+			return this._y;
+		}
+
+		set thrust(v) {
+			this._thrust = v;
+		}
+
+		get thrust() {
+			return this._thrust;
+		}
+
+		get mass() {
+			return this._mass;
+		}
+
+		thrustUp() {
+			this._thrust += 1;
+		}
+
+		thrustDown() {
+			this._thrust = Math.max(0, this._thrust - 1);
+		}
+
+		draw(ctx, w, h) {
+			ctx.fillStyle = 'blue';	
+			ctx.fillRect(w / 2, h - this._y - 10, 10, 10);
+		}
+
+	}
+
+	class PID {
+
+		constructor(uav) {
+			this._uav = uav;
+			this._targetY = 0;
+		}
+
+		set targetY(y) {
+			this._targetY = y;
+		}
+
+		get targetY() {
+			return this._targetY;
+		}
+
+		update(t) {
+			const uav = this._uav;
+			if(uav.y - this.targetY < -2) {
+				uav.thrustUp();
+			} else if(uav.y - this.targetY > 2) {
+				uav.thrustDown();
+			}
+			const a = (uav.thrust + (uav.mass * -9.8)) / uav.mass;
+			uav.y = Math.max(0, uav.y + a * t);
+		}
+	}
+
+	class Controller {
+
+		constructor(cq) {
+			this._canv = document.querySelector(cq);
+			this._uav = new UAV();
+			this._pid = new PID(this._uav);
+			addEventListener('keydown', this._keyDown.bind(this));
+		}
+
+		_keyDown(evt) {
+			if(evt.key == 'ArrowUp') {
+				//this._uav.thrustUp();
+				this._pid.targetY += 10;
+			} else if(evt.key == 'ArrowDown') {
+				this._pid.targetY = Math.max(0, this._pid.targetY - 10);
+			}
+		}
+
+		_compute() {
+			const t = this._t / 1000.0;
+			this._pid.update(t);
+		}
+
+		_render() {
+			const ctx = this._canv.getContext('2d');
+			ctx.clearRect(0, 0, 500, 500);
+			this._uav.draw(ctx, 500, 500);
+		}
+
+		_update() {
+			this._t++;
+			this._compute();
+			this._render();
+		}
+
+		start() {
+			this._t = 0;
+			this._i = setInterval(this._update.bind(this), 1);
+		}
+
+		stop() {
+			clearInterval(this._i);
+		}
+
+	}
+
+	var cont;
+
+	function init() {
+		cont = new Controller('#canv');
+		cont.start();
+	}
+</script>
+<body onload="init();">
+<div>
+<canvas id="canv" width="500" height="500"></canvas>
+</div>
+</body>
+</html>
