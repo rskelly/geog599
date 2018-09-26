@@ -4,21 +4,45 @@
 \newlength{\savedunitlength}
 \setlength{\unitlength}{2em}
 
-\section{Remote Sensing}
+\section{Introduction}
 
-Remote sensing is the acquisition of information about an object without the necessity of physical contact between the object and the observer \cite{Gupta2018}. The human eyes, nose and ears are remote sensing instruments, collecting the electromagnetic, chemical and mechanical signals that comprise sight, smell and hearing, respectively.
+Remote sensing is the acquisition of information about an object or phenomenon without the necessity of physical contact between it and the observer \cite{Gupta2018}. The human eyes, nose and ears are remote sensing instruments, collecting the electromagnetic, chemical and mechanical signals that comprise sight, smell and hearing, respectively.
 
-In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electromagnetic or gravitational emissions from the Earth. Electromagnetic instruments may be further categorized as \emph{active}, such as LiDAR and RADAR which emit a pulse of radiation, then measure the temporal delay and intensity of the return; and \emph{passive}, which measure the reflected energy emitted by natural sources such as the sun, or endogenous energy, such as thermal infrared radiation (i.e. heat).
+In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electromagnetic or gravitational emissions from the Earth. Electromagnetic instruments may be further categorized as \emph{active}, such as LiDAR and RADAR which emit a pulse of radiation, then measure the temporal delay and intensity of the echo; and \emph{passive}, which measure the reflected energy emitted by natural sources such as the sun, or endogenous energy, such as thermal infrared radiation (i.e. heat).
 
-This research considers two types of remote sensing instruments typically used by UAV surveys, a ``pushbroom''-type hyperspectral imaging spectrometer (passive) and a scanning LiDAR device (active). 
+Whatever instrument is used, its orientation relative to the target has important impacts on the quality of information it produces, due to geometric (e.g., scale distortion or changes to the field of view), atmospheric (e.g. attenuation by scattering and absorption) and other effects. Changes in the instrument orientation through time further impact the quality of data by inducing unpredictable variations in its characteristics: one cannot be confident, for example, that the statistical power of a result holds if the point density from which it derives varies through space.
 
-\subsection{Imaging Spectrometry}
+This research considers two types of remote sensing instruments typically used by UAV surveys: a ``pushbroom''-type hyperspectral imaging spectrometer (passive) and a scanning LiDAR device (active). 
 
-Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Goetz1985}. This is particularly important to researchers in agriculture, minerology and other fields where the discrimination of extremely narrow spectral features is necessary \cite{Goetz1985}. There is a tradeoff between the fine spectral and spatial resolution of modern scanners: as the spectral response of a sensor is narrowed, the number of reflected photons corresponding to that wavelength decreases. Similarly, as the spatial resolution increases, the relative size of the reflector, and therefore the number of reflected photons, also decreases. This decrease in intensity increases the relative fraction of noise in the measurement \cite{Moses2012}.
+
+\subsection{Imaging Spectroscopy}
+
+%Electromagnetic energy -- photons -- may be detected using one of two types of detectors: photon detectors, in which photons free electrons from a substrate, generating an electrical current and thermal %detectors, which detect changes in their own temperature due to the absorption of light energy \cite{Wolfe1997}. These detectors can be characterized according to a set of objective quantities. The quantum %factor ($\eta$) is the ratio of electrons released to photons received, and is never greater than one. Responsivity is measured in volts (of output) per watt (of input), or a similar ratio. The quantum factor %tends to remain roughly constant across the detector's range of sensitivity, however, as photons at longer wavelengths are less energetic, the output voltage tends to drop significantly at the longer %wavelengths. Responsivity, meanwhile, usually increases linearly across the bandwidth of the element \cite{Wolfe1997}.
+
+%Specific detectivity ($D*$) of a sensor is a figure of merit which gives an idea of the performance of a sensor, given its area, frequency bandwidth and noise characteristics. $D*$ is given by,
+
+%\begin{equation}
+%D* = \frac{\sqrt{A_d B}}{\Phi}SNR,
+%\end{equation}
+
+Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Goetz1985}. This is particularly important to researchers in agriculture, minerology and other fields where the discrimination of extremely narrow spectral features is necessary for the identification of physical features \cite{Goetz1985}. 
+
+Wolfe (\cite{Wolfe1997}) gives the specific detectivity ($D*$) as,
+
+%\begin{equation}
+%D* = \frac{\sqrt{A_d B}}{\Phi}SNR,
+%\end{equation}
+
+where $A_d$ is the detector area, $B$ is the effective noise bandwidth, $\Phi$ is the noise-equivalent power of the detector and $SNR$ is the signal to noise ratio. $D*$ is a figure of merit which gives an idea of the performance of a sensor, given its area, frequency bandwidth and noise characteristics. 
+
+Unfortunately, decreasing the sensor area and narrowing the bandwidth (increasing spatial and spectral resolution, respectively) will increase the relative fraction of noise in the measurement \cite{Moses2012, Wolfe2997}.
 
 The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a continuous line parallel to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands during its \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved as a single picture element, or pixel, which is spatially referenced to the target itself. 
 
-The integration time of a scanner is related to another important quantity, \emph{dwell time}, by the platform velocity and field of view. Dwell time is the time during which a hypothetical target is recorded by the instrument. For a stationary instrument the dwell time and integration time are identical. For a moving instrument, 
+The integration time of a scanner is related to another important quantity, \emph{dwell time}, by the platform velocity and field of view. Dwell time is the time during which a hypothetical target is recorded by the instrument. For a stationary instrument the dwell time and integration time are identical. For a moving instrument, dwell time is contingent on platform velocity and altitude.
+
+The integration time of an instrument is analogous to the shutter of a photographic camera -- it is the interval during which light is recorded by the photo-sensitive medium. Dwell time is related but slightly different -- it is the time during which the target is being recorded and may be equal to or less than, but not greater than the integration time. In the case of a stationary instrument, the integration time and dwell time are identical. On the other hand, if a moving instrument with a narrow IFOV passes over a target area, discrete objects within the area may pass into and out of the instrument's field of view during its integration time. Then the dwell time for such an object will be less than the integration time.
+
 
 \subsubsection{Signal-to-Noise Ratio}
 
@@ -33,13 +57,18 @@ There are several sources of noise in hyperspectral imagery.
 \item "smearing" \cite{Barducci2007,Ruyten1999}, which occurs as the photosensor remains active during charge transfer.
 \end{itemize}
 
-These sources have in common that they cannot not easily be mitigated by the user, but are intrinsic to the instrument. However, by increasing the magnitude of the signal, or photon flux, the relative influence of noise can be reduced \cite{Dor2012}. Of course, some of the factors affecting the strength of the signal cannot be directly controlled -- atmospheric attenuation and irradiant intensity, the optical properties of the instrument and the reflectivity of the target, etc. -- but there are others that can, namely, to perform the survey during solar noon, the period of most intense solar irradiation, to extend the time interval during which photons are recorded by the instrument, the \emph{dwell time} \cite{Gupta2018,Goetz1985,Dor2012} and to increase the surface area of the target scanned during one integration.
+These sources have in common that they cannot not easily be mitigated by the user, but are intrinsic to the instrument. However, by increasing the magnitude of the signal, or photon flux, the relative influence of noise can be reduced \cite{Dor2012}. Of course, some of the factors affecting the strength of the signal cannot be directly controlled -- irradiant intensity, the properties of the instrument and the reflectivity of the target, to name a few -- but there are others that can:
 
-The integration time of an instrument is analogous to the shutter of a photographic camera -- it is the interval during which light is recorded by the photo-sensitive medium. Dwell time is related but slightly different -- it is the time during which the target is being recorded and may be equal to or less than, but not greater than the integration time. In the case of a stationary instrument, the integration time and dwell time are identical. On the other hand, if a moving instrument with a narrow IFOV passes over a target area, discrete objects within the area may pass into and out of the instrument's field of view during its integration time. Then the dwell time for such an object will be less than the integration time.
+\begin{enumerate}
+\item A survey should be performed as near as possible to solar noon, the period of maximum irradiant intensity. 
+\item The time interval during which photons are recorded by the instrument, the \emph{dwell time} \cite{Gupta2018,Goetz1985,Dor2012}, can be maximised. As the \emph{dwell time} increases, the contribution of background (additive) noise, relative to the signal and multiplicative noise, decreases. Thus \emph{dwell time} is critical to the maintenance of an acceptably high signal to noise ratio \cite{F.MarkDanson1996,Avery1992,Rogass2014}. Dwell time is a function of platform altitude, forward velocity and instrument field of view.
+\item Increase the surface area of the target scanned during one integration. This is a function of platform altitude.
+\item Minimize the thickness of the atmosphere between the instrument and target by minimizing the platform altitude.
+\end{enumerate}
 
-As the \emph{dwell time} increases, the contribution of background (additive) noise, relative to the signal and multiplicative noise, decreases. Thus \emph{dwell time} is critical to the maintenance of an acceptably high signal to noise ratio \cite{F.MarkDanson1996,Avery1992,Rogass2014}. 
+It is clear that items 2, 3 and 4 are in conflict and require careful consideration. It is also clear that while these issues can be optimized statically, they must be stabilized through time to guarantee the quality of collected data across the study area.
 
-\cite{Gupta2018} gives a fundamental equation for that relates various operating parameters of a sensor to signal-to-noise over a contiguous range of wavelengths as, 
+\cite{Gupta2018} gives a fundamental equation that relates various operating parameters of a sensor to signal-to-noise over a contiguous range of wavelengths as, 
 
 \begin{equation}
 \frac{S}{N} = \int_{\lambda_1}^{\lambda_2} \frac{ 
@@ -114,7 +143,6 @@ It is clear that the signal-to-noise ratio, all other parameters held constant, 
 \subsubsection{Geometric Distortion}
 
 
-The elevation of the platform above the target determines the \emph{across-track} (lateral) scale of the resulting image, the forward velocity determines the \emph{along-track} (longitudinal) scale, and the velocity coupled with the \emph{integration time} determines the resolution. If the \emph{integration time} is too short, the scanner will only record within a small portion of the pixel. If it is  too long, the cells will ``smear'' together. Most importantly, the \emph{integration time} and velocity together determine the \emph{dwell time} -- the time that a scanner element spends recording any part of the target. 
 
 %[Tangent plane assumption of earth geometry -- ignore geodetic distortions]
 
@@ -184,13 +212,27 @@ Overlap
 %An optimal trajectory would minimize these rotations, but in the attempt to minimize fore-aft platform rotation, it must be remembered that changes in velocity also affect \emph{dwell time}.
 
 
-\subsubsection{Vehicle Dynamics}
+\subsubsection{Vehicle Dynamics and Control}
 
-The goal of this research is not to design a complete multi-copter flight controller, but to use elements of control theory to send commands to the vehicle's flight control computer at the appropriate time. In particular, given the vehicle's mass, velocity, pitch, throttle position and altitude, when should the flight controller be instructed adjust the platform's elevation, and at what rate, in order to satisfy the error constraints, while not exceeding the flight envelope. For instance, if the flight controller is instructed too late to increase its altitude, it may diverge from the trajectory or it may collide with the terrain.
+There are many aspects of vehicle dynamics that are unique to multi-rotor UAVs, some of which aid the stability of the vehicle. In particular, unlike a single-rotor helicopter, the rotors' torque forces cancel out, negating the need for a tail rotor, and the centre of mass is suspended between the rotors, rather than in line with the axis of rotation \cite{McKerrow2004}. A multi-copter is said to be an under-actuated system \cite{McKerrow2004,Mian2008,Valavanis2007} meaning that, though the vehicle has six degrees of freedom (rotation and translation along three axes), it has only four possible control inputs: roll, pitch, thrust and yaw. For this reason, it is virtually impossible for a human pilot to control a multi-copter directly, as one would a helicopter -- the advent of small, fast control systems makes the entire field possible. 
 
-There are many aspects of vehicle dynamics that are unique to multi-rotor UAVs, some of which aid the stability of the vehicle. In particular, unlike a single-rotor helicopter, the rotors' torque forces cancel out, negating the need for a tail rotor, and the centre of mass is suspended between the rotors, rather than below the axis of rotation \cite{McKerrow2004}. A multi-copter is said to be an under-actuated system \cite{McKerrow2004,Mian2008,Valavanis2007} meaning that, though the vehicle has six degrees of freedom (rotation and translation along three axes), [etc.]
+
+The goal of this research is not to design a complete multi-copter flight controller, but to use elements of control theory to send commands to the vehicle's flight control computer at the appropriate time. In particular, given the vehicle's mass, velocity, pitch, throttle position and altitude, when should the flight controller be instructed adjust the platform's elevation, and at what rate, in order to satisfy the error constraints, while not exceeding the flight envelope. For instance, if the flight controller is instructed too late to increase its altitude, it may diverge from the trajectory or it may collide with the terrain. Certainly, too large correction would entail the over-use of throttle and thus battery power.
+
+In UAV remote sensing, the researcher will generally develop a flight plan that entails flying in a series of parallel lines within a study area polygon. As the vehicle approaches the end of each line, it crosses the boundary of the polygon, which functions as a "trigger box," stopping the instruments. The vehicle then turns, aligns on the next flight line and crosses back into the polygon, restarting the instruments. 
+
+Since the horizontal control of the vehicle is handled by the mission-control software, this research will focus on the development of vertical trajectories only. There are then three control considerations: first, that the forward velocity of the platform is maintained; that the pitch of the vehicle is maintained; third, that the vertical trajectory is followed as closely as possible with the first two held as near constant as possible.
+
+To satisfy the dual constraints of the flight envelope and the remote
+
+
+
 
 The DJI Onboard Application Programming Interface (API) \cite{DJI2018} provides a means of retrieving various flight parameters from the flight computer at $\SI{100}\Hz$, including the hardware synchronization timestamp, the quaternion (orientation), angular rate, velocity and local and global positions. Combined with \emph{a-priori} knowledge about the mass, thrust and drag characteristics of the platform, this is enough information to determine the constraints upon the trajectory.
+
+
+
+
 
 Part II Modelling and Control Fundamentals
 Chapter 3: Airplane Basic Equations of Motion and Open-Loop Dynamics

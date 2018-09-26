@@ -7,17 +7,17 @@
 \contentsline {chapter}{Dedication}{viii}
 \contentsline {chapter}{\numberline {1}Introduction}{1}
 \contentsline {chapter}{\numberline {2}Literature Review}{4}
-\contentsline {section}{\numberline {2.1}Remote Sensing}{4}
-\contentsline {subsection}{\numberline {2.1.1}Imaging Spectrometry}{4}
-\contentsline {subsubsection}{Signal-to-Noise Ratio}{5}
-\contentsline {subsubsection}{Geometric Distortion}{7}
-\contentsline {subsection}{\numberline {2.1.2}LiDAR}{9}
-\contentsline {subsubsection}{Geometric Effects on Image Quality}{9}
-\contentsline {section}{\numberline {2.2}Kinematics and Dynamics}{9}
-\contentsline {subsubsection}{Vehicle Dynamics}{9}
-\contentsline {section}{\numberline {2.3}Computational Geometry}{11}
-\contentsline {section}{\numberline {2.4}Terrain Following}{11}
-\contentsline {section}{\numberline {2.5}Surface Reconstruction}{13}
+\contentsline {section}{\numberline {2.1}Introduction}{4}
+\contentsline {subsection}{\numberline {2.1.1}Imaging Spectroscopy}{5}
+\contentsline {subsubsection}{Signal-to-Noise Ratio}{6}
+\contentsline {subsubsection}{Geometric Distortion}{8}
+\contentsline {subsection}{\numberline {2.1.2}LiDAR}{10}
+\contentsline {subsubsection}{Geometric Effects on Image Quality}{10}
+\contentsline {section}{\numberline {2.2}Kinematics and Dynamics}{10}
+\contentsline {subsubsection}{Vehicle Dynamics}{10}
+\contentsline {section}{\numberline {2.3}Computational Geometry}{12}
+\contentsline {section}{\numberline {2.4}Terrain Following}{12}
+\contentsline {section}{\numberline {2.5}Surface Reconstruction}{14}
 \contentsline {section}{\numberline {2.6}Control Systems}{14}
 \contentsline {subsubsection}{PID Controllers}{14}
 \contentsline {section}{\numberline {2.7}Ethics}{16}
