@@ -10,42 +10,34 @@
 #include <string>
 #include <iostream>
 
-#include "i2c.hpp"
-
-namespace util {
-
-	int _open(const char* path, int flags) {
-		return open(path, flags);
-	}
-
-	void _close(int fd) {
-		close(fd);
-	}
-
-	int _read(int fd, char* buf, int len) {
-		return read(fd, buf, len);
-	}
-
-	int _write(int fd, char* buf, int len) {
-		return write(fd, buf, len);
-	}
-
-}
+#include "serial.hpp"
 
 
-I2C::I2C(const std::string& dev, long addr) :
+Serial::Serial(const std::string& dev, long addr) :
 	m_dev(dev),
 	m_addr(addr),
 	m_fd(0) {
 }
 
-int I2C::write(char* buf, int len) {
+int Serial::write(char* buf, int len) {
 	return util::_write(m_fd, buf, len);
 }
 
-int I2C::read(char* buf, int len) {
+int Serial::read(char* buf, int len) {
 	return util::_read(m_fd, buf, len);
 }
+
+int Serial::read(std::vector<char>& buf) {
+	int len = buf.size();
+	return util::_read(m_fd, buf.data(), len);
+}
+
+int Serial::write(std::vector<char>& buf, int len = -1) {
+	if(len == -1)
+		len = (int) buf.size();
+	return util::_write(m_fd, buf.data(), len);
+}
+
 
 bool I2C::open() {
 	std::cout << "Opening I2C device at " << m_dev << ".\n";
@@ -60,17 +52,6 @@ bool I2C::open() {
 		return false;
 	}
 	return true;
-}
-
-int I2C::read(std::vector<char>& buf) {
-	int len = buf.size();
-	return util::_read(m_fd, buf.data(), len);
-}
-
-int I2C::write(std::vector<char>& buf, int len = -1) {
-	if(len == -1)
-		len = (int) buf.size();
-	return util::_write(m_fd, buf.data(), len);
 }
 
 void I2C::close() {

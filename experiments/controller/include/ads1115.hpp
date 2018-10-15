@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "i2c.hpp"
+#include "serial.hpp"
 
 /**
  * A class for interoperating with a Texas Instruments ADS1115 analog-to-digital
