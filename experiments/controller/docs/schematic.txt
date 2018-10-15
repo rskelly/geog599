@@ -9,7 +9,7 @@ ads1115 -> pi
 
 encoder -> pi/ads1115
 -gry - GND (pi)
--blu - 5v
+-blu - 5v (move to 3.3 and update range on ADC. need an external regulated power source.)
 -ppl - a0
 
 
