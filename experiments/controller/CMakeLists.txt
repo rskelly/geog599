@@ -85,5 +85,8 @@ endif()
 
 # Build support libraries ################################################################################
 
-add_executable (encoder src/encoder.cpp)
-#target_link_libraries (encoder) 
+#add_executable (encoder src/encoder.cpp)
+#target_link_libraries (encoder)
+
+add_executable (sf30c src/lwsf30c.cpp src/serial.cpp)
+ 

@@ -1,0 +1,66 @@
+- minimize/stabilize geometric scale distortion, along and across track
+- minimize/stabilize point density variation (same as scale)
+- minimize/stabilize SNR
+- minimize battery usage
+
+- requirements
+	- constant altitude
+	- constant ground speed of *swath*
+	- it would be nice to maintain an instrument axis perpendicular to the across-track 
+	  gradient, but this would require simultaneous roll and translation in y for the platform.
+	  translations of this sort are probably not possible at the required speed, and would
+	  cause a deviation from the planned trajectory.
+
+- platform thrust and rotation vectors
+	- thrust is always in line with the platform's z axis. platform rotates in y to direct thrust
+	  rearward or forward to control velocity in x.
+	- when grounded, thrust vector magnitude is zero; rotation vector is [0, 0, 0]
+	- when hovering, thrust vector in body and intertial frames is [0, 0, >0], rotation vector is [0, 0, 0]
+	- when moving, thrust vector in body frame is t0 = [0, 0, >0], inertial frame is t1 = [x > 0, y = 0, 0 < z < t0[2]]
+		- the vector's x and y elements are a result of pitch and roll.
+		- when pitch != 0, some part of thrust contributes to acceleration in x, and some in z
+		- since the 2d motion of the platform is dictated by pitch and thrust, and climbing requires the 
+		  addition of thrust, the climbing thrust also imparts some force to forward motion, which increases
+		  velocity in x. 
+		- the x velocity of the platform can be maintained during climb by adjusting the pitch and thrust.
+		- however, the platform motion isn't important, what's important is the velocity of the ground swath, so the
+		  pitch and thrust have to be optimized to to maintain ground swath velocity irrespective of the platform velocity. 
+		- however, pitch adjustments imply along-track scale distortion within integrations, so pitch changes must
+		  be minimized.
+			- we have three(?) inputs:
+				1) thrust 
+				2) pitch
+				3) terrain?
+			- we have four primary constraints
+				1) minimize altitude error w/r/t planned altitude
+				2) minimize ground swath velocity error w/r/t planned velocity
+				3) minimize pitch error w/r/t pitch in level flight on flat ground
+				4) minimize thrust (i.e. battery usage)
+		- suspect that there is only one pitch/thrust combination for a given trajectory/velocity.
+		- it appears as though there will be a global optimum for the pitch/thrust combination given the terrain, 
+		  mission objectives and constraints. however, it may be that there is more than one optimimum for some
+		  constraints, one of which satisfies the remaining constraints. for example, what if there are more than 
+		  one conditions that satisfy 1, 2 and 3, but only one of those satisifies 4. what if the best solution to
+		  4 is not the best for 3, but satisfies 1 and 2 as well as any other?
+
+- the DJI flight control API allows low-level inputs such as pitch, roll and thrust, and high-resolution
+  telemetry that can be used to asses the current dynamic state of the platform. therefore a flight-control
+  system can be designed that uses simplified dynamic equations to compute instructions to be sent to 
+  the API, on the assumption that the flight-controller will handle the low-level adjustments to achieve the
+  desired dynamic effect. 
+
+  put another way, if we desire a pitch angle of q, and a thrust force of r, given the output of a model that requires this,
+  we can send this instruction to the API and it will manage the low-level flight controls to achieve these parameters
+  to the best of its ability. the deviation between the requested inputs and the actual platform behaviour will have to 
+  be measured.
+
+ - the motor axes are not aligned, and therefore the individual thrust vectors do not align. it will probably be necessary to 
+   assume a single, unified thrust vector and allow the DJI computer to handle the individual thrust components.
+
+- DJI 6010 motor characteristics - https://store.dji.com/product/e2000-standard-6010-motor
+	- power peaks at around 3000rpm, efficiency at ~5800. power and efficiency intersect at around 4300.
+- DJI e2000 pro specifications - https://www.dji.com/e2000/info
+	- efficiency peaks at around 3400rpm, but thrust is less than half of maximum at this point. thrust,
+	  current and input power peak at about 4300, with a small dip from peak efficiency. 
+	- may be an opportunity to adjust trajectory to maximize efficiency without harming imagery metrics.
+	

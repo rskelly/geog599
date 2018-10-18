@@ -10,35 +10,67 @@
 
 #include <string>
 #include <vector>
+#include <cstring>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <termios.h>
+
 
 namespace util {
 
-	int _open(const char* path, int flags) {
-		return open(path, flags);
-	}
+	int _open(const char* path, int flags);
 
-	void _close(int fd) {
-		close(fd);
-	}
+	void _close(int fd);
 
-	int _read(int fd, char* buf, int len) {
-		return read(fd, buf, len);
-	}
+	int _read(int fd, char* buf, int len);
 
-	int _write(int fd, char* buf, int len) {
-		return write(fd, buf, len);
-	}
+	int _write(int fd, char* buf, int len);
 
 }
+
+enum ConnectionType {
+	I2C,
+	USB,
+};
+
+class Properties {
+public:
+	ConnectionType type;
+	std::string dev;
+
+	Properties(const std::string& dev, ConnectionType type) :
+		type(type), dev(dev) {}
+};
+
+class USBProperties : public Properties {
+public:
+	int parity;
+	int speed;
+
+	USBProperties(const std::string& dev, int parity = 0, int speed = B115200) :
+		Properties(dev, USB),
+		parity(parity), speed(speed) {}
+};
+
+class I2CProperties : public Properties {
+public:
+	int addr;
+
+	I2CProperties(const std::string& dev, int addr) :
+		Properties(dev, I2C),
+		addr(addr) {}
+};
 
 /**
  * An class for accessing Serial (I2C, USB, etc.) devices.
  */
 class Serial {
 protected:
-	std::string m_dev;	///<! The device path; something like "/dev/ttyi2c-1"
-	long m_addr;		///<! The address of the device if needed.
-	int m_fd;			///<! The file handle of the device.
+	int m_fd;
+	Properties m_props;		///<! The Properties object that gives parameters for the connection.
 
 	/**
 	 * A protected wrapper for write, for internal use.
@@ -50,26 +82,25 @@ protected:
 	 */
 	int read(char* buf, int len);
 
+	bool openUSB();
+
+	bool openI2C();
+
 public:
 
 	/**
 	 * Configure a serial device endpoint at the given path with the given address.
 	 *
-	 * @param dev The device path; something like "/dev/i2c-1".
-	 * @param addr The device address.
+	 * @param props An appropriate Properties subclass with values appropriate to the type of conneciton desired.
 	 */
-	Serial(const std::string& dev, long addr = -1) :
-		m_dev(dev),
-		m_addr(addr),
-		m_fd(0) {
-	}
+	Serial(const Properties& props);
 
 	/**
 	 * Connect to the device.
 	 *
 	 * @return True if connection is successful.
 	 */
-	virtual bool open() = 0;
+	bool open();
 
 	/**
 	 * Read from the device into the given buffer. The size
@@ -96,40 +127,9 @@ public:
 	/**
 	 * Disconnect from the device.
 	 */
-	virtual void close() = 0;
+	void close();
 
-	virtual ~Serial() {
-		close();
-	}
-
-};
-
-class I2C : public Serial {
-public:
-
-	/**
-	 * Configure an I2C device endpoint at the given path with the given address.
-	 *
-	 * @param dev The device path; something like "/dev/i2c-1".
-	 * @param addr The device address.
-	 */
-	I2C(const std::string& dev, long addr = -1) :
-		m_dev(dev),
-		m_addr(addr),
-		m_fd(0) {
-	}
-
-	/**
-	 * Connect to the device.
-	 *
-	 * @return True if connection is successful.
-	 */
-	virtual bool open() = 0;
-
-	/**
-	 * Disconnect from the device.
-	 */
-	virtual void close() = 0;
+	~Serial();
 
 };
 
