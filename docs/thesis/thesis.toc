@@ -14,12 +14,12 @@
 \contentsline {subsection}{\numberline {2.1.2}LiDAR}{10}
 \contentsline {subsubsection}{Geometric Effects on Image Quality}{10}
 \contentsline {section}{\numberline {2.2}Kinematics and Dynamics}{10}
-\contentsline {subsubsection}{Vehicle Dynamics}{10}
+\contentsline {subsubsection}{Vehicle Dynamics and Control}{10}
 \contentsline {section}{\numberline {2.3}Computational Geometry}{12}
 \contentsline {section}{\numberline {2.4}Terrain Following}{12}
 \contentsline {section}{\numberline {2.5}Surface Reconstruction}{14}
-\contentsline {section}{\numberline {2.6}Control Systems}{14}
-\contentsline {subsubsection}{PID Controllers}{14}
-\contentsline {section}{\numberline {2.7}Ethics}{16}
+\contentsline {section}{\numberline {2.6}Control Systems}{15}
+\contentsline {subsubsection}{PID Controllers}{15}
+\contentsline {section}{\numberline {2.7}Ethics}{17}
 \contentsline {chapter}{\numberline {A}Additional Information}{18}
 \contentsline {chapter}{Bibliography}{19}
