@@ -8,7 +8,9 @@
 #include <chrono>
 #include <iostream>
 
-#include <asio.hpp>
+#include <boost/asio.hpp>
+
+#include <Eigen/Core>
 
 #include "uav.hpp"
 #include "util.hpp"
@@ -86,11 +88,11 @@ SinGimbal::~SinGimbal() {
 }
 
 
-using asio::ip::udp;
+using boost::asio::ip::udp;
 
 void _netrun(const std::string* addr, int port, Eigen::Vector3d* orientation, bool* running) {
 
-	asio::io_service svc;
+	boost::asio::io_service svc;
 	udp::resolver res(svc);
 	udp::resolver::query query(udp::v4(), *addr, std::to_string(port));
 	udp::endpoint endpoint = *res.resolve(query);
@@ -99,12 +101,12 @@ void _netrun(const std::string* addr, int port, Eigen::Vector3d* orientation, bo
 	sock.open(udp::v4());
 
 	std::vector<char> send(1);
-	sock.send_to(asio::buffer(send), endpoint);
+	sock.send_to(boost::asio::buffer(send), endpoint);
 
 	std::vector<char> recv(128);
 	udp::endpoint sender;
 	while(*running) {
-		size_t len = sock.receive_from(asio::buffer(recv), sender);
+		size_t len = sock.receive_from(boost::asio::buffer(recv), sender);
 		for(size_t i = 0; i < len; i += 8) {
 			double angle = *((double*) recv.data() + i) * PI / 180.0;
 			(*orientation)[2] = angle;

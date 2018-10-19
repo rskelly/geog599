@@ -39,7 +39,7 @@ set (JSON_INCLUDEDIR "/usr/include/jsoncpp")
 set (THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package (Threads REQUIRED)
-#find_package (Boost 1.58 COMPONENTS system filesystem date_time thread REQUIRED)
+find_package (Boost 1.58 COMPONENTS system filesystem date_time thread REQUIRED)
 find_package (GDAL 2.2 REQUIRED)
 find_package (CGAL REQUIRED COMPONENTS Core)
 #find_package (PCL 1.8 REQUIRED)
@@ -91,7 +91,7 @@ if(${WITH_GUI})
 		src/sim/gimbal.cpp src/viewer/sim1viewer.cpp src/viewer/renderwidget.cpp 
 		src/surface.cpp src/sim/controller.cpp)
 	target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} 
-		${GL_LIBRARY} ${GLU_LIBRARY} Qt5::Gui Qt5::Core Qt5::Widgets) 
+		${GL_LIBRARY} ${GLU_LIBRARY} ${Boost_LIBRARIES} Qt5::Gui Qt5::Core Qt5::Widgets) 
 else()
 
 endif()
