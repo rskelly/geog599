@@ -365,6 +365,12 @@ Eg. Dense, uniform point cloud -> smoothness prior
 Studies a variety of reconstruction methods, priors and issues. 
 Fairly technical.
 
+
+One aspect of the surface reconstruction that must be considered is the shape of the surface, which requires an exploration of the notion of shape. The convex hull is one such notion of shape. There are a variety of sufficient descriptions, one being that it is the set that encloses all segments joining each point in the point cloud to each other point. For any given point set, there is exactly one convex hull.
+
+Edelsbrunner and Müke \cite{Edelsbrunner1994}	provide a similarly rigorous definition of shape, using $\alpha$-shapes. The $\alpha$-shape is a generalization of the convex hull, which is best understood using the ice cream metaphor \cite{cgal:dy-as3-18b}. If one imagines the point cloud as a collection of chocolate chips embedded in ice cream, one can scoop out the ice cream between the chips, leaving behind a shape. The remaining shape is determined by the squared radius ($\alpha$) of the scoop. An $\alpha = \inf$ scoop (a plane) will leave the convex hull itself, while a $\alpha = 0$ scoop will leave only the chocolate chips. So, for any given $\alpha$ there is exactly one solution, but $\alpha$ itself is bounded by $[0-\inf]$.
+
+The $\alpha$-shape reconstruction my be valuable for this case as it offers a parameter that satisfies the requirement that pits or holes in the terrain of a certain size may be closed or filled in. Plus, the algorithm is usually implemented using the Delaunay triangulation, which can be computed incrementally on a point stream.
 \section{Control Systems}
 
 %There are two primary fields of control system development, model-based and reactive. Model-based systems attempt to re-create the physical forces and control inputs acting upon a vehicle in order to calculate the control inputs required to maintain a stable state. Reactive controls, on the other hand, use sensor inputs to determine the amount of error between the desired and actual states, and compute the control inputs required to reduce the error.

@@ -64,3 +64,24 @@
 	  current and input power peak at about 4300, with a small dip from peak efficiency. 
 	- may be an opportunity to adjust trajectory to maximize efficiency without harming imagery metrics.
 	
+
+
+- surface reconstruction
+	- there are lots of ways to build surfaces from point clouds, some of them fast, some not.
+ 		- triangulation
+ 		- statistical
+ 		- etc.
+ 	- one obvious solution is to use alpha shapes
+ 		- we want to be able to limit the size of a "hole" that the vehicle will descend into; a suitably
+ 		  large alpha will do this.
+ 		- the underlying delaunay is reasonably fast
+ 	- how to reduce the density of points from which the triangulation is constructed?
+ 		- maybe it's possible to to a real-time clustering of points, in order to capture multiple
+ 		  returns from ground, and canopy structure, etc. use the size of the cluter to estimate
+ 		  its validity (i.e. n=0 signifies random noise)
+ 		- truncate the coordinates of a point and compute a hash. locate this hash in a set. if
+ 		  the slot is occupied, increment the slot's count, and update the raw coordinate values so that they
+ 		  can be averaged later. (simultaneously, maintain a map of points to times, and delete those which have expired.) 
+ 		  use these weighted points (filter them, probably) to generate the mesh.
+ 		- there's some stuff in the neuroimaging literature about correlating voxels (clusters of truncated points)
+ 		  to form contiguous regions that are then treated as whole.
