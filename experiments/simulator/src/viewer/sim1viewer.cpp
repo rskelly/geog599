@@ -17,6 +17,7 @@
 #include "viewer/sim1viewer.hpp"
 #include "viewer/renderwidget.hpp"
 #include "sim/rangefinder.hpp"
+#include "sim/gimbal.hpp"
 #include "geometry.hpp"
 #include "rangefinder.hpp"
 #include "platform.hpp"
@@ -129,8 +130,11 @@ void Sim1Viewer::start() {
 		Eigen::Vector3d go = m_sim->platform()->gimbal()->staticOrientation();
 		go[1] = m_settings.value(K_GIMBAL_ANGLE, D_GIMBAL_ANGLE).toDouble() * PI / 180;
 		m_sim->platform()->gimbal()->setStaticOrientation(go);
-		//m_sim->platform()->gimbal()->setSweepFrequency(m_settings.value(K_SWEEP_FREQ, D_SWEEP_FREQ).toDouble());
-		//m_sim->platform()->gimbal()->setSweepAngle(m_settings.value(K_SWEEP_ANGLE, D_SWEEP_ANGLE).toDouble() * PI / 180);
+		uav::sim::SinGimbal* g = dynamic_cast<uav::sim::SinGimbal*>(m_sim->platform()->gimbal()); // Very inefficient.
+		if(g) {
+			g->setSweepFrequency(m_settings.value(K_SWEEP_FREQ, D_SWEEP_FREQ).toDouble());
+			g->setSweepAngle(m_settings.value(K_SWEEP_ANGLE, D_SWEEP_ANGLE).toDouble() * PI / 180);
+		}
 		dynamic_cast<uav::sim::Rangefinder*>(m_sim->platform()->rangefinder())->setPulseFrequency(m_settings.value(K_PULSE_FREQ, D_PULSE_FREQ).toDouble());
 
 		glPanel->setTerrain(m_sim->terrain());
@@ -187,12 +191,16 @@ void Sim1Viewer::spnPulseFrequencyChanged(double value) {
 
 void Sim1Viewer::spnSweepFrequencyChanged(double value) {
 	m_settings.setValue(K_SWEEP_FREQ, value);
-	//m_sim->platform()->gimbal()->setSweepFrequency(value);
+	uav::sim::SinGimbal* g = dynamic_cast<uav::sim::SinGimbal*>(m_sim->platform()->gimbal()); // Very inefficient.
+	if(g)
+		g->setSweepFrequency(value);
 }
 
 void Sim1Viewer::spnSweepAngleChanged(double value) {
 	m_settings.setValue(K_SWEEP_ANGLE, value);
-	//m_sim->platform()->gimbal()->setSweepAngle(value * PI / 180);
+	uav::sim::SinGimbal* g = dynamic_cast<uav::sim::SinGimbal*>(m_sim->platform()->gimbal()); // Very inefficient.
+	if(g)
+		g->setSweepAngle(value * PI / 180);
 }
 
 void Sim1Viewer::terrainFileChanged(QString file) {
