@@ -24,7 +24,7 @@ namespace sim {
  */
 class Terrain {
 private:
-	std::unique_ptr<Delaunay> m_tri;
+	std::unique_ptr<Delaunay2> m_tri;
 	double m_trans[6];
 	double m_width;
 	double m_height;

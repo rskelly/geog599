@@ -9,6 +9,7 @@
 #include <string>
 
 #include <gdal_priv.h>
+#include <gdal.h>
 
 #include "sim/terrain.hpp"
 #include "geometry.hpp"
@@ -42,7 +43,7 @@ void Terrain::load(const std::string& demfile, int band) {
 	if(CE_None != bnd->RasterIO(GF_Read, 0, 0, cols, rows, data.data(), cols, rows, GDT_Float32, 0, 0, 0))
 		throw std::runtime_error("Failed to load raster.");
 
-	std::vector<Point> pts;
+	std::vector<Point3> pts;
 	size_t i = 0;
 	m_minz = 99999;
 	m_maxz = -99999;
@@ -60,16 +61,16 @@ void Terrain::load(const std::string& demfile, int band) {
 		}
 	}
 
-	m_tri.reset(new Delaunay(pts.begin(), pts.end()));
+	m_tri.reset(new Delaunay2(pts.begin(), pts.end()));
 }
 
 void Terrain::getVertices(std::vector<double>& vertices) {
 	try {
-		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+		for(Delaunay2::Finite_faces_iterator it = m_tri->finite_faces_begin();
 				it != m_tri->finite_faces_end(); ++it){
-			Delaunay::Triangle t = m_tri->triangle(it);
+			Delaunay2::Triangle t = m_tri->triangle(it);
 			for(int i = 0; i < 3; ++i) {
-				Point v = t.vertex(i);
+				Point3 v = t.vertex(i);
 				vertices.push_back(v.x());
 				vertices.push_back(v.y());
 				vertices.push_back(v.z());
@@ -80,12 +81,12 @@ void Terrain::getVertices(std::vector<double>& vertices) {
 	}
 }
 
-inline void __trinorm(Delaunay::Triangle& t, Eigen::Vector3d& vec) {
+inline void __trinorm(Delaunay2::Triangle& t, Eigen::Vector3d& vec) {
 	double x[3];
 	double y[3];
 	double z[3];
 	for(int i = 0; i < 3; ++i) {
-		Point v = t.vertex(i);
+		Point3 v = t.vertex(i);
 		x[i] = v.x();
 		y[i] = v.y();
 		z[i] = v.z();
@@ -97,19 +98,19 @@ inline void __trinorm(Delaunay::Triangle& t, Eigen::Vector3d& vec) {
 
 void Terrain::getNormals(std::vector<double>& normals) {
 	try {
-		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+		for(Delaunay2::Finite_faces_iterator it = m_tri->finite_faces_begin();
 				it != m_tri->finite_faces_end(); ++it){
 			Eigen::Vector3d norm, norm0;
 			for(int i = 0; i < 3; ++i) {
-				Delaunay::Vertex_handle v = it->vertex(i);
-				Delaunay::Face_circulator faces = v->incident_faces(), end(faces);
+				Delaunay2::Vertex_handle v = it->vertex(i);
+				Delaunay2::Face_circulator faces = v->incident_faces(), end(faces);
 				bool degen = false;
 				do {
 					if(m_tri->is_infinite(faces)) {
 						degen = true;
 						break;
 					}
-					Delaunay::Triangle t = m_tri->triangle(faces);
+					Delaunay2::Triangle t = m_tri->triangle(faces);
 					__trinorm(t, norm0);
 					norm += norm0;
 				} while(++faces != end);
@@ -135,9 +136,9 @@ double Terrain::sample(const Eigen::Vector3d& origin, const Eigen::Vector3d& dir
 		Point_3 pt(origin[0], origin[1], origin[2]);
 		Vector_3 dir(direction[0], direction[1], direction[2]);
 		Ray_3 line(pt, dir);
-		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+		for(Delaunay2::Finite_faces_iterator it = m_tri->finite_faces_begin();
 				it != m_tri->finite_faces_end(); ++it){
-			Delaunay::Triangle t = m_tri->triangle(it);
+			Delaunay2::Triangle t = m_tri->triangle(it);
 			if(CGAL::do_intersect(line, t)) {
 				const CGAL::Object result = CGAL::intersection(line, t);
 				const Point_3* p = CGAL::object_cast<Point_3>(&result);
@@ -156,9 +157,9 @@ double Terrain::sample(double x, double y) {
 		Point_3 p1(x, y, maxz() + 100);
 		Point_3 p2(x, y, minz() - 100);
 		Segment_3 line(p1, p2);
-		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+		for(Delaunay2::Finite_faces_iterator it = m_tri->finite_faces_begin();
 				it != m_tri->finite_faces_end(); ++it){
-			Delaunay::Triangle t = m_tri->triangle(it);
+			Delaunay2::Triangle t = m_tri->triangle(it);
 			if(CGAL::do_intersect(line, t)) {
 				const CGAL::Object result = CGAL::intersection(line, t);
 				const Point_3* p = CGAL::object_cast<Point_3>(&result);
@@ -218,9 +219,9 @@ double Terrain::range(const Eigen::Vector3d& origin, const Eigen::Vector3d& dire
 		Vector_3 dir(direction[0], direction[1], direction[2]);
 		Ray_3 line(pt, dir);
 		//std::cerr << "ray: " << line << "\n";
-		for(Delaunay::Finite_faces_iterator it = m_tri->finite_faces_begin();
+		for(Delaunay2::Finite_faces_iterator it = m_tri->finite_faces_begin();
 				it != m_tri->finite_faces_end(); ++it){
-			Delaunay::Triangle t = m_tri->triangle(it);
+			Delaunay2::Triangle t = m_tri->triangle(it);
 			if(CGAL::do_intersect(line, t)) {
 				const CGAL::Object result = CGAL::intersection(line, t);
 				const Point_3* p = CGAL::object_cast<Point_3>(&result);

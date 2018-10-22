@@ -50,7 +50,7 @@ Simulator::Simulator() :
 	rb1->setTerrain(m_terrain);
 	Rangefinder* rangefinder = new Rangefinder();
 	rangefinder->setRangeBridge(rb1);
-	rangefinder->setPulseFrequency(866); // NOTE: The gimbal's update frequency must be higher than this.
+	rangefinder->setPulseFrequency(866); // TODO: The gimbal's update frequency must be higher than this.
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
 	rb1 = new RangeBridge();
@@ -60,7 +60,9 @@ Simulator::Simulator() :
 	nadirRangefinder->setPulseFrequency(10);
 
 	// This is the surface reconstruction module.
-	DelaunaySurface* surface = new DelaunaySurface();
+	//DelaunaySurface* surface = new DelaunaySurface();
+	AlphaSurface* surface = new AlphaSurface();
+	surface->setAlpha(0);
 
 	// Configure the platform.
 	m_platform = new Platform();

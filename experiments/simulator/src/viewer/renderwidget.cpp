@@ -210,7 +210,7 @@ void RenderWidget::renderSurface(const RenderParams& params) {
 	glBegin(GL_TRIANGLES);
 
 	std::vector<double> vertices;
-	dynamic_cast<uav::surface::DelaunaySurface*>(m_surface)->getVertices(vertices);
+	m_surface->getVertices(vertices);
 
 	double x[3];
 	double y[3];
