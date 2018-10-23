@@ -29,19 +29,17 @@ Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as 
 
 Wolfe (\cite{Wolfe1997}) gives the specific detectivity ($D*$) as,
 
-%\begin{equation}
-%D* = \frac{\sqrt{A_d B}}{\Phi}SNR,
-%\end{equation}
+\begin{equation}
+D* = \frac{\sqrt{A_d B}}{\Phi}SNR,
+\end{equation}
 
 where $A_d$ is the detector area, $B$ is the effective noise bandwidth, $\Phi$ is the noise-equivalent power of the detector and $SNR$ is the signal to noise ratio. $D*$ is a figure of merit which gives an idea of the performance of a sensor, given its area, frequency bandwidth and noise characteristics. 
 
 Unfortunately, decreasing the sensor area and narrowing the bandwidth (increasing spatial and spectral resolution, respectively) will increase the relative fraction of noise in the measurement \cite{Moses2012, Wolfe2997}.
 
-The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a continuous line parallel to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands during its \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved as a single picture element, or pixel, which is spatially referenced to the target itself. 
+The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a continuous swath parallel to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands during its \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved as a single picture element, or pixel, which is spatially referenced to the target itself. 
 
-The integration time of a scanner is related to another important quantity, \emph{dwell time}, by the platform velocity and field of view. Dwell time is the time during which a hypothetical target is recorded by the instrument. For a stationary instrument the dwell time and integration time are identical. For a moving instrument, dwell time is contingent on platform velocity and altitude.
-
-The integration time of an instrument is analogous to the shutter of a photographic camera -- it is the interval during which light is recorded by the photo-sensitive medium. Dwell time is related but slightly different -- it is the time during which the target is being recorded and may be equal to or less than, but not greater than the integration time. In the case of a stationary instrument, the integration time and dwell time are identical. On the other hand, if a moving instrument with a narrow IFOV passes over a target area, discrete objects within the area may pass into and out of the instrument's field of view during its integration time. Then the dwell time for such an object will be less than the integration time.
+The integration time of a scanner is related to another important quantity, \emph{dwell time}, by the platform velocity and field of view. Dwell time is the time during which a hypothetical object is recorded by the instrument. For a stationary instrument the dwell time and integration time are identical. For a moving instrument, dwell time may be equal to or less than the integration time and is contingent on platform velocity and altitude. For example, if an object at the forward edge of the detector at the beginning of the integration is at the rearward edge at the end of the integration, its dwell time is equal to the integration time. If an object were in the middle of the frame, its dwell time is half of the integration time. Raising the platform velocity would reduce both objects' dwell times with respect to the integration time.
 
 
 \subsubsection{Signal-to-Noise Ratio}
@@ -49,12 +47,12 @@ The integration time of an instrument is analogous to the shutter of a photograp
 There are several sources of noise in hyperspectral imagery. 
 
 \begin{itemize}
-\item Shot noise \cite{Barducci2007} is due to the natural variability in the photon flux -- the number of photons passing through a given area -- which follows a Poisson distribution;
+\item Shot noise \cite{Barducci2007} is due to the natural variability in the photon flux -- the number of photons passing through the sensor -- which follows a Poisson distribution;
 \item thermal noise \cite{Barducci2007}, or dark current \cite{Rogass2011}, results from electrons generated spontaneously within the photosensitive material, as opposed to those activated by the interaction with a photon;
 \item read noise \cite{Barducci2007} is produced during the generation of a charge from the instrument, and during analog-to-digital conversion;
 \item charge transfer errors \cite{Barducci2007} result from defects in the sensor material;
 \item round-off error \cite{Barducci2007}, or quantization error, which results when real numbers are rounded or truncated during conversion to a computer-representable form, and;
-\item "smearing" \cite{Barducci2007,Ruyten1999}, which occurs as the photosensor remains active during charge transfer.
+\item ``smearing'' \cite{Barducci2007,Ruyten1999}, which occurs as the photosensor remains active during charge transfer.
 \end{itemize}
 
 These sources have in common that they cannot not easily be mitigated by the user, but are intrinsic to the instrument. However, by increasing the magnitude of the signal, or photon flux, the relative influence of noise can be reduced \cite{Dor2012}. Of course, some of the factors affecting the strength of the signal cannot be directly controlled -- irradiant intensity, the properties of the instrument and the reflectivity of the target, to name a few -- but there are others that can:
@@ -162,12 +160,14 @@ where $h$ is the platform altitude, $a$ is the target area and $a\prime$ is the 
 
 In a digital image, a cell, or pixel, has a constant area and a single value per band representing the measured radiance over the area contained within the spatial extent of the cell. A image, or raster, is a grid of cells. As a cell is the smallest unit that can be discriminated in a digital image, any objects within the cell will be impossible to isolate due to mixing. As the subject distance decreases, the target area within a cell decreases, enhancing the contribution of any individual object to the cell's overall value. At extremely high resolution, an object may fully occupy one or more cells. This is the essence of spatial resolution, and instrument and flight parameters are carefully chosen to optimize it to satisfy specific research objectives. 
 
-An important consequence of spatial resolution is the phenomenon of ``spectral mixing'' whereby discrete objects within a pixel each contribute their spectra to an mixed spectrum within the pixel. Increasing the spatial resolution reduces aereal or linear mixing \cite{Gupta2018} while also increasing the signal-to-noise ratio: a cell, fully-occupied by an object of interest, is said to have a ``pure'' spectrum, which is considered to be desirable \cite{Gupta2018}. If a researcher is interested in the health of a particular plant, for example, she would not wish the reflected leaf spectra to be mixed with the spectra of soil or other objects. It is important that spectral mixing be held reasonably constant across the study area so that any results derived from the imagery can be considered to apply everywhere. ``Spectral unmixing'' is applicable as a post-processing step, but requires \emph{a priori} knowledge of the spectral signatures of the constituent objects in the scene, and the availability of a spectral library \cite{Adams1986,Smith1990,Gupta2018}.
+An important consequence of spatial resolution is the phenomenon of ``spectral mixing'' whereby discrete objects within a pixel each contribute their spectra to an mixed spectrum within the pixel. Increasing the spatial resolution reduces aereal or linear mixing \cite{Gupta2018} while also increasing the signal-to-noise ratio: a cell, fully-occupied by an object of interest, is said to have a ``pure'' spectrum, which is considered to be desirable \cite{Gupta2018}. If a researcher is interested in the health of a particular plant, for example, she would not wish the reflected leaf spectra to be mixed with the spectra of soil or other objects. 
+
+It is important that spectral mixing be held reasonably constant across the study area so that any results derived from the imagery can be considered to apply everywhere. ``Spectral unmixing'' is applicable as a post-processing step, but requires \emph{a priori} knowledge of the spectral signatures of the constituent objects in the scene, and the availability of a spectral library \cite{Adams1986,Smith1990,Gupta2018}.
 
 
 
 
-
+~~~
 
  \cite{Gupta2018}. 
 Quality in the geometric sense is determined by a series of identities relating to the characteristics of a sensor, its orientation, motion, distance from the target and the characteristics of the medium between the sensor and the target.
@@ -178,7 +178,7 @@ Avery, T. E., \& Berlin, G. L. (1992). Fundamentals of Remote Sensing and Airpho
 Camera viewing angles.
 Ground distance
 
-
+~~~
 
 
 
@@ -226,13 +226,18 @@ Since the horizontal control of the vehicle is handled by the mission-control so
 To satisfy the dual constraints of the flight envelope and the remote
 
 
+~~~
 
 
 The DJI Onboard Application Programming Interface (API) \cite{DJI2018} provides a means of retrieving various flight parameters from the flight computer at $\SI{100}\Hz$, including the hardware synchronization timestamp, the quaternion (orientation), angular rate, velocity and local and global positions. Combined with \emph{a-priori} knowledge about the mass, thrust and drag characteristics of the platform, this is enough information to determine the constraints upon the trajectory.
 
 
+% \cite{MENON1991}'s formulation is attractive because it defines the vehicle's velocity vector in the tangent plane,
+% orthogonal to the $z$-normal. The vehicle's velocity is in the $x$-$y$ plane, with respect to the ground surface as
+% modelled, which preserves one of the constrains: constant ground velocity.
 
 
+~~~
 
 Part II Modelling and Control Fundamentals
 Chapter 3: Airplane Basic Equations of Motion and Open-Loop Dynamics
@@ -261,6 +266,8 @@ a) Attempt to model dynamics using parameters that represent physical forces; b)
 Assume “non-aggressive” flight, presumably to avoid control input singularities and exceeding the flight envelope.
 Newton/Euler; Quaternions; Energy-oriented approach eg. the Lagrange formulation.
 
+~~~
+
 \cite{Kim2004}
 Kim, S. K., \& Tilbury, D. M. (2004). Mathematical modeling and experimental identification of an unmanned helicopter robot with flybar dynamics. Journal of Robotic Systems, 21(3), 95–116. https://doi.org/10.1002/rob.20002
 
@@ -271,11 +278,32 @@ Rigid body equations - mass/inertia matrix.
 Note: I think this project should ignore all aspects of vehicle dynamics except for symplified system which considers thrust, mass and inertia in order to create a simplified model of power over a trajectory. A model involving wind, etc. would be nice but let’s be serious here.
 
 
-\section{Computational Geometry}
+~~~
+
+%\section{Computational Geometry}
 
 
 
-\section{Terrain Following}
+\section{Trajectory Estimation}
+
+A terrain following system depends on the development of a trajectory which the vehicle may follow, given the terrain, flight envelope and operational constraints. In general, constraints, including terrain, are considered to be smoothly twice-differentiable over time (or in space, in the forward direction), to facilitate computation of a solution without singularities in the control inputs \cite{MENON1991,Funk1977}.
+
+Much of the work on trajectory estimation has been conducted for the military into the automated control of ballistic missiles \cite{Dressler1968}, helicopters and fixed-wing aircraft \cite{MENON1991,Funk1977}. In a military context, aside from physical constraints, there is a need for "terrain masking" -- evading radar and other forms of detection by hiding the aircraft behind terrain features. This requires that the aircraft follow the terrain at a low, roughly constant altitude, putting extraordinary demands on the control system and the physical constraints on the airframe \cite{MENON1991}. Fortunately, the requirements of military aircraft dovetail nicely with those of remote-sensing aircraft.
+
+\cite{MENON1991} and \cite{Funk1977} suggest the use of cubic spline interpolation to produce twice-differentiable curves suitable for trajectory estimation, while \cite{Funk1977} suggests building the operational constraints into the spline equation. This allows the definition of a maximum curvature of the trajectory which respects the constraints on the acceleration of the craft.
+
+All authors define the objective in terms of a simple function. \cite{MENON1991} uses, 
+
+\begin{equation}
+F(x,y) = h_c + f(x,y) + P(x,y)
+\end{equation}
+
+where $F(x,y)$ gives the trajectory elevation at the given downrange ($x$) and crossrange ($y$), and $h_c$ is the altitude with respect to the terrain, either constant or as a function. Other constraints, such as, in the military context, "threats" and obstacles to the vehicle, are modelled by $P(x,y)$. Ultimately, the result is a smoothed model of the terrain with some minimal offset corresponding to the desired elevation.
+
+* The use of a spline curve trajectory that incorporates the given constraints has the advantage of modelling said constraints while decoupling the flight control inputs from trajectory estimation. *
+
+
+~~~
 
 Unmanned underwater vehicles
 Artificial Neural Networks
