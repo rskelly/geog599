@@ -18,7 +18,7 @@
  *
  * Datasheet: http://www.ti.com/lit/ds/symlink/ads1115.pdf
  */
-class ADS1115 : public I2C {
+class ADS1115 : public Serial {
 private:
 	uint16_t m_config;	///<! The contents of the configuration register.
 
@@ -33,10 +33,9 @@ public:
 	 * SDA  -->  1001010 (0x50)
 	 * SCL  -->  1001011 (0x51)
 	 *
-	 * @param dev The device path; something like "/dev/i2c-1".
-	 * @param addr The device address. Defaults to 0x48, but this can be changed (see above.)
+	 * @param props An I2CProperties object configured for this device.
 	 */
-	ADS1115(const std::string& dev, int addr = 0x48);
+	ADS1115(const Properties& props);
 
 	/**
 	 * Save the contents of the config variable to the configuration register.

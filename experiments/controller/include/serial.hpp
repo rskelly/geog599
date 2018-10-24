@@ -69,24 +69,19 @@ public:
  */
 class Serial {
 protected:
-	int m_fd;
-	Properties m_props;		///<! The Properties object that gives parameters for the connection.
-
-	/**
-	 * A protected wrapper for write, for internal use.
-	 */
-	int write(char* buf, int len);
-
-	/**
-	 * A protected wrapper for read, for internal use.
-	 */
-	int read(char* buf, int len);
+	int m_fd;			///<! File handle.
+	const Properties* m_props;	///<! The Properties object that gives parameters for the connection.
 
 	bool openUSB();
 
 	bool openI2C();
 
 public:
+
+	/**
+	 * Construct an unconfigured serial. Must be configured before use.
+	 */
+	Serial();
 
 	/**
 	 * Configure a serial device endpoint at the given path with the given address.
@@ -96,11 +91,26 @@ public:
 	Serial(const Properties& props);
 
 	/**
+	 * Configure the device using the given properties object.
+	 */
+	void configure(const Properties* props);
+
+	/**
 	 * Connect to the device.
 	 *
 	 * @return True if connection is successful.
 	 */
 	bool open();
+
+	/**
+	 * A wrapper for write, for internal use.
+	 */
+	int write(char* buf, int len);
+
+	/**
+	 * A wrapper for read, for internal use.
+	 */
+	int read(char* buf, int len);
 
 	/**
 	 * Read from the device into the given buffer. The size
