@@ -145,16 +145,16 @@ enum MagReg {
  */
 class MinIMU9v5State {
 public:
-	uint16_t linearX;
-	uint16_t linearY;
-	uint16_t linearZ;
-	uint16_t angularX;
-	uint16_t angularY;
-	uint16_t angularZ;
-	uint32_t timestamp;
-	bool linearUpdate;
-	bool angularUpdate;
-	bool timestampUpdate;
+	uint16_t linearX;		///<! The linear acceleration in X.
+	uint16_t linearY;		///<! The linear acceleration in Y.
+	uint16_t linearZ;		///<! The linear acceleration in Z.
+	uint16_t angularX;		///<! The angular acceleration in X.
+	uint16_t angularY;		///<! The angular acceleration in Y.
+	uint16_t angularZ;		///<! The angular acceleration in Z.
+	uint32_t timestamp;		///<! The timestamp of the last update.
+	bool linearUpdate;		///<! True if the linear component was updated.
+	bool angularUpdate;		///<! True if the angular component was updated.
+	bool timestampUpdate;	///<! True if the timestamp was updated.
 
 	/**
 	 * Reset the update flags to false. If any update flag is true,

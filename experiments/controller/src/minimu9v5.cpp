@@ -108,14 +108,14 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 	// 3) get timestamp
 
 	uint8_t xyz[6];
-	uint8_t len = 6;
+	uint8_t len;
 
 	state.reset();
 
-	// See GyroReg::CTRL3_C setting in configGyro
+	// Read the angular component. See GyroReg::CTRL3_C setting in configGyro
+	len = 6;
 	if(m_gyro.readBlockData(GyroReg::OUTX_H_G, xyz, len) && len == 6)
 		state.setAngular(xyz);
-
 
 	/*
 	if(_readWord(m_gyro, GyroReg::OUTX_H_G, GyroReg::OUTX_L_G, xyz[0])
@@ -124,9 +124,8 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 		state.setAngular(xyz);
 	*/
 
+	// Read the linear component. See GyroReg::CTRL3_C setting in configGyro
 	len = 6;
-
-	// See GyroReg::CTRL3_C setting in configGyro
 	if(m_gyro.readBlockData(GyroReg::OUTX_H_XL, xyz, len) && len == 6)
 		state.setLinear(xyz);
 
@@ -137,8 +136,8 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 		state.setLinear(xyz);
 	*/
 
-	len = 6;
-
+	// Read the timestamp. See GyroReg::CTRL3_C setting in configGyro
+	len = 3;
 	if(m_gyro.readBlockData(GyroReg::TIMESTAMP0_REG, xyz, len) && len == 3)
 		state.setTimestamp(xyz);
 
