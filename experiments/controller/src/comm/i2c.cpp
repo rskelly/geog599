@@ -18,7 +18,7 @@ extern "C" { // https://stackoverflow.com/questions/50154296/undefined-reference
 #include <cstring>
 #include <iostream>
 
-#include "i2c.hpp"
+#include "comm/i2c.hpp"
 
 using namespace comm;
 

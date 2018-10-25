@@ -11,7 +11,7 @@
 
 #include <unistd.h>
 
-#include "minimu9v5.hpp"
+#include "sensor/minimu9v5.hpp"
 
 using namespace sensor;
 using namespace comm;

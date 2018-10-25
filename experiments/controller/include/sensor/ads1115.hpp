@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "i2c.hpp"
+#include "comm/i2c.hpp"
 
 namespace sensor {
 

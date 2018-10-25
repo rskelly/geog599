@@ -11,7 +11,7 @@
 
 #include <unistd.h>
 
-#include "ads1115.hpp"
+#include "sensor/ads1115.hpp"
 
 using namespace sensor;
 using namespace comm;

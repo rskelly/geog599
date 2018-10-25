@@ -5,7 +5,7 @@
  *      Author: rob
  */
 
-#include "lwsf30c.hpp"
+#include "sensor/lwsf30c.hpp"
 
 using namespace sensor;
 
@@ -30,7 +30,7 @@ bool LWSF30C::sendCommand(char mnemonic, int value) {
 double LWSF30C::getMeasurement() {
 	char buf[2];
 	if(read(buf, 2) == 2)
-		return ((buf[0] << 8) | buf[1]) / 250.0;
+		return (buf[0] << 8) + buf[1] / 250.0;
 	return false;
 }
 

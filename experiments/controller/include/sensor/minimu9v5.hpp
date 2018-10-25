@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "i2c.hpp"
+#include "comm/i2c.hpp"
 
 namespace sensor {
 
@@ -68,7 +68,7 @@ enum GyroReg {
 	OUTZ_H_G           = 0x27,
 	OUTX_L_XL          = 0x28,		// Accel: x-axis (2 bytes)
 	OUTX_H_XL          = 0x29,
-	OUTY_L_XL          = 0x2A,		// Accel: y-axis (2 bytes)
+	OUTY_L_XL		   = 0x2A,		// Accel: y-axis (2 bytes)
 	OUTY_H_XL          = 0x2B,
 	OUTZ_L_XL          = 0x2C,		// Accel: z-axis (2 bytes)
 	OUTZ_H_XL          = 0x2D,

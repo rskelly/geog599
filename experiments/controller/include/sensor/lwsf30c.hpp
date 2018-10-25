@@ -16,7 +16,7 @@
 #include <fcntl.h>
 #include <cstring>
 
-#include "serial.hpp"
+#include "comm/serial.hpp"
 
 using namespace comm;
 

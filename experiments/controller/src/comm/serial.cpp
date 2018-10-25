@@ -15,7 +15,7 @@
 #include <string>
 #include <iostream>
 
-#include "serial.hpp"
+#include "comm/serial.hpp"
 
 using namespace comm;
 
