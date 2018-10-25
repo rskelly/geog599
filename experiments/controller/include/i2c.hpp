@@ -19,29 +19,8 @@ namespace serial {
 class I2C {
 protected:
 	int m_fd;						///<! File handle.
+	uint8_t m_addr;						///<! Device address.
 	std::string m_dev;				///<! Device path.
-	int m_addr;						///<! Device address.
-
-	bool readByte();
-
-	bool writeByte(uint8_t value);
-
-	bool readByteData(uint8_t cmd, uint8_t& value);
-
-	bool writeByteData(uint8_t cmd, uint8_t value);
-
-	bool readWordData(uint8_t cmd, uint16_t& value);
-
-	bool writeWordData(uint8_t cmd, uint16_t value);
-
-	bool readBlockData(uint8_t cmd, std::vector<uint8_t>& data, int& len);
-
-	bool writeBlockData(uint8_t cmd, const std::vector<uint8_t>& data, int len);
-
-	bool readBlockData(uint8_t cmd, uint8_t* data, int& len);
-
-	bool writeBlockData(uint8_t cmd, const uint8_t* data, int len);
-
 
 public:
 
@@ -76,6 +55,104 @@ public:
 	 * Disconnect from the device.
 	 */
 	void close();
+
+	// These methods wrap the smbus i2c methods.
+
+	/**
+	 * Read and return a byte from the device.
+	 *
+	 * @param value The value to be updated.
+	 * @return True if successful.
+	 */
+	bool readByte(uint8_t& value);
+
+	/**
+	 * Write the byte to the device.
+	 *
+	 * @param value The byte to write.
+	 * @return True if successful.
+	 */
+	bool writeByte(uint8_t value);
+
+	/**
+	 * Read and return a byte from the device. Will write the
+	 * register value first, then read the result.
+	 *
+	 * @param cmd The register value to read.
+	 * @param value The value to be updated.
+	 * @return True if successful.
+	 */
+	bool readByteData(uint8_t cmd, uint8_t& value);
+
+	/**
+	 * Write the byte to the device.
+	 *
+	 * @param cmd The register to write to.
+	 * @param value The byte to write.
+	 * @return True if successful.
+	 */
+	bool writeByteData(uint8_t cmd, uint8_t value);
+
+	/**
+	 * Read and return a word from the device. Will write the
+	 * register value first, then read the result.
+	 *
+	 * @param cmd The register value to read.
+	 * @param value The value to be updated.
+	 * @return True if successful.
+	 */
+	bool readWordData(uint8_t cmd, uint16_t& value);
+
+	/**
+	 * Write the word to the device.
+	 *
+	 * @param cmd The register to write to.
+	 * @param value The word to write.
+	 * @return True if successful.
+	 */
+	bool writeWordData(uint8_t cmd, uint16_t value);
+
+	/**
+	 * Read and return available bytes from the device. Will write the
+	 * register value first, then read the result.
+	 *
+	 * @param cmd The register value to read.
+	 * @param value The value to be updated.
+	 * @param len The length of data read.
+	 * @return True if successful.
+	 */
+	bool readBlockData(uint8_t cmd, std::vector<uint8_t>& data, uint8_t& len);
+
+	/**
+	 * Write the bytes to the device.
+	 *
+	 * @param cmd The register to write to.
+	 * @param value The bytes to write.
+	 * @param len The number of bytes to write.
+	 * @return True if successful.
+	 */
+	bool writeBlockData(uint8_t cmd, const std::vector<uint8_t>& data, uint8_t len);
+
+	/**
+	 * Read and return available bytes from the device. Will write the
+	 * register value first, then read the result.
+	 *
+	 * @param cmd The register value to read.
+	 * @param value The value to be updated.
+	 * @param len The length of data read.
+	 * @return True if successful.
+	 */
+	bool readBlockData(uint8_t cmd, uint8_t* data, uint8_t& len);
+
+	/**
+	 * Write the bytes to the device.
+	 *
+	 * @param cmd The register to write to.
+	 * @param value The bytes to write.
+	 * @param len The number of bytes to write.
+	 * @return True if successful.
+	 */
+	bool writeBlockData(uint8_t cmd, const uint8_t* data, uint8_t len);
 
 	~I2C();
 

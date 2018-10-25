@@ -5,9 +5,11 @@
  *      Author: rob
  */
 
-#include <linux/i2c.h>
-#include <linux/i2c-dev.h> // I2C bus definitions
-#include <i2c/smbus.h>
+extern "C" { // https://stackoverflow.com/questions/50154296/undefined-reference-to-i2c-smbus-read-word-dataint-unsigned-char
+	#include <linux/i2c.h>
+	#include <linux/i2c-dev.h> // I2C bus definitions
+	#include <i2c/smbus.h>
+}
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -33,8 +35,13 @@ void _err(std::ostream& str, const std::string& msg, const std::string& dev, int
 	str << msg << " at " << dev << " (" << addr << "): " << strerror(err) << "\n";
 }
 
-bool I2C::readByte() {
-	return i2c_smbus_read_byte(m_fd) > -1;
+bool I2C::readByte(uint8_t& value) {
+	int v = 0;
+	if((v = i2c_smbus_read_byte(m_fd)) > -1) {
+		value = (uint8_t) v;
+		return true;
+	}
+	return false;
 }
 
 bool I2C::writeByte(uint8_t value) {
@@ -69,10 +76,11 @@ bool I2C::writeWordData(uint8_t cmd, uint16_t value) {
 	return i2c_smbus_write_word_data(m_fd, cmd, value) != -1;
 }
 
-bool I2C::readBlockData(uint8_t cmd, std::vector<uint8_t>& data, int& len) {
+bool I2C::readBlockData(uint8_t cmd, std::vector<uint8_t>& data, uint8_t& len) {
 	int ret;
 	uint8_t buf[32];
-	if((ret = i2c_smbus_read_block_data(m_fd, cmd, buf)) == -1) {
+	// Kernel 2.6.23 and later.
+	if((ret = i2c_smbus_read_i2c_block_data(m_fd, cmd, len, buf)) == -1) {
 		return false;
 	} else {
 		data.resize(ret);
@@ -83,15 +91,16 @@ bool I2C::readBlockData(uint8_t cmd, std::vector<uint8_t>& data, int& len) {
 	}
 }
 
-bool I2C::writeBlockData(uint8_t cmd, const std::vector<uint8_t>& data, int len) {
+bool I2C::writeBlockData(uint8_t cmd, const std::vector<uint8_t>& data, uint8_t len) {
 	uint8_t l = (uint8_t) (len > 32 ? 32 : len);
 	return i2c_smbus_write_block_data(m_fd, cmd, l, data.data()) != -1;
 }
 
-bool I2C::readBlockData(uint8_t cmd, uint8_t* data, int& len) {
+bool I2C::readBlockData(uint8_t cmd, uint8_t* data, uint8_t& len) {
 	int ret;
 	uint8_t buf[128];
-	if((ret = i2c_smbus_read_block_data(m_fd, cmd, buf)) == -1) {
+	// Kernel 2.6.23 and later.
+	if((ret = i2c_smbus_read_i2c_block_data(m_fd, cmd, len, buf)) == -1) {
 		return false;
 	} else {
 		for(int i = 0; i < ret; ++i)
@@ -101,17 +110,17 @@ bool I2C::readBlockData(uint8_t cmd, uint8_t* data, int& len) {
 	}
 }
 
-bool I2C::writeBlockData(uint8_t cmd, const uint8_t* data, int len) {
+bool I2C::writeBlockData(uint8_t cmd, const uint8_t* data, uint8_t len) {
 	uint8_t l = (uint8_t) (len > 32 ? 32 : len);
 	return i2c_smbus_write_block_data(m_fd, cmd, l, data) != -1;
 }
-
-I2C::I2C() : I2C("", 0) {}
 
 I2C::I2C(const std::string& dev, uint8_t addr) :
 		m_fd(0),
 		m_addr(addr),
 		m_dev(dev) {}
+
+I2C::I2C() : I2C("", 0) {}
 
 bool I2C::open(const std::string& dev, uint8_t addr) {
 	m_addr = addr;
