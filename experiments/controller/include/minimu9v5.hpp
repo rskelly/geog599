@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "serial.hpp"
+#include "i2c.hpp"
 
 enum GyroRegisters {
 	FUNC_CFG_ACCESS	= 0x01,
@@ -20,10 +20,13 @@ enum GyroRegisters {
 	FIFO_CTRL3		= 0x08,
 	FIFO_CTRL4		= 0x09,
 	FIFO_CTRL5		= 0x0A,
-	ORIENT_CFG_G		= 0x0B,
+	ORIENT_CFG_G	= 0x0B,
 	INT1_CTRL		= 0x0D,
 	INT2_CTRL		= 0x0E,
+
 	WHO_AM_I		= 0x0F,
+
+	// Accel and gyro control
 	CTRL1_XL		= 0x10,
 	CTRL2_G			= 0x11,
 	CTRL3_C			= 0x12,
@@ -34,6 +37,7 @@ enum GyroRegisters {
 	CTRL8_XL		= 0x17,
 	CTRL9_XL		= 0x18,
 	CTRL10_C		= 0x19,
+
 	WAKE_UP_SRC        = 0x1B,
 	TAP_SRC            = 0x1C,
 	D6D_SRC            = 0x1D,
@@ -69,7 +73,7 @@ enum GyroRegisters {
 	STEP_COUNTER_H	   = 0x4C,
 	FUNC_SRC           = 0x53,
 	TAP_CFG	           = 0x58,
-	TAP_THS_6D	   = 0x59,
+	TAP_THS_6D		   = 0x59,
 	INT_DUR2           = 0x5A,
 	WAKE_UP_THS        = 0x5B,
 	WAKE_UP_DUR        = 0x5C,
@@ -79,12 +83,21 @@ enum GyroRegisters {
 };
 
 /**
- * A class for interoperating with a Pololu MinIMU9-v5 IMU I2C.
+ *
+ */
+class MinIMU9v5State {
+
+};
+
+using namespace serial;
+
+/**
+ * A class for interoperating with a Pololu MinIMU9-v5 IMU via I2C.
  */
 class MinIMU9v5 {
 private:
-	Serial m_gyro;
-	Serial m_accel;
+	I2C m_gyro;
+	I2C m_accel;
 
 protected:
 
@@ -95,7 +108,7 @@ protected:
 	 * @param val The value.
 	 * @return True on success.
 	 */
-	bool config_gyro(uint8_t reg, uint8_t val);
+	bool configGyro(uint8_t reg, uint8_t val);
 	
 	/**
 	 * Convenience method for configuring the gyroscope.
@@ -104,14 +117,20 @@ protected:
 	 * @param val The value.
 	 * @return True on success.
 	 */
-	bool config_accel(uint8_t, uint8_t val);
+	bool configAccel(uint8_t, uint8_t val);
 
 public:
 
 	/**
-	 * @param props An I2CProperties object configured for this device.
+	 * @param dev The I2C device path.
+	 * @param gyroAddr The address of the gyroscope.
+	 * @param accelAddr The address of the accelerometer.
 	 */
-	MinIMUv5(const Properties& gyroProps, const Properties& accelProps);
+	MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t accelAddr);
+
+	MinIMU9v5();
+
+	bool open(const std::string& dev, int gyroAddr, int accelAddr);
 
 	/**
 	 * Connect to the device. There are two addresses to connect to.
@@ -126,7 +145,7 @@ public:
 
 	bool hasAccel();
 
-	bool getState(MinIMUv5State& state);
+	bool getState(MinIMU9v5State& state);
 
 };
 
