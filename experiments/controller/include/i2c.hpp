@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace serial {
+namespace comm {
 
 /**
  * https://www.mjmwired.net/kernel/Documentation/i2c/dev-interface
@@ -158,6 +158,6 @@ public:
 
 };
 
-} // serial
+} // comm
 
 #endif /* INCLUDE_I2C_HPP_ */

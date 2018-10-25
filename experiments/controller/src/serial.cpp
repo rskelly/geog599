@@ -1,7 +1,8 @@
 #include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>    // read/write usleep
-#include <linux/i2c-dev.h> // I2C bus definitions
 #include <signal.h>
 #include <math.h>
 #include <stdio.h>
@@ -9,40 +10,45 @@
 #include <string.h>
 #include <termios.h>
 
+#include <cstring>
 #include <vector>
 #include <string>
 #include <iostream>
 
 #include "serial.hpp"
 
+using namespace comm;
 
-int util::_open(const char* path, int flags) {
-	return open(path, flags);
+namespace util {
+
+	int _open(const char* path, int flags) {
+		return open(path, flags);
+	}
+
+	void _close(int fd) {
+		close(fd);
+	}
+
+	int _read(int fd, char* buf, int len) {
+		return read(fd, buf, len);
+	}
+
+	int _write(int fd, char* buf, int len) {
+		return write(fd, buf, len);
+	}
+
 }
 
-void util::_close(int fd) {
-	close(fd);
-}
 
-int util::_read(int fd, char* buf, int len) {
-	return read(fd, buf, len);
-}
-
-int util::_write(int fd, char* buf, int len) {
-	return write(fd, buf, len);
-}
-
-Serial::Serial() {
+Serial::Serial(const std::string& dev, int speed) :
+	m_dev(dev),
 	m_fd(0),
-	m_props(nullptr) {}
-
-Serial::Serial(const Properties& props) :
-	Serial(),
-	m_props(&props) {
+	m_speed(speed) {
 }
 
-void Serial::configure(const Properties& props) {
-	m_props = &props;
+bool Serial::open(const std::string& dev) {
+	m_dev = dev;
+	return open();
 }
 
 int Serial::write(char* buf, int len) {
@@ -68,26 +74,11 @@ int Serial::write(std::vector<char>& buf, int len) {
 }
 
 bool Serial::open() {
-	if(!m_props)
+	if(m_dev.empty())
 		return false;
-	switch(m_props->type) {
-	case USB:
-		return openUSB();
-	case I2C:
-		return openI2C();
-	default:
-		return false;
-	}
-}
 
-bool Serial::openUSB() {
-
-	std::cout << "Opening USB\n";
-
-	const USBProperties* props = static_cast<const USBProperties*>(m_props);
-
-	if((m_fd = util::_open(props->dev.c_str(), O_RDWR | O_NOCTTY | O_SYNC)) < 0) {
-		std::cerr << "Error opening USB device at: " << props->dev << " (" << strerror(errno) << ")\n";
+	if((m_fd = util::_open(m_dev.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0) {
+		std::cerr << "Error opening serial device at: " << m_dev << " (" << strerror(errno) << ")\n";
 		return false;
 	}
 	
@@ -99,15 +90,15 @@ bool Serial::openUSB() {
 		return -1;
 	}
 
-	cfsetospeed(&tty, (speed_t) props->speed);
-	cfsetispeed(&tty, (speed_t) props->speed);
+	cfsetospeed(&tty, (speed_t) m_speed);
+	cfsetispeed(&tty, (speed_t) m_speed);
 
 	tty.c_cflag |= (CLOCAL | CREAD);    /* ignore modem controls */
 	tty.c_cflag &= ~CSIZE;
-	tty.c_cflag |= CS8;         /* 8-bit characters */
-	tty.c_cflag &= ~PARENB;     /* no parity bit */
-	tty.c_cflag &= ~CSTOPB;     /* only need 1 stop bit */
-	tty.c_cflag &= ~CRTSCTS;    /* no hardware flowcontrol */
+	tty.c_cflag |= CS8;         		/* 8-bit characters */
+	tty.c_cflag &= ~PARENB;     		/* no parity bit */
+	tty.c_cflag &= ~CSTOPB;     		/* only need 1 stop bit */
+	tty.c_cflag &= ~CRTSCTS;    		/* no hardware flowcontrol */
 
 	/* setup for non-canonical mode */
 	tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
@@ -116,32 +107,18 @@ bool Serial::openUSB() {
 
 	/* fetch bytes as they become available */
 	tty.c_cc[VMIN] = 1;
-	tty.c_cc[VTIME] = 1;
+	tty.c_cc[VTIME] = 5;
 
 	if (tcsetattr(m_fd, TCSANOW, &tty) != 0) {
-		printf("Error from tcsetattr: %s\n", strerror(errno));
+		std::cerr << "Error from tcsetattr: " << strerror(errno) << ".\n";
 		return false;
 	}
 
 	return true;
 }
 
-bool Serial::openI2C() {
-
-	const I2CProperties* props = static_cast<const I2CProperties*>(m_props);
-
-	std::cout << "Opening I2C device at " << props->dev << ".\n";
-	if((m_fd = util::_open(props->dev.c_str(), O_RDWR)) < 0) {
-		std::cerr << "Failed to open device at " << props->dev << ".\n";
-		return false;
-	}
-	std::cerr << "Connecting to I2C device at " << props->addr << " (" << m_fd << ").\n";
-	if(ioctl(m_fd, I2C_SLAVE, props->addr) < 0) {
-		perror("Failed to configure device");
-		util::_close(m_fd);
-		return false;
-	}
-	return true;
+bool Serial::setBlocking(bool blocking) {
+	return fcntl(m_fd, F_SETFL, blocking ? FNDELAY : 0) != -1;
 }
 
 void Serial::close() {

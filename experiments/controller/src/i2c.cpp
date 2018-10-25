@@ -20,7 +20,7 @@ extern "C" { // https://stackoverflow.com/questions/50154296/undefined-reference
 
 #include "i2c.hpp"
 
-using namespace serial;
+using namespace comm;
 
 namespace util {
 	int _open(const char* path, int flags) {

@@ -8,92 +8,49 @@
 #ifndef INCLUDE_SERIAL_HPP_
 #define INCLUDE_SERIAL_HPP_
 
-#include <string>
-#include <vector>
-#include <cstring>
-
+#include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <unistd.h>    // read/write usleep
+#include <signal.h>
+#include <math.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
 #include <termios.h>
 
+#include <string>
+#include <vector>
 
-namespace util {
-
-	int _open(const char* path, int flags);
-
-	void _close(int fd);
-
-	int _read(int fd, char* buf, int len);
-
-	int _write(int fd, char* buf, int len);
-
-}
-
-enum ConnectionType {
-	I2C,
-	USB,
-};
-
-class Properties {
-public:
-	ConnectionType type;
-	std::string dev;
-
-	Properties(const std::string& dev, ConnectionType type) :
-		type(type), dev(dev) {}
-};
-
-class USBProperties : public Properties {
-public:
-	int parity;
-	int speed;
-
-	USBProperties(const std::string& dev, int parity = 0, int speed = B115200) :
-		Properties(dev, USB),
-		parity(parity), speed(speed) {}
-};
-
-class I2CProperties : public Properties {
-public:
-	int addr;
-
-	I2CProperties(const std::string& dev, int addr) :
-		Properties(dev, I2C),
-		addr(addr) {}
-};
+namespace comm {
 
 /**
- * An class for accessing Serial (I2C, USB, etc.) devices.
+ * An class for accessing serial devices.
  */
 class Serial {
 protected:
+	std::string m_dev;	///<! Path to device.
 	int m_fd;			///<! File handle.
-	const Properties* m_props;	///<! The Properties object that gives parameters for the connection.
-
-	bool openUSB();
-
-	bool openI2C();
+	int m_speed;		///<! The serial baud rate.
 
 public:
 
 	/**
-	 * Construct an unconfigured serial. Must be configured before use.
-	 */
-	Serial();
-
-	/**
-	 * Configure a serial device endpoint at the given path with the given address.
+	 * Configure a serial device endpoint at the given device path.
 	 *
-	 * @param props An appropriate Properties subclass with values appropriate to the type of conneciton desired.
+	 * @param dev The device path.
+	 * @param speed The baud rate.
 	 */
-	Serial(const Properties& props);
+	Serial(const std::string& dev, int speed = B115200);
 
 	/**
-	 * Configure the device using the given properties object.
+	 * Configure and open the device using the given device path.
+	 *
+	 * @param dev The device path.
+	 * @return True if connection is successful.
 	 */
-	void configure(const Properties* props);
+	bool open(const std::string& dev);
 
 	/**
 	 * Connect to the device.
@@ -135,6 +92,14 @@ public:
 	int write(std::vector<char>& buf, int len = -1);
 
 	/**
+	 * Set the read call to blocking or non-blocking.
+	 *
+	 * @param blocking True to set read calls to block.
+	 * @return True if set successfully.
+	 */
+	bool setBlocking(bool blocking);
+
+	/**
 	 * Disconnect from the device.
 	 */
 	void close();
@@ -142,5 +107,7 @@ public:
 	~Serial();
 
 };
+
+} // comm
 
 #endif /* INCLUDE_SERIAL_HPP_ */

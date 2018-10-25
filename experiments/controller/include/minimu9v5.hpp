@@ -12,6 +12,8 @@
 
 #include "i2c.hpp"
 
+namespace sensor {
+
 /**
  * Register addresses for the gyroscope chip.
  * LSM6DS33
@@ -209,8 +211,6 @@ public:
 
 };
 
-using namespace serial;
-
 /**
  * A class for interoperating with a Pololu MinIMU9-v5 IMU via I2C.
  * The MinIMU9-v5 has a gyroscope/accelerometer/thermometer on one chip,
@@ -219,8 +219,8 @@ using namespace serial;
  */
 class MinIMU9v5 {
 private:
-	I2C m_gyro;
-	I2C m_mag;
+	comm::I2C m_gyro;
+	comm::I2C m_mag;
 
 protected:
 
@@ -302,6 +302,6 @@ public:
 
 };
 
-
+} // sensor
 
 #endif /* INCLUDE_MINIMU9V5_HPP_ */

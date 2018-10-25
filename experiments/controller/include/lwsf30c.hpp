@@ -18,10 +18,9 @@
 
 #include "serial.hpp"
 
-//#define SF30C_API_IMPLEMENTATION
+using namespace comm;
 
-//#include "sf30capi.hpp"
-
+namespace sensor {
 
 /**
  * Provides interactivity with the LightWare Optoelectronics SF30/C
@@ -29,7 +28,6 @@
  */
 class LWSF30C : public Serial {
 private:
-	//lwSF30C m_device;
 
 public:
 
@@ -38,20 +36,25 @@ public:
 	 *
 	 * @param props Connection properties.
 	 */
-	LWSF30C(const Properties& props) : Serial(props) {}
+	LWSF30C(const std::string& dev, int speed = B115200);
 
-	bool sendCommand(char mnemonic, int value = -1) {
-		char buf[32];
-		if(value > -1) {
-			sprintf(buf, "#%c%d:", mnemonic, value);
-		} else {
-			sprintf(buf, "#%c:", mnemonic);
-		}
-		int len = strlen(buf);
-		int wrt = util::_write(m_fd, buf, len);
-		usleep(len * 100);
-		return wrt;
-	}
+	/**
+	 * Send a command to the laser.
+	 *
+	 * @param mnemonic The letter-code used to identify the command.
+	 * @param value A numeric value for the argument, or -1 if no argument.
+	 * @return True if the command is sent successfully.
+	 */
+	bool sendCommand(char mnemonic, int value = -1);
+
+	/**
+	 * Return the latest measurement. This may be
+	 * distance or speed. Reads will be delayed according
+	 * to the serial update rate.
+	 *
+	 * @return The measurement.
+	 */
+	double getMeasurement();
 
 	/**
 	 * Set the resolution; one of:
@@ -61,32 +64,50 @@ public:
 	 * 2 = 0.06 m
 	 * 3 = 0.03 m
 	 * 4 = Smoothed
+	 *
+	 * @param The resolution code.
+	 * @return True if successful.
 	 */
-	bool setResolution(int value) {
-		return sendCommand('R', value);
-	}
+	bool setResolution(int value);
 
-	bool setSerialRate(int rate) {
-		return sendCommand('U', rate);
-	}
+	/**
+	 * Set the serial port update rate. Whole number factors of 18317 only.
+	 *
+	 * @param rate The update rate.
+	 * @return True if successful.
+	 */
+	bool setSerialRate(int rate);
 
-	bool startLaser() {
-		return sendCommand('Y');
-	}
+	/**
+	 * Start the laser.
+	 *
+	 * @return True if successful.
+	 */
+	bool startLaser();
 
-	bool stopLaser() {
-		return sendCommand('N');
-	}
+	/**
+	 * Stop the laser.
+	 *
+	 * @return True if successful.
+	 */
+	bool stopLaser();
 
-	bool setDistance() {
-		return sendCommand('p', 0);
-	}
+	/**
+	 * Set the laser to distance mode.
+	 *
+	 * @return True if successful.
+	 */
+	bool setDistance();
 
-	bool setSpeed() {
-		return sendCommand('p', 1);
-	}
+	/**
+	 * Set the laser to speed mode.
+	 *
+	 * @return True if successful.
+	 */
+	bool setSpeed();
 
 };
 
+} // sensor
 
 #endif /* INCLUDE_LWSF30C_HPP_ */

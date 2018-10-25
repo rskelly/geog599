@@ -13,6 +13,9 @@
 
 #include "minimu9v5.hpp"
 
+using namespace sensor;
+using namespace comm;
+
 MinIMU9v5::MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) {
 	m_gyro = I2C(dev, gyroAddr);
 	m_mag = I2C(dev, magAddr);
