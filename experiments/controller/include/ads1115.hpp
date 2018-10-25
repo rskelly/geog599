@@ -10,7 +10,9 @@
 
 #include <string>
 
-#include "serial.hpp"
+#include "i2c.hpp"
+
+namespace sensor {
 
 /**
  * A class for interoperating with a Texas Instruments ADS1115 analog-to-digital
@@ -18,9 +20,9 @@
  *
  * Datasheet: http://www.ti.com/lit/ds/symlink/ads1115.pdf
  */
-class ADS1115 : public Serial {
+class ADS1115 : public comm::I2C {
 private:
-	uint16_t m_config;	///<! The contents of the configuration register.
+	uint16_t m_config;
 
 public:
 
@@ -35,7 +37,7 @@ public:
 	 *
 	 * @param props An I2CProperties object configured for this device.
 	 */
-	ADS1115(const Properties& props);
+	ADS1115(const std::string& dev, uint8_t addr);
 
 	/**
 	 * Save the contents of the config variable to the configuration register.
@@ -191,6 +193,7 @@ public:
 
 };
 
+} // sensor
 
 
 #endif /* INCLUDE_ADS1115_HPP_ */

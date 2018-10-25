@@ -7,55 +7,38 @@
 
 #include <iostream>
 #include <string>
+#include <cstring>
 
 #include <unistd.h>
 
 #include "ads1115.hpp"
 
-ADS1115::ADS1115(const Properties& props):
-	Serial(props),
+using namespace sensor;
+using namespace comm;
+
+ADS1115::ADS1115(const std::string& dev, uint8_t addr):
+	I2C(dev, addr),
 	m_config(0) {
 }
 
 bool ADS1115::saveConfig() {
-	
-	// 1) Config register address, 2) MSB of config data, 3) LSB of config data.
-	char conf[3] = {1, (char) ((m_config >> 8) & 0xff), (char) (m_config & 0xff)};
-	int w;
-	if((w = write(conf, 3)) < 3) {
-		std::cerr << "Failed to save configuration (" << w << "; " << strerror(errno) << ").\n";
+	if(!writeWordData(1, m_config)) {
+		std::cerr << "Failed to save configuration (" << strerror(errno) << ").\n";
 		return false;
 	}
-	
 	return true;
 }
 
 bool ADS1115::loadConfig() {
-	
-	// Set address pointer register.
-	char conf[1] = {1};
-	int w;
-	if((w = write(conf, 1)) < 1) {
-		std::cerr << "Failed to set pointer register to config (" << w << "; " << strerror(errno) << ").\n";
+	if(!readWordData(1, m_config)) {
+		std::cerr << "Failed to read configuration (" << strerror(errno) << ").\n";
 		return false;
 	}
-
-	usleep(100000);
-	
-	// Read config register.
-	char value[2] = {0, 0};
-	if((w = read(value, 2)) < 2) {
-		std::cerr << "Failed to read configuration (" << w << "; " << strerror(errno) << ").\n";
-		return false;
-	}
-	
-	m_config = (value[0] << 8) | value[1];
-	
 	return true;
 }
 
 bool ADS1115::open() {
-	if(Serial::open())
+	if(I2C::open())
 		return loadConfig();
 	return false;
 }
@@ -135,21 +118,13 @@ bool ADS1115::readValue(int slot, int& value) {
 
 	usleep((int) (1000000.0 / dataRateS()));
 
-	// Select the conversion address.
-	char addr[1] = {0};
-	int w;
-	if((w = write(addr, 1)) < 1) {
-		std::cerr << "Failed to select conversion register (" << w << "; " << strerror(errno) << ").\n";
-		return false;
-	}
-
 	// Read the register.
-	char buf[2] = {0, 0};
-	if((w = read(buf, 2)) == 2) {
-		value = (buf[0] << 8) | buf[1];
+	uint16_t val;
+	if(readWordData(0, val)) {
+		value = val;
 		return true;
 	} else {
-		std::cerr << "Failed to read conversion register (" << w << "; " << strerror(errno) << ").\n";
+		std::cerr << "Failed to read conversion register (" << strerror(errno) << ").\n";
 		return false;
 	}
 }
@@ -158,8 +133,7 @@ bool ADS1115::readValue(int slot, int& value) {
 
 int main(int argc, char** argv) {
 
-	I2CProperties props("/dev/i2c-1", 48);
-	ADS1115 conn(props);
+	ADS1115 conn("/dev/i2c-1", 48);
 	if(conn.open()) {
 
 		int x = 100000;

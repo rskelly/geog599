@@ -89,7 +89,8 @@ endif()
 #target_link_libraries (encoder)
 
 add_executable (sf30c src/lwsf30c.cpp src/serial.cpp)
-#add_executable (enc src/ads1115.cpp src/serial.cpp)
+add_executable (encoder src/ads1115.cpp src/i2c.cpp)
+target_link_libraries (encoder i2c)
 add_executable (imu src/minimu9v5.cpp src/i2c.cpp)
 target_link_libraries (imu i2c)
  
