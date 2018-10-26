@@ -56,11 +56,9 @@ public:
 	}
 
 	bool step() {
-		sensor::MinIMU9v5State imu;
-		//if(!m_imu.getState(imu))
-		//	return false;
-		//imu.print(std::cout);
-		//
+		const sensor::MinIMU9v5State& imu = m_imu.getState();
+		if(!imu.updated())
+			imu.print(std::cout);
 		double r = m_scanner.getMeasurement();
 		std::cout << r << "m\n";
 		return true;

@@ -219,6 +219,17 @@ public:
 	bool angularUpdate;		///<! True if the angular component was updated.
 	bool timestampUpdate;	///<! True if the timestamp was updated.
 
+	double m_gfs;			///<! Gyroscope full-scale setting.
+	double m_afs; 			///<! Accelerometer full-scale setting.
+
+	void setAccelFullScale(double scale) {
+		m_afs = scale;
+	}
+
+	void setGyroFullScale(double scale) {
+		m_gfs = scale;
+	}
+
 	/**
 	 * Reset the update flags to false. If any update flag is true,
 	 * the updated() method returns true.
@@ -232,7 +243,7 @@ public:
 	 *
 	 * @return True if the object has been updated.
 	 */
-	bool updated() {
+	bool updated() const {
 		return linearUpdate || angularUpdate || timestampUpdate;
 	}
 
@@ -242,9 +253,9 @@ public:
 	 * @param values A 6-byte array.
 	 */
 	void setLinear(uint8_t* values) {
-		linearX = (values[0] << 8) | values[1];
-		linearY = (values[2] << 8) | values[3];
-		linearZ = (values[4] << 8) | values[5];
+		linearX = ((values[1] << 8) | values[0]) * m_afs;
+		linearY = ((values[3] << 8) | values[2]) * m_afs;
+		linearZ = ((values[5] << 8) | values[4]) * m_afs;
 		linearUpdate = true;
 	}
 
@@ -254,9 +265,9 @@ public:
 	 * @param values A 6-byte array.
 	 */
 	void setAngular(uint8_t* values) {
-		angularX = (values[0] << 8) | values[1];
-		angularY = (values[2] << 8) | values[3];
-		angularZ = (values[4] << 8) | values[5];
+		angularX = ((values[1] << 8) | values[0]) * m_gfs;
+		angularY = ((values[3] << 8) | values[2]) * m_gfs;
+		angularZ = ((values[5] << 8) | values[4]) * m_gfs;
 		angularUpdate = true;
 	}
 
@@ -266,11 +277,11 @@ public:
 	 * @param values A 3-byte array.
 	 */
 	void setTimestamp(uint8_t* values) {
-		timestamp = (values[0] << 16) | (values[1] << 8) | values[2];
+		timestamp = (values[2] << 16) | (values[1] << 8) | values[0];
 		timestampUpdate = true;
 	}
 
-	void print(std::ostream& str) {
+	void print(std::ostream& str) const {
 		str << "IMU: ang: " << angularX << ", " << angularY << ", " << angularZ 
 			<< "; lin: " << linearX << ", " << linearY << ", " << linearZ
 			<< "; time: " << timestamp << "\n";
@@ -285,6 +296,7 @@ public:
  */
 class MinIMU9v5 {
 private:
+	MinIMU9v5State m_state;		///<! The current state object.
 	comm::I2C m_gyro;			///<! The gyroscope device.
 	comm::I2C m_mag;			///<! The magnetometer device.
 	std::string m_dev;			///<! The device path.
@@ -355,11 +367,18 @@ public:
 	void close();
 
 	/**
-	 * Returns true if the gyroscope/accelerometer is available.
+	 * Returns true if the gyroscope is available.
 	 *
-	 * @return True if the gyroscope/accelerometer is available.
+	 * @return True if the gyroscope is available.
 	 */
 	bool hasGyro();
+
+	/**
+	 * Returns true if the accelerometer is available.
+	 *
+	 * @return True if the accelerometer is available.
+	 */
+	bool hasAccel();
 
 	/**
 	 * Returns true if the magnetometer is available.
@@ -369,12 +388,12 @@ public:
 	bool hasMag();
 
 	/**
-	 * Collect the current state of the instruments.
+	 * Collect the and return current state of the instruments. If any property
+	 * of the state object has been updated, the updated() method will return true.
 	 *
-	 * @param state An object containing the instrument state.
-	 * @return True if at least some of the state was successfully collected.
+	 * @return A reference to the state object.
 	 */
-	bool getState(MinIMU9v5State& state);
+	const MinIMU9v5State& getState();
 
 	/**
 	 * Set the gyroscope data rate.

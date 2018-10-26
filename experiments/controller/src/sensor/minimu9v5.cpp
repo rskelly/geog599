@@ -16,6 +16,30 @@
 using namespace sensor;
 using namespace comm;
 
+
+bool _readWord(I2C& device, uint8_t cmda, uint8_t cmdb, uint16_t& value) {
+	uint8_t a = 0, b = 0;
+	if(device.readByteData(cmda, a) && device.readByteData(cmdb, b)) {
+		value = (a << 8) | b;
+		return true;
+	} else {
+		std::cerr << "Failed to read from device: " << cmda << ", " << cmdb << "\n";
+		return false;
+	}
+}
+
+bool _readInt(I2C& device, uint8_t cmda, uint8_t cmdb, uint8_t cmdc, uint32_t& value) {
+	uint8_t a = 0, b = 0, c = 0;
+	if(device.readByteData(cmda, a) && device.readByteData(cmdb, b), device.readByteData(cmdc, c)) {
+		value = (a << 16) | (b << 8) | c;
+		return true;
+	} else {
+		std::cerr << "Failed to read from device: " << cmda << ", " << cmdb << ", " << cmdc << "\n";
+		return false;
+	}
+}
+
+
 MinIMU9v5::MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) :
 	m_dev(dev),
 	m_gyroAddr(gyroAddr),
@@ -123,36 +147,21 @@ bool MinIMU9v5::hasGyro() {
 	return false;
 }
 
-bool MinIMU9v5::hasMag() {
+bool MinIMU9v5::hasAccel() {
 	uint8_t val = 0;
-	if(m_mag.readByteData(MagReg::M_WHO_AM_I, val))
+	if(m_gyro.readByteData(GyroReg::G_WHO_AM_I, val))
 		return val == 0b01101001;
 	return false;
 }
 
-bool _readWord(I2C& device, uint8_t cmda, uint8_t cmdb, uint16_t& value) {
-	uint8_t a = 0, b = 0;
-	if(device.readByteData(cmda, a) && device.readByteData(cmdb, b)) {
-		value = (a << 8) | b;
-		return true;
-	} else {
-		std::cerr << "Failed to read from device: " << cmda << ", " << cmdb << "\n";
-		return false;
-	}
+bool MinIMU9v5::hasMag() {
+	uint8_t val = 0;
+	if(m_mag.readByteData(MagReg::M_WHO_AM_I, val))
+		return val == 0b00111101;
+	return false;
 }
 
-bool _readInt(I2C& device, uint8_t cmda, uint8_t cmdb, uint8_t cmdc, uint32_t& value) {
-	uint8_t a = 0, b = 0, c = 0;
-	if(device.readByteData(cmda, a) && device.readByteData(cmdb, b), device.readByteData(cmdc, c)) {
-		value = (a << 16) | (b << 8) | c;
-		return true;
-	} else {
-		std::cerr << "Failed to read from device: " << cmda << ", " << cmdb << ", " << cmdc << "\n";
-		return false;
-	}
-}
-
-bool MinIMU9v5::getState(MinIMU9v5State& state) {
+const MinIMU9v5State& MinIMU9v5::getState() {
 	// 1) get angular values
 	// 2) get linear values
 	// 3) get timestamp
@@ -160,12 +169,14 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 	uint8_t xyz[6];
 	uint8_t len;
 
-	state.reset();
+	m_state.reset();
 
 	// Read the angular component. See GyroReg::CTRL3_C setting in configGyro
 	len = 6;
-	if(m_gyro.readBlockData(GyroReg::OUTX_H_G, xyz, len) && len == 6)
-		state.setAngular(xyz);
+	if(m_gyro.readBlockData(GyroReg::OUTX_H_G, xyz, len) && len == 6) {
+		m_state.setGyroFullScale(m_gyroFullScale);
+		m_state.setAngular(xyz);
+	}
 
 	/*
 	if(_readWord(m_gyro, GyroReg::OUTX_H_G, GyroReg::OUTX_L_G, xyz[0])
@@ -176,8 +187,10 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 
 	// Read the linear component. See GyroReg::CTRL3_C setting in configGyro
 	len = 6;
-	if(m_gyro.readBlockData(GyroReg::OUTX_H_XL, xyz, len) && len == 6)
-		state.setLinear(xyz);
+	if(m_gyro.readBlockData(GyroReg::OUTX_H_XL, xyz, len) && len == 6) {
+		m_state.setAccelFullScale(m_accelFullScale);
+		m_state.setLinear(xyz);
+	}
 
 	/*
 	if(_readWord(m_gyro, GyroReg::OUTX_H_XL, GyroReg::OUTX_L_XL, xyz[0])
@@ -189,14 +202,14 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 	// Read the timestamp. See GyroReg::CTRL3_C setting in configGyro
 	len = 3;
 	if(m_gyro.readBlockData(GyroReg::TIMESTAMP0_REG, xyz, len) && len == 3)
-		state.setTimestamp(xyz);
+		m_state.setTimestamp(xyz);
 
 	/*
 	if(_readInt(m_gyro, GyroReg::TIMESTAMP0_REG, GyroReg::TIMESTAMP1_REG, GyroReg::TIMESTAMP2_REG, xyz))
 		state.setTimestamp(xyz);
 	*/
 
-	return state.updated();
+	return m_state;
 }
 
 /*
