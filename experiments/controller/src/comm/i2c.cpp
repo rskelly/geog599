@@ -6,9 +6,10 @@
  */
 
 extern "C" { // https://stackoverflow.com/questions/50154296/undefined-reference-to-i2c-smbus-read-word-dataint-unsigned-char
-	//#include <linux/i2c.h>
 	#include <linux/i2c-dev.h> // I2C bus definitions
-	//#include <i2c/smbus.h>
+	#if __has_include(<i2c/smbus.h>)
+	#include <i2c/smbus.h>
+	#endif
 }
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -36,7 +37,7 @@ void _err(std::ostream& str, const std::string& msg, const std::string& dev, int
 }
 
 bool I2C::readByte(uint8_t& value) {
-	int v = 0;
+	int v;
 	if((v = i2c_smbus_read_byte(m_fd)) > -1) {
 		value = (uint8_t) v;
 		return true;
