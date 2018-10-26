@@ -14,24 +14,41 @@ LWSF30C::LWSF30C(const std::string& dev, int speed) :
 	Serial(dev, speed) {
 }
 
+LWSF30C::LWSF30C() :
+	Serial() {
+}
+
+bool LWSF30C::open() {
+	return Serial::open();
+}
+
+bool LWSF30C::open(const std::string& dev, int speed) {
+	return Serial::open(dev, speed);
+}
+
 bool LWSF30C::sendCommand(char mnemonic, int value) {
 	char buf[32];
 	if(value > -1) {
 		sprintf(buf, "#%c%d:", mnemonic, value);
 	} else {
-		sprintf(buf, "#%c:", mnemonic);
+		sprintf(buf, "#%c", mnemonic);
 	}
 	int len = strlen(buf);
-	int wrt = write(buf, len);
+	int wrt;
+	if((wrt = write(buf, len)) < 0) 
+	       std::cerr << strerror(errno) << "\n";
 	usleep(len * 100);
 	return wrt > -1;
 }
 
 double LWSF30C::getMeasurement() {
 	char buf[2];
-	if(read(buf, 2) == 2)
-		return (buf[0] << 8) + buf[1] / 250.0;
-	return false;
+	int r;
+	if((r = read(buf, 2)) < 2) {
+		std::cerr << strerror(errno) << "\n";
+		return -1;
+	}
+	return (buf[0] << 8) + buf[1] / 256.0;
 }
 
 bool LWSF30C::setResolution(int value) {
@@ -58,7 +75,7 @@ bool LWSF30C::setSpeed() {
 	return sendCommand('p', 1);
 }
 
-
+/*
 int main(int argc, char** argv) {
 
 	LWSF30C l("/dev/tty1");
@@ -69,13 +86,13 @@ int main(int argc, char** argv) {
 		std::cerr << "Failed to connect to laser\n";
 	}
 
-	/*
+
 	if(l.stopLaser()) {
 		std::cout << "Stopped laser.\n";
 	} else {
 		std::cerr << "Failed to stop laser\n";
 	}
-	*/
+
 	if(l.startLaser()) {
 		std::cout << "Started laser.\n";
 	} else {
@@ -94,4 +111,4 @@ int main(int argc, char** argv) {
 
 }
 
-
+*/

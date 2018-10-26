@@ -209,6 +209,11 @@ public:
 		timestampUpdate = true;
 	}
 
+	void print(std::ostream& str) {
+		str << "IMU: ang: " << angularX << ", " << angularY << ", " << angularZ 
+			<< "; lin: " << linearX << ", " << linearY << ", " << linearZ
+			<< "; time: " << timestamp << "\n";
+	}
 };
 
 /**
@@ -221,6 +226,9 @@ class MinIMU9v5 {
 private:
 	comm::I2C m_gyro;
 	comm::I2C m_mag;
+	std::string m_dev;
+	uint8_t m_gyroAddr;
+	uint8_t m_magAddr;
 
 protected:
 
@@ -262,7 +270,7 @@ public:
 	 *
 	 * @return True if the connection succeeded.
 	 */
-	bool open(const std::string& dev, int gyroAddr, int magAddr);
+	bool open(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr);
 
 	/**
 	 * Connect to the device.

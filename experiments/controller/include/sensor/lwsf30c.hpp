@@ -39,6 +39,27 @@ public:
 	LWSF30C(const std::string& dev, int speed = B115200);
 
 	/**
+	 * Create an unconfigured device.
+	 */
+	LWSF30C();
+
+	/**
+	 * Connect to the device.
+	 *
+	 * @return True on success.
+	 */
+	bool open();
+
+	/**
+	 * Connect to the device.
+	 *
+	 * @param dev The device path.
+	 * @param speed The baud rate.
+	 * @return True on success.
+	 */
+	bool open(const std::string& dev, int speed = B115200);
+
+	/**
 	 * Send a command to the laser.
 	 *
 	 * @param mnemonic The letter-code used to identify the command.

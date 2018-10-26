@@ -30,10 +30,58 @@ private:
 
 public:
 
-	void step() {
+	Controller() {}
 
+	bool start() {
+		if(!m_imu.open("/dev/i2c-1", 0x6b, 0x1e)) {
+			std::cerr << "Failed to connect to IMU.\n";
+			return false;
+		}
+		if(m_scanner.open("/dev/ttyS0", B115200)) {
+			//if(!m_scanner.setBlocking(false)) 
+			//	std::cerr << "Failed to set blocking.\n";
+			if(!m_scanner.startLaser()) {
+				std::cerr << "Failed to start laser.\n";
+				return false;
+			}
+		} else {
+			std::cerr << "Failed to connect to scanner.\n";
+			return false;
+		}
+		return true;
+	}
+
+	void stop() {
+		m_imu.close();
+	}
+
+	bool step() {
+		sensor::MinIMU9v5State imu;
+		//if(!m_imu.getState(imu))
+		//	return false;
+		//imu.print(std::cout);
+		//
+		double r = m_scanner.getMeasurement();
+		std::cout << r << "m\n";
+		return true;
+	}
+
+	~Controller() {
+		stop();
 	}
 
 };
 
+int main(int argc, char** argv) {
 
+	Controller cont;
+	if(cont.start()) {
+		while(true) {
+			if(!cont.step())
+				break;
+		}
+		cont.stop();
+	}
+
+	return 0;
+}

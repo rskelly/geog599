@@ -21,6 +21,11 @@ ADS1115::ADS1115(const std::string& dev, uint8_t addr):
 	m_config(0) {
 }
 
+ADS1115::ADS1115() :
+	I2C(),
+	m_config(0) {
+}
+
 bool ADS1115::saveConfig() {
 	if(!writeWordData(1, m_config)) {
 		std::cerr << "Failed to save configuration (" << strerror(errno) << ").\n";
@@ -35,6 +40,12 @@ bool ADS1115::loadConfig() {
 		return false;
 	}
 	return true;
+}
+
+bool ADS1115::open(const std::string& dev, uint8_t addr) {
+	if(I2C::open(dev, addr))
+		return loadConfig();
+	return false;
 }
 
 bool ADS1115::open() {
@@ -130,7 +141,7 @@ bool ADS1115::readValue(int slot, int& value) {
 }
 
 
-
+/*
 int main(int argc, char** argv) {
 
 	ADS1115 conn("/dev/i2c-1", 48);
@@ -152,4 +163,4 @@ int main(int argc, char** argv) {
 	conn.close();
 	return 0;
 }
-
+*/

@@ -89,13 +89,17 @@ endif()
 #target_link_libraries (encoder)
 
 add_library (uav_serial src/comm/serial.cpp)
-add_library (uav_i2c src/comm/i2c.cpp)
-target_link_libraries (uav_i2c i2c)
 
-add_executable (uav_sf30c src/sensor/lwsf30c.cpp)
-add_executable (uav_encoder src/sensor/ads1115.cpp)
-add_executable (uav_imu src/sensor/minimu9v5.cpp)
-target_link_libraries (uav_sf30c uav_serial)
-target_link_libraries (uav_encoder uav_i2c)
+add_library (uav_i2c src/comm/i2c.cpp)
+
+add_library (uav_imu src/sensor/minimu9v5.cpp)
 target_link_libraries (uav_imu uav_i2c)
+
+add_library (uav_sf30c src/sensor/lwsf30c.cpp)
+target_link_libraries (uav_sf30c uav_serial)
+
+add_library (uav_encoder src/sensor/ads1115.cpp)
+target_link_libraries (uav_encoder uav_i2c)
  
+add_executable (controller src/controller.cpp)
+target_link_libraries (controller uav_imu uav_sf30c uav_encoder)

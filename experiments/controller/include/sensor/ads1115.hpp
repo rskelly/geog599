@@ -40,6 +40,11 @@ public:
 	ADS1115(const std::string& dev, uint8_t addr);
 
 	/**
+	 * Create an unconfigured device.
+	 */
+	ADS1115();
+
+	/**
 	 * Save the contents of the config variable to the configuration register.
 	 *
 	 * @return True if the save succeeds.
@@ -52,6 +57,15 @@ public:
 	 * @return True if the load succeeds.
 	 */
 	bool loadConfig();
+
+	/**
+	 * Connect to the device using the given configuration.
+	 *
+	 * @param dev The device path.
+	 * @param addr The device address.
+	 * @return True if successful.
+	 */
+	bool open(const std::string& dev, uint8_t addr);
 
 	/**
 	 * Connect to the device. Loads the configuration.

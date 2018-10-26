@@ -16,9 +16,14 @@
 using namespace sensor;
 using namespace comm;
 
-MinIMU9v5::MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) {
-	m_gyro = I2C(dev, gyroAddr);
-	m_mag = I2C(dev, magAddr);
+MinIMU9v5::MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) :
+	m_dev(dev),
+	m_gyroAddr(gyroAddr),
+	m_magAddr(magAddr) {
+}
+
+MinIMU9v5::MinIMU9v5() :
+	MinIMU9v5("", 0, 0) {
 }
 
 bool MinIMU9v5::configGyro(uint8_t reg, uint8_t value) {
@@ -38,7 +43,7 @@ bool MinIMU9v5::configMag(uint8_t reg, uint8_t value) {
 }
 
 bool MinIMU9v5::open() {
-	if(m_gyro.open()) {
+	if(m_gyro.open(m_dev, m_gyroAddr)) {
 		// Gyroscope -- Data rate: 1.66kHz; Full scale: 245dps; Full-scale @ 125: disabled
 		if(!configGyro(GyroReg::CTRL2_G, 0b10000000))
 			return false;
@@ -53,11 +58,18 @@ bool MinIMU9v5::open() {
 			return false;
 		return true;
 	}
-	if(m_mag.open()) {
+	if(m_mag.open(m_dev, m_magAddr)) {
 		// TODO: Not using the magnetometer at the moment.
 	}
 	return false;
 
+}
+
+bool MinIMU9v5::open(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) {
+	m_dev = dev;
+	m_gyroAddr = gyroAddr;
+	m_magAddr = magAddr;
+	return open();
 }
 
 void MinIMU9v5::close() {
@@ -152,8 +164,8 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 	return state.updated();
 }
 
-
+/*
 int main(int argc, char** argv) {
 	return 0;
 }
-
+*/

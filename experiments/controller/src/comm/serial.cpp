@@ -19,25 +19,25 @@
 
 using namespace comm;
 
-namespace util {
+namespace _s {
 
-	int _open(const char* path, int flags) {
+	inline int _open(const char* path, int flags) {
 		return open(path, flags);
 	}
 
-	void _close(int fd) {
+	inline void _close(int fd) {
 		close(fd);
 	}
 
-	int _read(int fd, char* buf, int len) {
+	inline int _read(int fd, char* buf, int len) {
 		return read(fd, buf, len);
 	}
 
-	int _write(int fd, char* buf, int len) {
+	inline int _write(int fd, char* buf, int len) {
 		return write(fd, buf, len);
 	}
 
-}
+} // _s
 
 
 Serial::Serial(const std::string& dev, int speed) :
@@ -46,23 +46,28 @@ Serial::Serial(const std::string& dev, int speed) :
 	m_speed(speed) {
 }
 
-bool Serial::open(const std::string& dev) {
+Serial::Serial() :
+	Serial("", 0) {
+}
+
+bool Serial::open(const std::string& dev, int speed) {
 	m_dev = dev;
+	m_speed = speed;
 	return open();
 }
 
 int Serial::write(char* buf, int len) {
-	return util::_write(m_fd, buf, len);
+	return _s::_write(m_fd, buf, len);
 }
 
 int Serial::read(char* buf, int len) {
-	return util::_read(m_fd, buf, len);
+	return _s::_read(m_fd, buf, len);
 }
 
 int Serial::read(std::vector<char>& buf) {
 	int len = buf.size();
 	std::cout << "reading " << len << "\n";
-	int red = util::_read(m_fd, buf.data(), len);
+	int red = _s::_read(m_fd, buf.data(), len);
 	std::cout << "read " << red << " of " << len << "\n";
 	return red;
 }
@@ -70,14 +75,14 @@ int Serial::read(std::vector<char>& buf) {
 int Serial::write(std::vector<char>& buf, int len) {
 	if(len == -1)
 		len = (int) buf.size();
-	return util::_write(m_fd, buf.data(), len);
+	return _s::_write(m_fd, buf.data(), len);
 }
 
 bool Serial::open() {
 	if(m_dev.empty())
 		return false;
 
-	if((m_fd = util::_open(m_dev.c_str(), O_RDWR | O_NOCTTY | O_NDELAY)) < 0) {
+	if((m_fd = _s::_open(m_dev.c_str(), O_RDWR | O_NOCTTY /*| O_NDELAY*/)) < 0) {
 		std::cerr << "Error opening serial device at: " << m_dev << " (" << strerror(errno) << ")\n";
 		return false;
 	}
@@ -86,7 +91,7 @@ bool Serial::open() {
 	memset(&tty, 0, sizeof(tty));
 
 	if (tcgetattr(m_fd, &tty) < 0) {
-		printf("Error from tcgetattr: %s\n", strerror(errno));
+		std::cerr << "Error from tcgetattr: " <<  strerror(errno) << "\n";
 		return -1;
 	}
 
@@ -101,12 +106,14 @@ bool Serial::open() {
 	tty.c_cflag &= ~CRTSCTS;    		/* no hardware flowcontrol */
 
 	/* setup for non-canonical mode */
-	tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+	cfmakeraw(&tty);
+
+	//tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
 	tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 	tty.c_oflag &= ~OPOST;
 
 	/* fetch bytes as they become available */
-	tty.c_cc[VMIN] = 1;
+	tty.c_cc[VMIN] = 0; 
 	tty.c_cc[VTIME] = 5;
 
 	if (tcsetattr(m_fd, TCSANOW, &tty) != 0) {
@@ -118,11 +125,11 @@ bool Serial::open() {
 }
 
 bool Serial::setBlocking(bool blocking) {
-	return fcntl(m_fd, F_SETFL, blocking ? FNDELAY : 0) != -1;
+	return fcntl(m_fd, F_SETFL, blocking ? 0 : FNDELAY) != -1;
 }
 
 void Serial::close() {
-	util::_close(m_fd);
+	_s::_close(m_fd);
 }
 
 Serial::~Serial() {
