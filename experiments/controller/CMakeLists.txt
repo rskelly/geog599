@@ -59,6 +59,7 @@ find_package (Threads REQUIRED)
 #find_library (GL_LIBRARY GL)
 #find_library (GLEW_LIBRARY GLEW)
 #find_library (GLU_LIBRARY GLU)
+find_library (I2C_LIBRARY i2c)
 
 project (test)
 
@@ -85,12 +86,12 @@ endif()
 
 # Build support libraries ################################################################################
 
-#add_executable (encoder src/encoder.cpp)
-#target_link_libraries (encoder)
-
 add_library (uav_serial src/comm/serial.cpp)
 
 add_library (uav_i2c src/comm/i2c.cpp)
+if (I2C_LIBRARY)
+	target_link_libraries (uav_i2c i2c)
+endif()
 
 add_library (uav_imu src/sensor/minimu9v5.cpp)
 target_link_libraries (uav_imu uav_i2c)
