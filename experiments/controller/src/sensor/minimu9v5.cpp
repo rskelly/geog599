@@ -19,7 +19,14 @@ using namespace comm;
 MinIMU9v5::MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) :
 	m_dev(dev),
 	m_gyroAddr(gyroAddr),
-	m_magAddr(magAddr) {
+	m_magAddr(magAddr),
+
+	m_gyroDataRate(GDR_1660Hz),
+	m_gyroFullScale(GFS_245dps),
+	m_accelDataRate(ADR_1660Hz),
+	m_accelFullScale(AFS_2g),
+	m_accelFilterBW(AAFB_400Hz),
+	m_autoInc(AUTO_INC_ON) {
 }
 
 MinIMU9v5::MinIMU9v5() :
@@ -42,19 +49,47 @@ bool MinIMU9v5::configMag(uint8_t reg, uint8_t value) {
 	return true;
 }
 
+void MinIMU9v5::setGyroDataRate(GyroConfig config) {
+	m_gyroDataRate = config;
+}
+
+void MinIMU9v5::setGyroFullScale(GyroConfig config) {
+	m_gyroFullScale = config;
+}
+
+void MinIMU9v5::setAccelDataRate(GyroConfig config) {
+	m_accelDataRate = config;
+}
+
+void MinIMU9v5::setAccelFullScale(GyroConfig config) {
+	m_accelFullScale = config;
+}
+
+void MinIMU9v5::setAccelFilterBandwidth(GyroConfig config) {
+	m_accelFilterBW = config;
+}
+
+void MinIMU9v5::setAddrAutoIncrement(GyroConfig config) {
+	m_autoInc = config;
+}
+
 bool MinIMU9v5::open() {
 	if(m_gyro.open(m_dev, m_gyroAddr)) {
-		// Gyroscope -- Data rate: 1.66kHz; Full scale: 245dps; Full-scale @ 125: disabled
-		if(!configGyro(GyroReg::CTRL2_G, 0b10000000))
+		// Gyroscope: data rate, full-scale, full-scale @ 125 disabled.
+		uint8_t config = 0b00000000 | (m_gyroDataRate << 4) | (m_gyroFullScale << 2);
+		if(!configGyro(GyroReg::CTRL2_G, config))
 			return false;
 		// Gyroscope -- High performance: enabled; High-pass filter: disabled; HP filter reset: off; Rounding status: disabled; High-pass cutoff: 0.0081Hz
-		if(!configGyro(GyroReg::CTRL7_G, 0b00000000))
+		config = 0b00000000;
+		if(!configGyro(GyroReg::CTRL7_G, config))
 			return false;
 		// Accelerometer -- Data rate: 1.66kHz; Full scale: +-2g; Anti-aliasing filter bandwidth: 400Hz
-		if(!configGyro(GyroReg::CTRL1_XL, 0b10001100))
+		config = 0b00000000 | (m_accelDataRate << 4) | (m_accelFullScale << 2) | (m_accelFilterBW << 1);
+		if(!configGyro(GyroReg::CTRL1_XL, config))
 			return false;
 		// Control -- automatically increment register byte on multiple-byte access.
-		if(!configGyro(GyroReg::CTRL3_C, 0b00000100))
+		config = 0b00000000 | (m_autoInc << 3);
+		if(!configGyro(GyroReg::CTRL3_C, config))
 			return false;
 		return true;
 	}
