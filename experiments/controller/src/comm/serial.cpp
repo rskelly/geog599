@@ -113,7 +113,7 @@ bool Serial::open() {
 	tty.c_oflag &= ~OPOST;
 
 	/* fetch bytes as they become available */
-	tty.c_cc[VMIN] = 0; 
+	tty.c_cc[VMIN] = 1; 
 	tty.c_cc[VTIME] = 5;
 
 	if (tcsetattr(m_fd, TCSANOW, &tty) != 0) {
@@ -122,6 +122,12 @@ bool Serial::open() {
 	}
 
 	return true;
+}
+
+int Serial::available() {
+	int avail;
+	ioctl(m_fd, FIONREAD, &avail);
+	return avail;
 }
 
 bool Serial::setBlocking(bool blocking) {

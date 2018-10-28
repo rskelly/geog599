@@ -75,7 +75,7 @@ public:
 	 *
 	 * @return The measurement.
 	 */
-	double getMeasurement();
+	double range();
 
 	/**
 	 * Set the resolution; one of:

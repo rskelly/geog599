@@ -115,6 +115,25 @@ bool MinIMU9v5::open() {
 		config = 0b00000000 | (m_autoInc << 3);
 		if(!configGyro(GyroReg::CTRL3_C, config))
 			return false;
+		
+		double gfs = 245.0;
+		switch(m_gyroFullScale) {
+		//case GFS_245dps: gfs = 245.0; break;
+		case GFS_500dps: gfs = 500.0; break;
+		case GFS_1000dps: gfs = 1000.0; break;
+		case GFS_2000dps: gfs = 2000.0; break;
+		}
+		m_state.setGyroFullScale(gfs);
+
+		double afs = 2.0;
+		switch(m_accelFullScale) {
+		//case AFS_2g: afs = 2.0; break;
+		case AFS_4g: afs = 4.0; break;
+		case AFS_8g: afs = 8.0; break;
+		case AFS_16g: afs = 16.0; break;
+		}
+		m_state.setAccelFullScale(afs);
+
 		return true;
 	}
 	if(m_mag.open(m_dev, m_magAddr)) {
@@ -173,10 +192,8 @@ const MinIMU9v5State& MinIMU9v5::getState() {
 
 	// Read the angular component. See GyroReg::CTRL3_C setting in configGyro
 	len = 6;
-	if(m_gyro.readBlockData(GyroReg::OUTX_H_G, xyz, len) && len == 6) {
-		m_state.setGyroFullScale(m_gyroFullScale);
+	if(m_gyro.readBlockData(GyroReg::OUTX_H_G, xyz, len) && len == 6)
 		m_state.setAngular(xyz);
-	}
 
 	/*
 	if(_readWord(m_gyro, GyroReg::OUTX_H_G, GyroReg::OUTX_L_G, xyz[0])
@@ -187,10 +204,8 @@ const MinIMU9v5State& MinIMU9v5::getState() {
 
 	// Read the linear component. See GyroReg::CTRL3_C setting in configGyro
 	len = 6;
-	if(m_gyro.readBlockData(GyroReg::OUTX_H_XL, xyz, len) && len == 6) {
-		m_state.setAccelFullScale(m_accelFullScale);
+	if(m_gyro.readBlockData(GyroReg::OUTX_H_XL, xyz, len) && len == 6)
 		m_state.setLinear(xyz);
-	}
 
 	/*
 	if(_readWord(m_gyro, GyroReg::OUTX_H_XL, GyroReg::OUTX_L_XL, xyz[0])
