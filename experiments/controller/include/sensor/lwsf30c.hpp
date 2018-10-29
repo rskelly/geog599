@@ -39,6 +39,27 @@ public:
 	LWSF30C(const std::string& dev, int speed = B115200);
 
 	/**
+	 * Create an unconfigured device.
+	 */
+	LWSF30C();
+
+	/**
+	 * Connect to the device.
+	 *
+	 * @return True on success.
+	 */
+	bool open();
+
+	/**
+	 * Connect to the device.
+	 *
+	 * @param dev The device path.
+	 * @param speed The baud rate.
+	 * @return True on success.
+	 */
+	bool open(const std::string& dev, int speed = B115200);
+
+	/**
 	 * Send a command to the laser.
 	 *
 	 * @param mnemonic The letter-code used to identify the command.
@@ -48,13 +69,13 @@ public:
 	bool sendCommand(char mnemonic, int value = -1);
 
 	/**
-	 * Return the latest measurement. This may be
+	 * Return the latest measurement in centimetres. This may be
 	 * distance or speed. Reads will be delayed according
 	 * to the serial update rate.
 	 *
 	 * @return The measurement.
 	 */
-	double getMeasurement();
+	int range();
 
 	/**
 	 * Set the resolution; one of:

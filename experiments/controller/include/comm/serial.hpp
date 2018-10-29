@@ -45,12 +45,25 @@ public:
 	Serial(const std::string& dev, int speed = B115200);
 
 	/**
+	 * Create an unconfigured device.
+	 */
+	Serial();
+
+	/**
+	 * Returns the number of bytes available for reading from the buffer.
+	 *
+	 * @eturn The number of bytes available for reading from the buffer.
+	 */
+	int available();
+
+	/**
 	 * Configure and open the device using the given device path.
 	 *
 	 * @param dev The device path.
+	 * @param speed The baud rate.
 	 * @return True if connection is successful.
 	 */
-	bool open(const std::string& dev);
+	bool open(const std::string& dev, int speed = B115200);
 
 	/**
 	 * Connect to the device.

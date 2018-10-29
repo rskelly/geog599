@@ -143,6 +143,67 @@ enum MagReg {
 };
 
 /**
+ * Constants for configuring the gyroscope chip.
+ * LSM6DS33
+ */
+enum GyroConfig {
+	// CTRL2_G
+	// Gyro data rate.
+	GDR_OFF = 0b0000,
+	GDR_13Hz = 0b0001,
+	GDR_26Hz = 0b0010,
+	GDR_52Hz = 0b0011,
+	GDR_104Hz = 0b0100,
+	GDR_208Hz = 0b0101,
+	GDR_416Hz = 0b0110,
+	GDR_833Hz = 0b0111,
+	GDR_1660Hz = 0b1000,
+
+	// Gyro full-scale selection
+	GFS_245dps = 0b00,
+	GFS_500dps = 0b01,
+	GFS_1000dps = 0b10,
+	GFS_2000dps = 0b11,
+
+	// Gyro full-scale at 125dps
+	GFS_125dps_DISABLED = 0b0,
+	GFS_125dps_ENABLED = 0b1,
+
+	// CTRL1_XL
+	// Accel data rate.
+	ADR_OFF = 0b0000,
+	ADR_13Hz = 0b0001,
+	ADR_26Hz = 0b0010,
+	ADR_52Hz = 0b0011,
+	ADR_104Hz = 0b0100,
+	ADR_208Hz = 0b0101,
+	ADR_416Hz = 0b0110,
+	ADR_833Hz = 0b0111,
+	ADR_1660Hz = 0b1000,
+	ADR_3330Hz = 0b1001,
+	ADR_6660Hz = 0b1010,
+
+	// Accel full-scale selection.
+	AFS_2g = 0b00,
+	AFS_4g = 0b01,	// TODO: Assuming the datasheet settings are wrong. This is my interpretation.
+	AFS_8g = 0b10,
+	AFS_16g = 0b11,
+
+	// Accel anti-aliasing filter bandwidth. Interacts with data rate; see table 45.
+	AAFB_400Hz = 0b00,
+	AAFB_200Hz = 0b01,
+	AAFB_100Hz = 0b10,
+	AAFB_50Hz = 0b11,
+
+	// CTRL3_C
+	// Auto increment addresses.
+	AUTO_INC_ON = 0b1,
+	AUTO_INC_OFF = 0b0,
+};
+
+
+
+/**
  * Stores information about the latest IMU update.
  */
 class MinIMU9v5State {
@@ -158,6 +219,17 @@ public:
 	bool angularUpdate;		///<! True if the angular component was updated.
 	bool timestampUpdate;	///<! True if the timestamp was updated.
 
+	double m_gfs;			///<! Gyroscope full-scale setting.
+	double m_afs; 			///<! Accelerometer full-scale setting.
+
+	void setAccelFullScale(double scale) {
+		m_afs = scale;
+	}
+
+	void setGyroFullScale(double scale) {
+		m_gfs = scale;
+	}
+
 	/**
 	 * Reset the update flags to false. If any update flag is true,
 	 * the updated() method returns true.
@@ -171,7 +243,7 @@ public:
 	 *
 	 * @return True if the object has been updated.
 	 */
-	bool updated() {
+	bool updated() const {
 		return linearUpdate || angularUpdate || timestampUpdate;
 	}
 
@@ -181,9 +253,9 @@ public:
 	 * @param values A 6-byte array.
 	 */
 	void setLinear(uint8_t* values) {
-		linearX = (values[0] << 8) | values[1];
-		linearY = (values[2] << 8) | values[3];
-		linearZ = (values[4] << 8) | values[5];
+		linearX = ((values[1] << 8) | values[0]) * m_afs;
+		linearY = ((values[3] << 8) | values[2]) * m_afs;
+		linearZ = ((values[5] << 8) | values[4]) * m_afs;
 		linearUpdate = true;
 	}
 
@@ -193,9 +265,9 @@ public:
 	 * @param values A 6-byte array.
 	 */
 	void setAngular(uint8_t* values) {
-		angularX = (values[0] << 8) | values[1];
-		angularY = (values[2] << 8) | values[3];
-		angularZ = (values[4] << 8) | values[5];
+		angularX = ((values[1] << 8) | values[0]) * m_gfs;
+		angularY = ((values[3] << 8) | values[2]) * m_gfs;
+		angularZ = ((values[5] << 8) | values[4]) * m_gfs;
 		angularUpdate = true;
 	}
 
@@ -205,10 +277,15 @@ public:
 	 * @param values A 3-byte array.
 	 */
 	void setTimestamp(uint8_t* values) {
-		timestamp = (values[0] << 16) | (values[1] << 8) | values[2];
+		timestamp = (values[2] << 16) | (values[1] << 8) | values[0];
 		timestampUpdate = true;
 	}
 
+	void print(std::ostream& str) const {
+		str << "IMU: ang: " << angularX << ", " << angularY << ", " << angularZ 
+			<< "; lin: " << linearX << ", " << linearY << ", " << linearZ
+			<< "; time: " << timestamp << "\n";
+	}
 };
 
 /**
@@ -219,8 +296,21 @@ public:
  */
 class MinIMU9v5 {
 private:
-	comm::I2C m_gyro;
-	comm::I2C m_mag;
+	MinIMU9v5State m_state;		///<! The current state object.
+	comm::I2C m_gyro;			///<! The gyroscope device.
+	comm::I2C m_mag;			///<! The magnetometer device.
+	std::string m_dev;			///<! The device path.
+	uint8_t m_gyroAddr;			///<! The gyroscope address.
+	uint8_t m_magAddr;			///<! The magnetometer address.
+
+	uint8_t m_gyroDataRate;		///<! The gyroscope output data rate (CTRL2_G).
+	uint8_t m_gyroFullScale;	///<! The gyroscope full scale setting (CTRL2_G).
+
+	uint8_t m_accelDataRate;	///<! The accelerometer data rate (CTRL1_XL).
+	uint8_t m_accelFullScale;	///<! The accelerometer full scale setting (CTRL1_XL).
+	uint8_t m_accelFilterBW;	///<! The accelerometer bandwidth filter (CTRL1_XL).
+
+	uint8_t m_autoInc;			///<! Auto increment addresses (CTRL3_C).
 
 protected:
 
@@ -262,7 +352,7 @@ public:
 	 *
 	 * @return True if the connection succeeded.
 	 */
-	bool open(const std::string& dev, int gyroAddr, int magAddr);
+	bool open(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr);
 
 	/**
 	 * Connect to the device.
@@ -277,11 +367,18 @@ public:
 	void close();
 
 	/**
-	 * Returns true if the gyroscope/accelerometer is available.
+	 * Returns true if the gyroscope is available.
 	 *
-	 * @return True if the gyroscope/accelerometer is available.
+	 * @return True if the gyroscope is available.
 	 */
 	bool hasGyro();
+
+	/**
+	 * Returns true if the accelerometer is available.
+	 *
+	 * @return True if the accelerometer is available.
+	 */
+	bool hasAccel();
 
 	/**
 	 * Returns true if the magnetometer is available.
@@ -291,12 +388,54 @@ public:
 	bool hasMag();
 
 	/**
-	 * Collect the current state of the instruments.
+	 * Collect the and return current state of the instruments. If any property
+	 * of the state object has been updated, the updated() method will return true.
 	 *
-	 * @param state An object containing the instrument state.
-	 * @return True if at least some of the state was successfully collected.
+	 * @return A reference to the state object.
 	 */
-	bool getState(MinIMU9v5State& state);
+	const MinIMU9v5State& getState();
+
+	/**
+	 * Set the gyroscope data rate.
+	 *
+	 * @param config a GyroConfig constant.
+	 */
+	void setGyroDataRate(GyroConfig config);
+
+	/**
+	 * Set the gyroscope full-scale setting.
+	 *
+	 * @param config a GyroConfig constant.
+	 */
+	void setGyroFullScale(GyroConfig config);
+
+	/**
+	 * Set the accelerometer data rate.
+	 *
+	 * @param config a GyroConfig constant.
+	 */
+	void setAccelDataRate(GyroConfig config);
+
+	/**
+	 * Set the accelerometer full-scale setting.
+	 *
+	 * @param config a GyroConfig constant.
+	 */
+	void setAccelFullScale(GyroConfig config);
+
+	/**
+	 * Set the accelerometer filter bandwidth.
+	 *
+	 * @param config a GyroConfig constant.
+	 */
+	void setAccelFilterBandwidth(GyroConfig config);
+
+	/**
+	 * Set whether register addresses auto-increment on each read.
+	 *
+	 * @param config a GyroConfig constant.
+	 */
+	void setAddrAutoIncrement(GyroConfig config);
 
 	~MinIMU9v5();
 

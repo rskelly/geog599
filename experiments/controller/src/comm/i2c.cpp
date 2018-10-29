@@ -6,9 +6,10 @@
  */
 
 extern "C" { // https://stackoverflow.com/questions/50154296/undefined-reference-to-i2c-smbus-read-word-dataint-unsigned-char
-	#include <linux/i2c.h>
 	#include <linux/i2c-dev.h> // I2C bus definitions
+	#if __has_include(<i2c/smbus.h>)
 	#include <i2c/smbus.h>
+	#endif
 }
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -22,21 +23,21 @@ extern "C" { // https://stackoverflow.com/questions/50154296/undefined-reference
 
 using namespace comm;
 
-namespace util {
-	int _open(const char* path, int flags) {
+namespace _i {
+	inline int _open(const char* path, int flags) {
 		return open(path, flags);
 	}
-	int _close(int file) {
+	inline int _close(int file) {
 		return close(file);
 	}
-} // util
+} // _i
 
 void _err(std::ostream& str, const std::string& msg, const std::string& dev, int addr, int err) {
 	str << msg << " at " << dev << " (" << addr << "): " << strerror(err) << "\n";
 }
 
 bool I2C::readByte(uint8_t& value) {
-	int v = 0;
+	int v;
 	if((v = i2c_smbus_read_byte(m_fd)) > -1) {
 		value = (uint8_t) v;
 		return true;
@@ -130,21 +131,21 @@ bool I2C::open(const std::string& dev, uint8_t addr) {
 
 bool I2C::open() {
 	std::cout << "Opening I2C device at " << m_dev << ", " << m_addr << ".\n";
-	if((m_fd = util::_open(m_dev.c_str(), O_RDWR)) < 0) {
+	if((m_fd = _i::_open(m_dev.c_str(), O_RDWR)) < 0) {
 		_err(std::cerr, "Failed to open device", m_dev, m_addr, errno);
 		return false;
 	}
-	std::cerr << "Connecting to I2C device at " << m_addr << " (" << m_fd << ").\n";
+	std::cout << "Connecting to I2C device at " << m_addr << " (" << m_fd << ").\n";
 	if(ioctl(m_fd, I2C_SLAVE, m_addr) < 0) {
 		_err(std::cerr, "Failed to configure device", m_dev, m_addr, errno);
-		util::_close(m_fd);
+		_i::_close(m_fd);
 		return false;
 	}
 	return true;
 }
 
 void I2C::close() {
-	util::_close(m_fd);
+	_i::_close(m_fd);
 }
 
 I2C::~I2C() {

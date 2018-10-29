@@ -16,72 +16,6 @@
 using namespace sensor;
 using namespace comm;
 
-MinIMU9v5::MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) {
-	m_gyro = I2C(dev, gyroAddr);
-	m_mag = I2C(dev, magAddr);
-}
-
-bool MinIMU9v5::configGyro(uint8_t reg, uint8_t value) {
-	if(!m_gyro.writeByteData(reg, value)) {
-		std::cerr << "Failed to configure gyro: " << reg << ", " << value << ".\n";
-		return false;
-	}
-	return true;
-}
-
-bool MinIMU9v5::configMag(uint8_t reg, uint8_t value) {
-	if(!m_mag.writeByteData(reg, value)) {
-		std::cerr << "Failed to configure mag: " << reg << ", " << value << ".\n";
-		return false;
-	}
-	return true;
-}
-
-bool MinIMU9v5::open() {
-	if(m_gyro.open()) {
-		// Gyroscope -- Data rate: 1.66kHz; Full scale: 245dps; Full-scale @ 125: disabled
-		if(!configGyro(GyroReg::CTRL2_G, 0b10000000))
-			return false;
-		// Gyroscope -- High performance: enabled; High-pass filter: disabled; HP filter reset: off; Rounding status: disabled; High-pass cutoff: 0.0081Hz
-		if(!configGyro(GyroReg::CTRL7_G, 0b00000000))
-			return false;
-		// Accelerometer -- Data rate: 1.66kHz; Full scale: +-2g; Anti-aliasing filter bandwidth: 400Hz
-		if(!configGyro(GyroReg::CTRL1_XL, 0b10001100))
-			return false;
-		// Control -- automatically increment register byte on multiple-byte access.
-		if(!configGyro(GyroReg::CTRL3_C, 0b00000100))
-			return false;
-		return true;
-	}
-	if(m_mag.open()) {
-		// TODO: Not using the magnetometer at the moment.
-	}
-	return false;
-
-}
-
-void MinIMU9v5::close() {
-	m_gyro.close();
-	m_mag.close();
-}
-
-MinIMU9v5::~MinIMU9v5() {
-	close();
-}
-
-bool MinIMU9v5::hasGyro() {
-	uint8_t val = 0;
-	if(m_gyro.readByteData(GyroReg::G_WHO_AM_I, val))
-		return val == 0b01101001;
-	return false;
-}
-
-bool MinIMU9v5::hasMag() {
-	uint8_t val = 0;
-	if(m_mag.readByteData(MagReg::M_WHO_AM_I, val))
-		return val == 0b01101001;
-	return false;
-}
 
 bool _readWord(I2C& device, uint8_t cmda, uint8_t cmdb, uint16_t& value) {
 	uint8_t a = 0, b = 0;
@@ -105,7 +39,148 @@ bool _readInt(I2C& device, uint8_t cmda, uint8_t cmdb, uint8_t cmdc, uint32_t& v
 	}
 }
 
-bool MinIMU9v5::getState(MinIMU9v5State& state) {
+
+MinIMU9v5::MinIMU9v5(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) :
+	m_dev(dev),
+	m_gyroAddr(gyroAddr),
+	m_magAddr(magAddr),
+
+	m_gyroDataRate(GDR_1660Hz),
+	m_gyroFullScale(GFS_245dps),
+	m_accelDataRate(ADR_1660Hz),
+	m_accelFullScale(AFS_2g),
+	m_accelFilterBW(AAFB_400Hz),
+	m_autoInc(AUTO_INC_ON) {
+}
+
+MinIMU9v5::MinIMU9v5() :
+	MinIMU9v5("", 0, 0) {
+}
+
+bool MinIMU9v5::configGyro(uint8_t reg, uint8_t value) {
+	if(!m_gyro.writeByteData(reg, value)) {
+		std::cerr << "Failed to configure gyro: " << reg << ", " << value << ".\n";
+		return false;
+	}
+	return true;
+}
+
+bool MinIMU9v5::configMag(uint8_t reg, uint8_t value) {
+	if(!m_mag.writeByteData(reg, value)) {
+		std::cerr << "Failed to configure mag: " << reg << ", " << value << ".\n";
+		return false;
+	}
+	return true;
+}
+
+void MinIMU9v5::setGyroDataRate(GyroConfig config) {
+	m_gyroDataRate = config;
+}
+
+void MinIMU9v5::setGyroFullScale(GyroConfig config) {
+	m_gyroFullScale = config;
+}
+
+void MinIMU9v5::setAccelDataRate(GyroConfig config) {
+	m_accelDataRate = config;
+}
+
+void MinIMU9v5::setAccelFullScale(GyroConfig config) {
+	m_accelFullScale = config;
+}
+
+void MinIMU9v5::setAccelFilterBandwidth(GyroConfig config) {
+	m_accelFilterBW = config;
+}
+
+void MinIMU9v5::setAddrAutoIncrement(GyroConfig config) {
+	m_autoInc = config;
+}
+
+bool MinIMU9v5::open() {
+	if(m_gyro.open(m_dev, m_gyroAddr)) {
+		// Gyroscope: data rate, full-scale, full-scale @ 125 disabled.
+		uint8_t config = 0b00000000 | (m_gyroDataRate << 4) | (m_gyroFullScale << 2);
+		if(!configGyro(GyroReg::CTRL2_G, config))
+			return false;
+		// Gyroscope -- High performance: enabled; High-pass filter: disabled; HP filter reset: off; Rounding status: disabled; High-pass cutoff: 0.0081Hz
+		config = 0b00000000;
+		if(!configGyro(GyroReg::CTRL7_G, config))
+			return false;
+		// Accelerometer -- Data rate: 1.66kHz; Full scale: +-2g; Anti-aliasing filter bandwidth: 400Hz
+		config = 0b00000000 | (m_accelDataRate << 4) | (m_accelFullScale << 2) | (m_accelFilterBW << 1);
+		if(!configGyro(GyroReg::CTRL1_XL, config))
+			return false;
+		// Control -- automatically increment register byte on multiple-byte access.
+		config = 0b00000000 | (m_autoInc << 3);
+		if(!configGyro(GyroReg::CTRL3_C, config))
+			return false;
+		
+		double gfs = 245.0;
+		switch(m_gyroFullScale) {
+		//case GFS_245dps: gfs = 245.0; break;
+		case GFS_500dps: gfs = 500.0; break;
+		case GFS_1000dps: gfs = 1000.0; break;
+		case GFS_2000dps: gfs = 2000.0; break;
+		}
+		m_state.setGyroFullScale(gfs);
+
+		double afs = 2.0;
+		switch(m_accelFullScale) {
+		//case AFS_2g: afs = 2.0; break;
+		case AFS_4g: afs = 4.0; break;
+		case AFS_8g: afs = 8.0; break;
+		case AFS_16g: afs = 16.0; break;
+		}
+		m_state.setAccelFullScale(afs);
+
+		return true;
+	}
+	if(m_mag.open(m_dev, m_magAddr)) {
+		// TODO: Not using the magnetometer at the moment.
+	}
+	return false;
+
+}
+
+bool MinIMU9v5::open(const std::string& dev, uint8_t gyroAddr, uint8_t magAddr) {
+	m_dev = dev;
+	m_gyroAddr = gyroAddr;
+	m_magAddr = magAddr;
+	return open();
+}
+
+void MinIMU9v5::close() {
+	m_gyro.close();
+	m_mag.close();
+}
+
+MinIMU9v5::~MinIMU9v5() {
+	close();
+}
+
+bool MinIMU9v5::hasGyro() {
+	uint8_t val = 0;
+	if(m_gyro.readByteData(GyroReg::G_WHO_AM_I, val))
+		return val == 0b01101001;
+	return false;
+}
+
+bool MinIMU9v5::hasAccel() {
+	uint8_t val = 0;
+	if(m_gyro.readByteData(GyroReg::G_WHO_AM_I, val))
+		return val == 0b01101001;
+	return false;
+}
+
+bool MinIMU9v5::hasMag() {
+	uint8_t val = 0;
+	if(m_mag.readByteData(MagReg::M_WHO_AM_I, val))
+		return val == 0b00111101;
+	return false;
+}
+
+const MinIMU9v5State& MinIMU9v5::getState() {
 	// 1) get angular values
 	// 2) get linear values
 	// 3) get timestamp
@@ -113,12 +188,12 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 	uint8_t xyz[6];
 	uint8_t len;
 
-	state.reset();
+	m_state.reset();
 
 	// Read the angular component. See GyroReg::CTRL3_C setting in configGyro
 	len = 6;
 	if(m_gyro.readBlockData(GyroReg::OUTX_H_G, xyz, len) && len == 6)
-		state.setAngular(xyz);
+		m_state.setAngular(xyz);
 
 	/*
 	if(_readWord(m_gyro, GyroReg::OUTX_H_G, GyroReg::OUTX_L_G, xyz[0])
@@ -130,7 +205,7 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 	// Read the linear component. See GyroReg::CTRL3_C setting in configGyro
 	len = 6;
 	if(m_gyro.readBlockData(GyroReg::OUTX_H_XL, xyz, len) && len == 6)
-		state.setLinear(xyz);
+		m_state.setLinear(xyz);
 
 	/*
 	if(_readWord(m_gyro, GyroReg::OUTX_H_XL, GyroReg::OUTX_L_XL, xyz[0])
@@ -142,18 +217,18 @@ bool MinIMU9v5::getState(MinIMU9v5State& state) {
 	// Read the timestamp. See GyroReg::CTRL3_C setting in configGyro
 	len = 3;
 	if(m_gyro.readBlockData(GyroReg::TIMESTAMP0_REG, xyz, len) && len == 3)
-		state.setTimestamp(xyz);
+		m_state.setTimestamp(xyz);
 
 	/*
 	if(_readInt(m_gyro, GyroReg::TIMESTAMP0_REG, GyroReg::TIMESTAMP1_REG, GyroReg::TIMESTAMP2_REG, xyz))
 		state.setTimestamp(xyz);
 	*/
 
-	return state.updated();
+	return m_state;
 }
 
-
+/*
 int main(int argc, char** argv) {
 	return 0;
 }
-
+*/
