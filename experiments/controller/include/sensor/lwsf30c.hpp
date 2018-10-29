@@ -69,13 +69,13 @@ public:
 	bool sendCommand(char mnemonic, int value = -1);
 
 	/**
-	 * Return the latest measurement. This may be
+	 * Return the latest measurement in centimetres. This may be
 	 * distance or speed. Reads will be delayed according
 	 * to the serial update rate.
 	 *
 	 * @return The measurement.
 	 */
-	double range();
+	int range();
 
 	/**
 	 * Set the resolution; one of:
