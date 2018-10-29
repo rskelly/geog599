@@ -1,0 +1,40 @@
+Molex Connectors
+
+Laser: 
+	** 7 circuit female plug crimped on to existing wires.
+	** 7 circuit male socket on distribution board.
+	** There are 2 of these.
+	WM1725-ND - 7 circuit female socket
+	WM1736-ND - 7 circuit vertical male thru-hole plug
+	WM1142CT-ND  - female crimp terminal
+
+IMU:
+	** 5 circuit female plug + lead soldered onto breakout board.
+	** 5 circuit male socket on distribution board.
+	WM15261-ND - 5 circuit female socket + lead 100mm ** may need longer.
+	WM1734-ND - 5 circuit vertical male thru-hole plug
+
+Encoder:
+	** 3 circuit female plug + lead soldered to terminals on encoder.
+	** 3 circuit male socket on distribution board.
+	WM15255-ND - 3 circuit female plug + lead 300mm 
+	WM1732-ND - 3 circuit vertical male thru-hole plug 
+
+Crank Motor:
+	** 2 circuit female plug + lead soldered to terminals on motor.
+	** 2 circuit male socket on distribution board.
+	WM15251-ND - 2 circuit female plug + lead 300mm
+	WM1731-ND - 2 circuit vertical male thru-hole plug
+
+ADS1115:
+	** don't need plugs, these are soldered together with the distribution board
+
+Raspberry Pi
+	** 40 pins need to go to distribution board not all used.
+	WM1739-ND  - 10 circuit vertical male thru-hole plug
+
+Distribution Board:
+
+
+
+
