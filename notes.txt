@@ -89,5 +89,10 @@
  - or, avoid surface reconstruction all together and use a geostats approach.
  	- put the points in a data structure and use weighted interpolation to
  	  build a linear profile in the forward axis.
- 	- develope a spline which obeys the offset, with curvatures designed to satisfy the 
+ 	- develop a cubic spline which obeys the offset, with curvatures designed to satisfy the 
  	  constraints.
+
+ - operating system
+ 	- raspian can be compiled with the realtime rt patch which enables realtime thread priority.
+ 	- the pi has 4 cores. it will be necessary to figure out how best to divide up the work, since 	 at this point there are several simulataneous demands
+ 	- see https://lemariva.com/blog/2018/07/raspberry-pi-preempt-rt-patching-tutorial-for-kernel-4-14-y for kernel compilation and important information about isolating CPUs, etc.
