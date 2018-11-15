@@ -19,11 +19,12 @@
 \contentsline {section}{\numberline {2.4}Surface Reconstruction}{15}
 \contentsline {section}{\numberline {2.5}Control Systems}{16}
 \contentsline {subsubsection}{PID Controllers}{16}
-\contentsline {section}{\numberline {2.6}Ethics}{18}
-\contentsline {chapter}{\numberline {3}Methods}{20}
-\contentsline {section}{\numberline {3.1}Equipment}{20}
-\contentsline {subsection}{\numberline {3.1.1}Aircraft}{20}
-\contentsline {subsection}{\numberline {3.1.2}Computer}{21}
-\contentsline {subsection}{\numberline {3.1.3}Sensors}{21}
-\contentsline {chapter}{\numberline {A}Additional Information}{24}
-\contentsline {chapter}{Bibliography}{25}
+\contentsline {section}{\numberline {2.6}Operating Systems}{18}
+\contentsline {section}{\numberline {2.7}Ethics}{20}
+\contentsline {chapter}{\numberline {3}Methods}{21}
+\contentsline {section}{\numberline {3.1}Equipment}{21}
+\contentsline {subsection}{\numberline {3.1.1}Aircraft}{21}
+\contentsline {subsection}{\numberline {3.1.2}Computer}{24}
+\contentsline {subsection}{\numberline {3.1.3}Sensors}{24}
+\contentsline {chapter}{\numberline {A}Additional Information}{27}
+\contentsline {chapter}{Bibliography}{28}
