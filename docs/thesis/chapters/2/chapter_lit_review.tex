@@ -184,8 +184,15 @@ Ground distance
 
 \subsection{LiDAR}
 
-DEnsity
+Density - Statistical power, fractals, arc-curve.
+
 Overlap
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[scale=0.25]{tmp/dupreez_2014.pdf} 
+\caption{Contoured surface and plane-of-best-fit used for arc-chord rugosity computation \cite{DuPreez2014}.}
+\label{fig:arcchord}
+\end{figure}
 
 
 \subsubsection{Geometric Effects on Image Quality}
@@ -286,11 +293,9 @@ Note: I think this project should ignore all aspects of vehicle dynamics except 
 
 \section{Trajectory Estimation}
 
-A terrain following system depends on the development of a trajectory which the vehicle may follow, given the terrain, flight envelope and operational constraints. In general, constraints, including terrain, are considered to be smoothly twice-differentiable over time (or in space, in the forward direction), to facilitate computation of a solution without singularities in the control inputs \cite{MENON1991,Funk1977}.
+A terrain following system depends on the development of a trajectory which the vehicle may follow, given the terrain, flight envelope and operational constraints. In general, it is desireable for the trajectory to be smooth and twice-differentiable to eliminate singularities in the control inputs, for example, the need for infinite thrust to satisfy the demand for an infinite rate of climb \cite{MENON1991,Funk1977}. 
 
 Much of the work on trajectory estimation has been conducted for the military into the automated control of ballistic missiles \cite{Dressler1968}, helicopters and fixed-wing aircraft \cite{MENON1991,Funk1977}. In a military context, aside from physical constraints, there is a need for "terrain masking" -- evading radar and other forms of detection by hiding the aircraft behind terrain features. This requires that the aircraft follow the terrain at a low, roughly constant altitude, putting extraordinary demands on the control system and the physical constraints on the airframe \cite{MENON1991}. Fortunately, the requirements of military aircraft dovetail nicely with those of remote-sensing aircraft.
-
-\cite{MENON1991} and \cite{Funk1977} suggest the use of cubic spline interpolation to produce twice-differentiable curves suitable for trajectory estimation, while \cite{Funk1977} suggests building the operational constraints into the spline equation. This allows the definition of a maximum curvature of the trajectory which respects the constraints on the acceleration of the craft.
 
 All authors define the objective in terms of a simple function. \cite{MENON1991} uses, 
 
@@ -299,6 +304,17 @@ F(x,y) = h_c + f(x,y) + P(x,y)
 \end{equation}
 
 where $F(x,y)$ gives the trajectory elevation at the given downrange ($x$) and crossrange ($y$), and $h_c$ is the altitude with respect to the terrain, either constant or as a function. Other constraints, such as, in the military context, "threats" and obstacles to the vehicle, are modelled by $P(x,y)$. Ultimately, the result is a smoothed model of the terrain with some minimal offset corresponding to the desired elevation.
+
+\cite{MENON1991} and \cite{Funk1977} suggest the use of cubic spline interpolation to produce twice-differentiable curves suitable for trajectory estimation, while \cite{Funk1977} suggests building the operational constraints into the spline equation. This allows the definition of a maximum curvature of the trajectory which respects the constraints on the acceleration of the craft. 
+
+\cite{Funk1977} provides several key concepts that relate by analogy to the demands of UAV remote sensing. The "frame length" concept concerns the distance required to execute a "characteristic manouvre" \cite{Funk1997} -- a "symmetric manouvre" over an obstacle of "maximum expected height" (typically three times rugosity -- the standard deviation in the terrain elevation), including maximum pull-up, push-over and transition arcs. The symmetric manouvre is represented using piecewise cubic splines whose integrals must sum to zero for the resumption of level flight. In the fixed-wing military aircraft context, the constraints are those imposed by flight envelope of the craft. A remote-sensing UAV is no different, however, rather than airframe integrity, lift and thrust (etc.), the constraints on a UAV primarily concern the availability of thrust and rotational velocity (for vectoring).
+
+\cite{Funk1977} 
+
+Through "efficient programming" for the CDC 6600 computer, Funk proposes a $\SI{3}{\second}$ frame time which, at Mach 1, would yield a trajectory update every $3500$ feet \cite{Funk1977}. Given a relatively high (for a UAV) horizontal velocity of $\SI{10}{\m\/\s}$, this gives an update every $\SI{30}{\m}$. Given the advances in computer technology in the intervening 41 years, $\SI{3}{\second}$ would be an extremely pessimistic estimate for a trajectory update period. Still, it provides a reasonable upper bound forward distance for terrain measurement.
+
+
+
 
 * The use of a spline curve trajectory that incorporates the given constraints has the advantage of modelling said constraints while decoupling the flight control inputs from trajectory estimation. *
 
