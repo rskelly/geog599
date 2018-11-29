@@ -1,4 +1,7 @@
 \#*.dxf
+*.lot
+*.toc
+*.lof
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -91,7 +94,4 @@ ENV/
 .ropeproject
 .DS_Store
 kernel
-*.lof
-*.lot
-*.toc
-docs/thesis/tmp
+
