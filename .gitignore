@@ -89,3 +89,5 @@ ENV/
 .ropeproject
 .DS_Store
 kernel
+node_modules
+client/planner/node_modules

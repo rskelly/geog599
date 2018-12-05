@@ -68,7 +68,7 @@ int LWSF30C::range() {
 			}
 		}
 		// The first bit in the high byte is a flag; remove it.
-		return ((buf[0] & 0x7f) << 7) | buf[1];
+		return ((buf[0] & 0x7f) << 7) | (buf[1] & 0x7f);
 	} else {
 		return 0;
 	}

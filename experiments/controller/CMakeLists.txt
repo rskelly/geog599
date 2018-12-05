@@ -93,14 +93,17 @@ if (I2C_LIBRARY)
 	target_link_libraries (uav_i2c i2c)
 endif()
 
-add_library (uav_imu src/sensor/minimu9v5.cpp)
-target_link_libraries (uav_imu uav_i2c)
+#add_library (uav_imu src/sensor/minimu9v5.cpp)
+#target_link_libraries (uav_imu uav_i2c)
 
-add_library (uav_sf30c src/sensor/lwsf30c.cpp)
-target_link_libraries (uav_sf30c uav_serial)
+#add_library (uav_sf30c src/sensor/lwsf30c.cpp)
+#target_link_libraries (uav_sf30c uav_serial)
 
-add_library (uav_encoder src/sensor/ads1115.cpp)
-target_link_libraries (uav_encoder uav_i2c)
+add_library (uav_teensy src/sensor/teensy.cpp)
+target_link_libraries (uav_teensy uav_serial)
+
+#add_library (uav_encoder src/sensor/ads1115.cpp)
+#target_link_libraries (uav_encoder uav_i2c)
  
 add_executable (controller src/controller.cpp)
-target_link_libraries (controller uav_imu uav_sf30c uav_encoder)
+target_link_libraries (controller uav_teensy)# uav_imu uav_teensy uav_encoder)

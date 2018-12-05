@@ -17,16 +17,19 @@
  *      Author: rob
  */
 
-#include "sensor/ads1115.hpp"
-#include "sensor/lwsf30c.hpp"
-#include "sensor/minimu9v5.hpp"
+#include <list>
 
+#include "sensor/ads1115.hpp"
+#include "sensor/teensy.hpp"
+//#include "sensor/minimu9v5.hpp"
+
+constexpr double PI = 3.141592653589793;
 
 class Controller {
 private:
-	sensor::ADS1115 m_adc;
-	sensor::LWSF30C m_scanner;
-	sensor::MinIMU9v5 m_imu;
+	//sensor::ADS1115 m_adc;
+	sensor::Teensy m_scanner;
+	//sensor::MinIMU9v5 m_imu;
 
 public:
 
@@ -34,6 +37,7 @@ public:
 
 	bool start() {
 		using namespace sensor;
+		/*
 		m_imu.setGyroDataRate(GDR_1660Hz);
 		m_imu.setGyroFullScale(GFS_245dps);
 		m_imu.setAccelDataRate(ADR_1660Hz);
@@ -42,19 +46,12 @@ public:
 			std::cerr << "Failed to connect to IMU.\n";
 			return false;
 		}
-		if(m_scanner.open("/dev/ttyS0", B115200)) {
-			m_scanner.setResolution(3);
-			m_scanner.setSerialRate(1);
-			m_scanner.setDistance();
-			//m_scanner.setBlocking(true);
-			if(!m_scanner.startLaser()) {
-				std::cerr << "Failed to start laser.\n";
-				return false;
-			}
-		} else {
+		*/
+		if(!m_scanner.open("/dev/ttyACM0", B115200)) {
 			std::cerr << "Failed to connect to scanner.\n";
 			return false;
 		}
+		/*
 		if(m_adc.open("/dev/i2c-1", 0x48)) {
 			m_adc.setGain(0);
 			m_adc.setDataRate(0b111);
@@ -67,25 +64,59 @@ public:
 			std::cerr << "Failed to connect to ADC.\n";
 			return false;
 		}
-
+		*/
 		return true;
 	}
 
 	void stop() {
-		m_imu.close();
+		//m_imu.close();
 	}
 
-	bool step() {
+	std::list<double> __range;
+	std::list<double> __angle;
+
+	inline double __avg(std::list<double>& l) {
+		double s = 0;
+		for(double d : l)
+			s += d;
+		return s / l.size();
+	}
+
+	inline void __push(std::list<double>& l, double v) {
+		l.push_back(v);
+		if(l.size() > 5)
+			l.pop_front();
+	}
+
+	bool step(double t) {
 		// IMU
 		//const sensor::MinIMU9v5State& imu = m_imu.getState();
 		//if(imu.updated())
 		//	imu.print(std::cout);
 
 		// Laser
-		//double r = m_scanner.range();
-		//std::cout << "Range: " << r << "m\n";
+		int rangeTime, angleTime;
+		int range = 0;
+		float angle = 0.0;
+		int gyro[3];
+		int acc[3];
+		if(m_scanner.readData(range, rangeTime, angle, angleTime, gyro, acc)) {
+			//__push(__range, range);
+			__push(__angle, angle);
+			double r = range;//__avg(__range);
+			if(r < 250) {
+				double a = __avg(__angle);
+				double rad = ((float) a / 65535) * PI * 2;
+				double x = std::cos(rad) * r;
+				double y = std::sin(rad) * r;
+				double z = 0;//t / 1000.0;
+				//std::cout << x << "," << y << "," << z << "\n";
+				std::cout << gyro[0] << ":" << gyro[1] << ":" << gyro[2] << ", " << r << ", " << rangeTime << ", " << rad << ", " << angleTime << "\n";
+			}
+		}
 
 		// Encoder
+		/*
 		int cur, max;
 		if(!m_adc.readValue(0b101, cur))
 			return false;
@@ -93,6 +124,7 @@ public:
 			return false;
 		std::cout << cur << ", " << max << "\n";
 		std::cout << "Angle: " << (double) cur / max * 360.0 << "\n";
+		*/
 		return true;
 	}
 
@@ -105,10 +137,13 @@ public:
 int main(int argc, char** argv) {
 
 	Controller cont;
+	double t = 0.0;
 	if(cont.start()) {
 		while(true) {
-			if(!cont.step())
+			t += 1.0;
+			if(!cont.step(t))
 				break;
+			//usleep(10000);
 		}
 		cont.stop();
 	}
