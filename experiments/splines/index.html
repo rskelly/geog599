@@ -1,0 +1,151 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Splines</title>
+  <meta name="description" content="Splines">
+  <meta name="author" content="rob">
+
+  <!--<link rel="stylesheet" href="css/styles.css?v=1.0">-->
+
+  <script>
+
+  	function rpt(xrange, yrange, x = 0.0, y = 0.0) {
+		return [x + Math.random() * xrange, y + (Math.random() - 0.5) * 2 * yrange];
+  	}
+
+  	function genPts() {
+  		let pts = [];
+  		let pt = [0, 500];
+  		for(let i = 0; i < 100; ++i) {
+  			pt = rpt(50, 100, i * 100, pt[1]);
+  			for(let j = 0; j < 10; ++j)
+  				pts.push(rpt(150, 30, pt[0], pt[1]));
+  		}
+  		return pts;
+  	}
+
+  	function p3(t) {
+  		return t*t*t;
+  	}
+
+  	function p2(t) {
+  		return t*t;
+  	}
+
+  	function spline(t, p0, p1, m0, m1) {
+  		return (2 * p3(t) - 3 * p2(t) + 1) * p0 + (p3(t) - 2 * p2(t) + t) * m0 + (-2 * p3(t) + 3 * p2(t)) * p1 + (p3(t) - p2(t)) * m1;
+  	}
+
+  	function draw(pts, style) {
+  		let ctx = document.querySelector('#canv').getContext('2d');
+  		ctx.fillStyle = style;
+  		pts.forEach(pt => {
+			ctx.fillRect(pt[0] - 2, pt[1] - 2, 4, 4);
+  		});
+  	}
+
+  	function drawSlopes(slopes, style) {
+  		let ctx = document.querySelector('#canv').getContext('2d');
+  		ctx.strokeStyle = style;
+  		slopes.forEach(item => {
+  			let pt = item[0];
+  			let slope = item[1];
+  			let x0 = pt[0] - 10.0;
+  			let x1 = x0 + 20.0;
+  			let y0 = pt[1] - slope * 10.0;
+  			let y1 = pt[1] + slope * 10.0;
+  			ctx.moveTo(x0, y0);
+  			ctx.lineTo(x1, y1);
+  			ctx.stroke();
+  		});
+  	}
+
+  	function drawSplines(pts, slopes, style) {
+  		let ctx = document.querySelector('#canv').getContext('2d');
+  		ctx.strokeStyle = style;
+  		let m = 0.0;
+  		for(let i = 0; i < pts.length - 2; ++i) {
+  			let a = pts[i];
+  			let b = pts[i + 1];
+  			let m0 = m;
+  			let m1 = -slopes[i][1];
+  			let p0 = a[1];
+  			let p1 = b[1];
+  			for(let j = 0; j <= 10; ++j) {
+  				let x = a[0] + (b[0] - a[0]) / 10.0 * j;
+  				let y = spline(j / 10.0, p0, p1, m0, m1);
+  				if(j == 0) {
+  					ctx.moveTo(x, y);
+  				} else {
+  					ctx.lineTo(x, y);
+  				}
+  			}
+			ctx.stroke();
+  			m = m1;
+  		}
+  	}
+
+  	function genClust(pts, num) {
+  		let minx = 99999999.9;
+  		let maxx = -99999999.9;
+  		let miny = 99999999.9;
+  		let maxy = -99999999.9;
+  		pts.forEach(pt => {
+  			if(minx > pt[0]) minx = pt[0];
+  			if(miny > pt[1]) miny = pt[1];
+  			if(maxx < pt[0]) maxx = pt[0];
+  			if(maxy < pt[1]) maxy = pt[1];
+  		});
+  		let w = (maxx - minx) / num;
+  		let result = new Array(num);
+  		pts.forEach(pt => {
+  			let i = parseInt((pt[0] - minx) / (maxx - minx) * num);
+  			if(!result[i]) result[i] = [];
+  			result[i].push(pt);
+  		});
+  		for(let i = 0; i < num; ++i) {
+  			let cnt = result[i].length;
+  			if(cnt < 1) continue;
+  			let xsum = 0.0;
+  			let ysum = 0.0;
+  			for(let j = 0; j < cnt; ++j) {
+  				xsum += result[i][j][0];
+  				ysum += result[i][j][1];
+  			}
+  			result[i] = [xsum / cnt, ysum / cnt]
+  		}
+  		return result;
+  	}
+
+  	function getSlopes(pts) {
+  		let slopes = [];
+  		for(let i = 1; i < pts.length - 1; ++i) {
+  			let a = pts[i - 1];
+  			let b = pts[i];
+  			let c = pts[i + 1];
+  			let sca = (c[1] - a[1]) / (c[0] - a[0]);
+  			slopes.push([b, sca])
+  		}
+  		return slopes;
+  	}
+
+  	function run() {
+  		let pts = genPts();
+  		draw(pts, '#aaaaff');
+  		let clust = genClust(pts, 100);
+  		draw(clust, 'red');
+  		let slopes = getSlopes(clust);
+  		//drawSlopes(slopes, 'black');
+  		drawSplines(clust, slopes, 'green');
+  	}
+  </script>
+
+</head>
+
+<body onload="run();" style="background-color: black">
+  <canvas id="canv" width="2400" height="1200" style="background-color: white"></canvas>
+</body>
+</html>

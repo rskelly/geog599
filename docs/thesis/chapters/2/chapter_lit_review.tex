@@ -8,9 +8,9 @@
 
 Remote sensing is the acquisition of information about an object or phenomenon without the necessity of physical contact between it and the observer \cite{Gupta2018}. The human eyes, nose and ears are remote sensing instruments, collecting the electromagnetic, chemical and mechanical signals that comprise sight, smell and hearing, respectively.
 
-In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electromagnetic or gravitational emissions from the Earth. Electromagnetic instruments may be further categorized as \emph{active}, such as LiDAR and RADAR which emit a pulse of radiation, then measure the temporal delay and intensity of the echo; and \emph{passive}, which measure the reflected energy emitted by natural sources such as the sun, or endogenous energy, such as thermal infrared radiation (i.e. heat).
+In the geographic and earth sciences, remote sensing is typically (though not exclusively) conducted from above the earth using aircraft or space-borne satellites carrying instruments that measure electromagnetic or gravitational emissions from the Earth. Electromagnetic instruments may be further categorized as \emph{active}, such as LiDAR and RADAR which emit a pulse of radiation, then measure the temporal delay -- hence range -- of the echo, along with its intensity and other qualities; and \emph{passive}, which measure the reflected energy emitted by natural sources such as the sun or endogenous energy, such as thermal infrared radiation (i.e. heat).
 
-Whatever instrument is used, its orientation relative to the target has important impacts on the quality of information it produces, due to geometric (e.g., scale distortion or changes to the field of view), atmospheric (e.g. attenuation by scattering and absorption) and other effects. Changes in the instrument orientation through time further impact the quality of data by inducing unpredictable variations in its characteristics: one cannot be confident, for example, that the statistical power of a result holds if the point density from which it derives varies through space.
+Whatever instrument is used, distance from, and orientation relative to, the target has important impacts on the quality of information it produces, due to geometric (e.g., scale distortion or changes to the field of view), atmospheric (e.g. attenuation by scattering and absorption) and other effects. Changes in the instrument distance or orientation through time further impact the quality of data by inducing unpredictable variations in its characteristics: one cannot be confident, for example, that the statistical power of a result holds if the LiDAR point density from which it derives varies through space.
 
 This research considers two types of remote sensing instruments typically used by UAV surveys: a ``pushbroom''-type hyperspectral imaging spectrometer (passive) and a scanning LiDAR device (active). 
 
@@ -25,21 +25,19 @@ This research considers two types of remote sensing instruments typically used b
 %D* = \frac{\sqrt{A_d B}}{\Phi}SNR,
 %\end{equation}
 
-Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands throught the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Goetz1985}. This is particularly important to researchers in agriculture, minerology and other fields where the discrimination of extremely narrow spectral features is necessary for the identification of physical features \cite{Goetz1985}. 
+Goetz \emph{et al} \cite{Goetz1985} define hyperspectral imaging spectometry as ``the acquisition of images in many narrow contiguous spectral bands through the visible and solar-reflected infrared spectal bands simultaneously.'' Narrow spectral bands enable the detection of small absorbtion features which broad-band scanners, such as Landsat, cannot \cite{Goetz1985}. This is particularly important to researchers in agriculture, minerology and other fields where the discrimination of extremely narrow spectral features is necessary for the identification of physical features and phenomena \cite{Goetz1985}. 
 
-Wolfe (\cite{Wolfe1997}) gives the specific detectivity ($D*$) as,
+Wolfe (\cite{Wolfe1997}) gives the specific detectivity ($D*$) of a spectrometer as,
 
 \begin{equation}
 D* = \frac{\sqrt{A_d B}}{\Phi}SNR,
 \end{equation}
 
-where $A_d$ is the detector area, $B$ is the effective noise bandwidth, $\Phi$ is the noise-equivalent power of the detector and $SNR$ is the signal to noise ratio. $D*$ is a figure of merit which gives an idea of the performance of a sensor, given its area, frequency bandwidth and noise characteristics. 
-
-Unfortunately, decreasing the sensor area and narrowing the bandwidth (increasing spatial and spectral resolution, respectively) will increase the relative fraction of noise in the measurement \cite{Moses2012, Wolfe2997}.
+where $A_d$ is the detector area, $B$ is the effective noise bandwidth, $\Phi$ is the noise-equivalent power of the detector and $SNR$ is the signal to noise ratio. $D*$ is a figure of merit which gives an idea of the performance of a sensor, given its area, frequency bandwidth and noise characteristics. Unfortunately, decreasing the sensor area and narrowing the bandwidth (increasing spatial and spectral resolution, respectively) will increase the relative fraction of noise in the measurement \cite{Moses2012, Wolfe2997}.
 
 The imaging spectrometers typically mounted on UAVs are of the linear-array ``pushbroom'' type, which have no moving parts and are therefore small and reliable enough for this purpose. In a pushbroom scanner, a single \emph{across-track}-aligned sensor array moves with the vehicle, with each sensor element receiving photons reflected from the target in a continuous swath parallel to the flight path. As the scanner moves across the target, the sensor measures and records radiant intensity (i.e. the number of reflected photons) in all bands during its \emph{integration time}. During the \emph{integration time}, all information captured by the element is saved as a single picture element, or pixel, which is spatially referenced to the target itself. 
 
-The integration time of a scanner is related to another important quantity, \emph{dwell time}, by the platform velocity and field of view. Dwell time is the time during which a hypothetical object is recorded by the instrument. For a stationary instrument the dwell time and integration time are identical. For a moving instrument, dwell time may be equal to or less than the integration time and is contingent on platform velocity and altitude. For example, if an object at the forward edge of the detector at the beginning of the integration is at the rearward edge at the end of the integration, its dwell time is equal to the integration time. If an object were in the middle of the frame, its dwell time is half of the integration time. Raising the platform velocity would reduce both objects' dwell times with respect to the integration time.
+The integration time of a scanner is related to another important quantity, \emph{dwell time}, by the platform velocity and field of view. Dwell time is the time during which a hypothetical object is recorded by the instrument. For a stationary instrument the dwell time and integration time are identical. For a moving instrument, dwell time may be equal to or less than the integration time and is contingent on platform velocity and altitude. For example, if an object at the forward edge of the detector at the beginning of the integration is at the rearward edge at the end of the integration, its dwell time is equal to the integration time. If an object were in the middle of the frame to begin with, its dwell time is half of the integration time. Raising the platform velocity would reduce both objects' dwell times with respect to the integration time, as they would cross the rearward edge of the pixel before recording ceased.
 
 
 \subsubsection{Signal-to-Noise Ratio}
@@ -140,13 +138,13 @@ It is clear that the signal-to-noise ratio, all other parameters held constant, 
 
 \subsubsection{Geometric Distortion}
 
-
-
 %[Tangent plane assumption of earth geometry -- ignore geodetic distortions]
 
 \cite{Gupta2018} provides an extensive survey of the geometric causes of spectral image quality degradation. Geometric causes of degradation are grouped into two categories: systematic and non-systematic. Non-systematic distortions are due to variable or unpredictable factors such as airframe perturbation due to wind, while systematic distortions are those caused by fixed or planned effects, such as sensor-craft altitude and relief displacement.
 
 Some variations in the velocity and attitude of the airframe and instruments are induced by forces (e.g. wind) which are stochastic in time and space and so not easily predicted. Others are induced by phenomena which are stochastic in space but constant in time and therefore predictable. Terrain relief is one of these. Variations in terrain relief induce changes in target distance for a platform and instrument travelling at a constant absolute elevation, which in turn induces geometric distortions in the imagery. Gupta \cite{Gupta2018} considers these disturbances to be non-systematic, but for the purposes of this research, they will be considered systematic and therefore addressable.
+
+%[more]
 
 \subsubsection*{Spectral Mixing}
 
@@ -184,8 +182,23 @@ Ground distance
 
 \subsection{LiDAR}
 
-DEnsity
+Density - Statistical power, fractals, arc-curve.
+
+Hypothesis testing, type I, II error, etc.
+
+In \cite{DuPreez2014}, a method -- the arc-chord ratio (ACR) -- for estimating surface rugosity is given which takes the ratio of the surface area of a triangulated (i.e. Delaunay) point cloud and of the plane of best fit (POBF) of the boundary points of the cloud. Whereas the standard rugosity-estimation methods use the standard deviation or coefficient of variation of the point elevations, which stabilize as $n$ increases, the relationship of the ACR to point density is fixed, taking the form of an inverse parabola. The first derivative of the parabola at a given point density gives the fractal dimension at that point. In essence, increasing the point density decreases the size of the "ruler" used to measure the underlying structure.
+
+Not only must $n$, or density, be sufficient to maintain the power of parametric statistical products, but the \emph{stability} of $n$ must be maintained in order to guarantee the quality of .... If the point counts are sufficient, either through low-altitude flying or large overlap, point density can be controlled artificially by removing a random selection of points from each cell. However, within a single flight line, an accurate altitude control system can fly the vehicle safely at a low enough elevation to maintain sufficient point density, while guaranteeing the consistency of the point density within certain bounds.
+
+
+
 Overlap
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[scale=0.25]{tmp/dupreez_2014.pdf} 
+\caption{Contoured surface and plane-of-best-fit used for arc-chord rugosity computation \cite{DuPreez2014}.}
+\label{fig:arcchord}
+\end{figure}
 
 
 \subsubsection{Geometric Effects on Image Quality}
@@ -286,11 +299,14 @@ Note: I think this project should ignore all aspects of vehicle dynamics except 
 
 \section{Trajectory Estimation}
 
-A terrain following system depends on the development of a trajectory which the vehicle may follow, given the terrain, flight envelope and operational constraints. In general, constraints, including terrain, are considered to be smoothly twice-differentiable over time (or in space, in the forward direction), to facilitate computation of a solution without singularities in the control inputs \cite{MENON1991,Funk1977}.
+[This is mostly over simple. The Menon journal article has a complete solution; also check the wiki for optimal control ]
 
-Much of the work on trajectory estimation has been conducted for the military into the automated control of ballistic missiles \cite{Dressler1968}, helicopters and fixed-wing aircraft \cite{MENON1991,Funk1977}. In a military context, aside from physical constraints, there is a need for "terrain masking" -- evading radar and other forms of detection by hiding the aircraft behind terrain features. This requires that the aircraft follow the terrain at a low, roughly constant altitude, putting extraordinary demands on the control system and the physical constraints on the airframe \cite{MENON1991}. Fortunately, the requirements of military aircraft dovetail nicely with those of remote-sensing aircraft.
+see: Bianco2017
 
-\cite{MENON1991} and \cite{Funk1977} suggest the use of cubic spline interpolation to produce twice-differentiable curves suitable for trajectory estimation, while \cite{Funk1977} suggests building the operational constraints into the spline equation. This allows the definition of a maximum curvature of the trajectory which respects the constraints on the acceleration of the craft.
+
+Since the objective of this research is to derive a trajectory which optimises certain constraints, it must be representable by a function. In general, it is desireable for the trajectory to be smooth and twice-differentiable to eliminate singularities in the control inputs, for example, the need for infinite thrust to satisfy the demand for an infinite rate of climb, or an instantaneous change in said rate \cite{MENON1991,Funk1977}. 
+
+Much of the work on trajectory estimation has been conducted for the military into the automated control of ballistic missiles \cite{Dressler1968}, helicopters and fixed-wing aircraft \cite{MENON1991,Funk1977}. In a military context, aside from physical constraints, there is a need for ``terrain masking'' -- evading radar and other forms of detection by hiding the aircraft behind terrain features. This requires that the aircraft follow the terrain at a low, roughly constant altitude, putting extraordinary demands on the control system and airframe \cite{MENON1991}. Fortunately, the requirements of military aircraft dovetail nicely with those of remote-sensing aircraft.
 
 All authors define the objective in terms of a simple function. \cite{MENON1991} uses, 
 
@@ -298,9 +314,18 @@ All authors define the objective in terms of a simple function. \cite{MENON1991}
 F(x,y) = h_c + f(x,y) + P(x,y)
 \end{equation}
 
-where $F(x,y)$ gives the trajectory elevation at the given downrange ($x$) and crossrange ($y$), and $h_c$ is the altitude with respect to the terrain, either constant or as a function. Other constraints, such as, in the military context, "threats" and obstacles to the vehicle, are modelled by $P(x,y)$. Ultimately, the result is a smoothed model of the terrain with some minimal offset corresponding to the desired elevation.
+where $F(x,y)$ gives the trajectory elevation at the given downrange ($x$) and crossrange ($y$), and $h_c$ is the altitude with respect to the terrain, either constant or as a function. Other constraints, such as, in the military context, ``threats'' and obstacles to the vehicle, are modelled by $P(x,y)$. Ultimately, the result is a smoothed model of the terrain with some minimal offset corresponding to the desired elevation.
 
-* The use of a spline curve trajectory that incorporates the given constraints has the advantage of modelling said constraints while decoupling the flight control inputs from trajectory estimation. *
+\cite{MENON1991} and \cite{Funk1977} suggest the use of cubic spline interpolation to produce twice-differentiable curves suitable for trajectory estimation, while \cite{Funk1977} suggests building the operational constraints into the spline equation. This allows the definition of a maximum curvature of the trajectory in respect of the craft's flight envelope. Piecewise splines are ideal for this application as, so long as the slope and elevation are identical where they meet, continuity is insured.
+
+\cite{Funk1977} provides several key concepts that relate by analogy to the demands of UAV remote sensing. The ``frame length'' concept concerns the distance required to execute a ``characteristic manouvre'' \cite{Funk1977} -- a ``symmetric manouvre'' over an obstacle of ``maximum expected height'' (typically three times rugosity -- the standard deviation in the terrain elevation), including maximum pull-up, push-over and transition arcs. The symmetric manouvre is represented using piecewise cubic splines whose integrals must sum to zero for the resumption of level flight. In the fixed-wing military aircraft context, the constraints are those imposed by flight envelope of the craft. A remote-sensing UAV is no different, however, rather than airframe integrity, lift and thrust (etc.), the constraints on a UAV primarily concern the availability of thrust and rotational velocity (for thrust vectoring), as well as whatever bounds are placed data-quality and power consumption.
+
+Through ``efficient programming'' for the CDC 6600 computer, Funk proposes a $\SI{3}{\second}$ frame time which, at Mach 1, would yield a trajectory update every $\SI{1067}{\m}$ \cite{Funk1977}. For a relatively high (for a UAV) horizontal velocity of $\SI{10}{\m\/\s}$, this gives an update every $\SI{30}{\m}$. Given the advances in computer technology in the intervening 41 years -- the CDC 6600 was introduced in 1967 and weighed $\SI{5400}{\tonne}$ -- $\SI{3}{\second}$ would be an extremely pessimistic estimate for a trajectory update period using presently-available hardware.
+
+There have been other methods for deriving trajectories, but these have drawbacks that render them unsuitable for remote-sensing UAV applications. Twigg, Calise and Johnson (\cite{Twigg2003}) extend Menon's (\cite{MENON1991}) work through the notion of constant-energy, rather than constant-velocity trajectory estimation, however the maintenance of a constant ground speed is critical to the data-quality objectives of this research.
+
+
+Per The use of a spline curve trajectory that incorporates the given constraints has the advantage of modelling said constraints while decoupling the flight control inputs from trajectory estimation. *
 
 
 ~~~
@@ -463,6 +488,18 @@ Sánchez, J., Visioli, A., \& Dormido, S. (2012). PID Control in the third mille
 
 \cite{Soediono1989}
 Soediono, B., \& Visioli, A. (2006). Practical PID Control. (Intergovernmental Panel on Climate Change, Ed.), Climate Change 2013 - The Physical Science Basis (Vol. 53). Cambridge: Springer London. https://doi.org/10.1007/1-84628-586-0
+
+\section{Operating Systems}
+
+A typical modern desktop computer divides its tasks into units of work which it dispatches to the processor to be performed. This is called multitasking. All current mainstream operating systems (OSX, Windows and Linux) use a strategy called preemptive multitasking, whereby a currently-executing process may be preempted by another process if the first process is, for example, waiting on a resource, or has a lower priority than the new process. On a single core, no two processes execute at the same time, but interleaving operations gives the impression of simultaneous execution and can radically speed up execution of a set of tasks if one or more of those tasks is required to wait for any reason. Task scheduling is performed by the scheduler according to one a variety of heuristics.
+
+Multitasking computers used for flight-control and other time-critical operations have one or more processes that must not be preempted, lest a critical operation fail to complete in sufficient time to keep the craft safely aloft. A multitasking operating system that permits non-preemptable threads of execution is called a realtime operating system (RTOS) \cite{Foundation2018,BristotdeOliveira2018}. Realtime operating systems allow processes to execute without interruption and require those processes to complete within a specified temporal bound \cite{BristotdeOliveira2018}. Failure to meet a deadline results in system failure. Ultimately, the goal of the RTOS is to provide deterministic bounds on the execution times of tasks \cite{BristotdeOliveira2018}.
+
+The Linux operating system three realtime scheduling policies in the standard kernel, \texttt{SCHED\_FIFO}, \texttt{SCHED\_RR} and \texttt{SCHED\_DEADLINE} \cite{Foundation2018,BristotdeOliveira2018}. \texttt{SCHED\_FIFO} and \texttt{SCHED\_RR} use the POSIX scheduler and are similar in that they require a thread to run to completion, unless a thread with a higher priority preempts it. Under \texttt{SCHED\_FIFO} (first-in-first-out), tasks are executed at in the order in which they arrive, while \texttt{SCHED\_RR} executes tasks in sequential order using a circular queue. 
+
+\texttt{SCHED\_DEADLINE} uses the deadline scheduler. Each task is configured with a run time, a deadline and a period. For deadline-scheduled tasks, the run time is guaranteed to be available within each period, and the task will complete before the deadline \cite{BristotdeOliveira2018}. Linux' deadline scheduler uses the 	Global Earliest Deadline First (GEDF) algorithm which schedules tasks with the earliest deadlines first. On multi-core systems this can cause tasks to miss their deadlines, even when processor utilization is blow maximum. For example, if four tasks with short deadlines are assigned to each of four cores, a single long-running task will be unable to complete before its deadline (the Dhall effect). Alternatively, if the four short tasks were assigned to run in sequence on one core, the long-running task could complete on another, leaving two cores free \cite{BristotdeOliveira2018a}. In multi-core environments, it is therefore necessary to run critical tasks on a CPU  reserved for that purpose, leaving other tasks to run on the remaining CPUS.
+
+Typically, kernel tasks are not preemptible. That is, only threads in ``user space'' can be suspended while a higher-priority task executes. The \texttt{PREEMPT\_RT} patch adds two preemption modes to the kernel, Preemptible Kernel (Basic RT) and Fully Preemptible Kernel (RT). With the fully preemptable kernel selected, all kernel code is preemptible, save for certain highly critical sections which are reduced through alternative locking constructs  \cite{Foundation2018}. The \texttt{PREEMPT\_RT} patch can be applied to any Linux kernel, including that used by the Raspbian distribution used by Raspberry Pi.
 
 \section{Ethics}
 

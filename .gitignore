@@ -1,3 +1,8 @@
+\#*.dxf
+*.lot
+*.toc
+*.lof
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
