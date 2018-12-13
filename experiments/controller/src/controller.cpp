@@ -18,6 +18,7 @@
  */
 
 #include <list>
+#include <thread>
 
 #include "sensor/ads1115.hpp"
 #include "sensor/teensy.hpp"
@@ -47,7 +48,7 @@ public:
 			return false;
 		}
 		*/
-		if(!m_scanner.open("/dev/ttyACM0", B115200)) {
+		if(!m_scanner.open("/dev/ttyACM0", B921600)) {
 			std::cerr << "Failed to connect to scanner.\n";
 			return false;
 		}
@@ -95,24 +96,12 @@ public:
 		//	imu.print(std::cout);
 
 		// Laser
-		int rangeTime, angleTime;
-		int range = 0;
-		float angle = 0.0;
-		int gyro[3];
-		int acc[3];
-		if(m_scanner.readData(range, rangeTime, angle, angleTime, gyro, acc)) {
-			//__push(__range, range);
-			__push(__angle, angle);
-			double r = range;//__avg(__range);
-			if(r < 250) {
-				double a = __avg(__angle);
-				double rad = ((float) a / 65535) * PI * 2;
-				double x = std::cos(rad) * r;
-				double y = std::sin(rad) * r;
-				double z = 0;//t / 1000.0;
-				//std::cout << x << "," << y << "," << z << "\n";
-				std::cout << gyro[0] << ":" << gyro[1] << ":" << gyro[2] << ", " << r << ", " << rangeTime << ", " << rad << ", " << angleTime << "\n";
-			}
+		sensor::Range range;
+		sensor::Orientation orientation;
+		if(m_scanner.readData(range, orientation)) {
+			if(range.status() == 0)
+				std::cout << range.angle() << ", " << range.range() << ", " << range.x() << ", " << range.y() << ", " << range.timestamp() << "\n";
+			//std::cout << range.x() << ", " << range.y() << ", " << range.z() << "\n";
 		}
 
 		// Encoder
@@ -143,7 +132,7 @@ int main(int argc, char** argv) {
 			t += 1.0;
 			if(!cont.step(t))
 				break;
-			//usleep(10000);
+			std::this_thread::yield();
 		}
 		cont.stop();
 	}
