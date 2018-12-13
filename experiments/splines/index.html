@@ -12,8 +12,63 @@
 
   <script>
 
+    class Point {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+      }
+      times(s) {
+        return new Point(this.x * s, this.y * s);
+      }
+      plus(p) {
+        return new Point(this.x + p.x, this.y + p.y);
+      }
+    }
+
+    const _p = Math.pow;
+    const _s = Math.sqrt;
+
+    function tj(ti, pi, pj, alpha) {
+      let a = _p(pj.x - pi.x, 2.0) + _p(pj.y - pi.y, 2.0);
+      let b = _s(a);
+      let c = _p(b, alpha);
+      return ti + c;
+    }
+
+    function catmullRomSpline(p0, p1, p2, p3, alpha = 0.5, npoints = 10) {
+
+      t0 = 0.0;
+      t1 = tj(t0, p0, p1, alpha);
+      t2 = tj(t1, p1, p2, alpha);
+      t3 = tj(t2, p2, p3, alpha);
+
+      let out = []
+
+      for(let t = t1; t < t2; t += (t2 - t1) / npoints) {
+
+        let a1 = p0.times((t1 - t) / (t1 - t0)).plus(p1.times((t - t0) / (t1 - t0)));
+        let a2 = p1.times((t2 - t) / (t2 - t1)).plus(p2.times((t - t1) / (t2 - t1)));
+        let a3 = p2.times((t3 - t) / (t3 - t2)).plus(p3.times((t - t2) / (t3 - t2)));
+        let b1 = a1.times((t2 - t) / (t2 - t0)).plus(a2.times((t - t0) / (t2 - t0)));
+        let b2 = a2.times((t3 - t) / (t3 - t1)).plus(a3.times((t - t1) / (t3 - t1)));
+        let c  = b1.times((t2 - t) / (t2 - t1)).plus(b2.times((t - t1) / (t2 - t1)));
+
+        out.push(c);
+
+      }      
+
+      return out;
+    }
+
+    function catmullRomChain(points, alpha = 0.95, npoints = 10) {
+      let out = [];
+      for(let i = 0; i < points.length - 3; ++i)
+        Array.prototype.push.apply(out, catmullRomSpline(points[i], points[i + 1], points[i + 2], points[i + 3], alpha, npoints));
+      return out;
+    }
+
   	function rpt(xrange, yrange, x = 0.0, y = 0.0) {
-		return [x + Math.random() * xrange, y + (Math.random() - 0.5) * 2 * yrange];
+		  return [x + Math.random() * xrange, y + (Math.random() - 0.5) * 2 * yrange];
   	}
 
   	function genPts() {
@@ -43,12 +98,23 @@
   		let ctx = document.querySelector('#canv').getContext('2d');
   		ctx.fillStyle = style;
   		pts.forEach(pt => {
-			ctx.fillRect(pt[0] - 2, pt[1] - 2, 4, 4);
+			 ctx.fillRect(pt[0] - 2, pt[1] - 2, 4, 4);
   		});
   	}
 
+    function drawLines(pts, style) {
+      let ctx = document.querySelector('#canv').getContext('2d');
+      ctx.beginPath();
+      ctx.strokeStyle = style;
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for(let i = 1; i < pts.length; ++i)
+        ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke();
+    }
+
   	function drawSlopes(slopes, style) {
   		let ctx = document.querySelector('#canv').getContext('2d');
+      ctx.beginPath();
   		ctx.strokeStyle = style;
   		slopes.forEach(item => {
   			let pt = item[0];
@@ -65,6 +131,7 @@
 
   	function drawSplines(pts, slopes, style) {
   		let ctx = document.querySelector('#canv').getContext('2d');
+      ctx.beginPath();
   		ctx.strokeStyle = style;
   		let m = 0.0;
   		for(let i = 0; i < pts.length - 2; ++i) {
@@ -88,7 +155,25 @@
   		}
   	}
 
-  	function genClust(pts, num) {
+    function drawCMSplines(pts, offset, style) {
+      let ctx = document.querySelector('#canv').getContext('2d');
+      ctx.beginPath();
+      ctx.strokeStyle = style;
+      let cmpts = catmullRomChain(pts);
+      console.log(cmpts);
+      let pt = cmpts[0];
+      ctx.moveTo(pt.x, pt.y);
+      for(let i = 1; i < cmpts.length; ++i) {
+        pt = cmpts[i];
+        ctx.lineTo(pt.x, pt.y + offset);
+      }
+      ctx.stroke();
+    }
+
+    const MAX = 1;
+    const MEAN = 2;
+
+  	function genClust(pts, num, type = MAX) {
   		let minx = 99999999.9;
   		let maxx = -99999999.9;
   		let miny = 99999999.9;
@@ -106,19 +191,65 @@
   			if(!result[i]) result[i] = [];
   			result[i].push(pt);
   		});
-  		for(let i = 0; i < num; ++i) {
-  			let cnt = result[i].length;
-  			if(cnt < 1) continue;
-  			let xsum = 0.0;
-  			let ysum = 0.0;
-  			for(let j = 0; j < cnt; ++j) {
-  				xsum += result[i][j][0];
-  				ysum += result[i][j][1];
-  			}
-  			result[i] = [xsum / cnt, ysum / cnt]
-  		}
-  		return result;
+      switch(type) {
+      case MEAN:
+        for(let i = 0; i < num; ++i) {
+    			let cnt = result[i].length;
+    			if(cnt > 0) {
+      			let xsum = 0.0;
+      			let ysum = 0.0;
+      			for(let j = 0; j < cnt; ++j) {
+      				xsum += result[i][j][0];
+      				ysum += result[i][j][1];
+      			}
+      			result[i] = [xsum / cnt, ysum / cnt]
+          }
+        }
+        break;
+      case MAX:
+        for(let i = 0; i < num; ++i) {
+          let cnt = result[i].length;
+          let max = null;
+          let ymax = 99999999.0;
+          for(let j = 0; j < cnt; ++j) {
+            if(result[i][j][1] < ymax) {
+              ymax = result[i][j][1];
+              max = result[i][j];
+            }
+          }
+          result[i] = max;
+        }
+        break;
+      default:
+        throw new Error('Unknown type ' + type);
+      }
+    	return result;
   	}
+
+    function _cross(p0, p1, p) {
+      return (p0[0] - p[0]) * (p1[1] - p[1]) - (p0[1] - p[1]) * (p1[0] - p[0]);
+    }
+
+    function _sort(p0, p1) {
+      return p0[0] == p1[0] ? p0[1] > p1[1] : p0[0] > p1[0];
+    }
+
+    function _length(p0, p1) {
+      return _p(p0[0] - p1[0], 2) + 0; //_p(p0[1] - p1[1], 2);
+    }
+
+    function getHull(pts_, alpha) {
+      alpha = alpha * alpha;
+      let pts = pts_.sort(_sort);
+      let hull = [pts[0], pts[1]];
+      for(let i = 2; i < pts.length; ++i) {
+        // The _length call limits the range of the search for a convex point; causes an alpha-like surface.
+        while(hull.length >= 2 && _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]) <= 0 && _length(hull[hull.length - 2], pts[i]) < alpha)
+          hull.pop();
+        hull.push(pts[i]);
+      }
+      return hull;
+    }
 
   	function getSlopes(pts) {
   		let slopes = [];
@@ -135,11 +266,14 @@
   	function run() {
   		let pts = genPts();
   		draw(pts, '#aaaaff');
-  		let clust = genClust(pts, 100);
-  		draw(clust, 'red');
-  		let slopes = getSlopes(clust);
-  		//drawSlopes(slopes, 'black');
-  		drawSplines(clust, slopes, 'green');
+      let hull = getHull(pts, 100);
+      draw(hull, 'red');
+      drawLines(hull, 'red');
+      for(let i = 0; i < hull.length; ++i)
+        hull[i] = new Point(hull[i][0], hull[i][1]);
+      //drawHull(hull)
+  		//drawCMSplines(hull, 0, 'green');
+      drawCMSplines(hull, -20, 'blue');
   	}
   </script>
 
