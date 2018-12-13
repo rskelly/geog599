@@ -12,24 +12,45 @@
 
   <script>
 
+    const _p = Math.pow;
+    const _s = Math.sqrt;
+    const _min = Math.min;
+    const _max = Math.max;
+
+    function _p3(t) {
+      return t*t*t;
+    }
+
+    function _p2(t) {
+      return t*t;
+    }
+
+    const defaultMaxBounds = [Number.MAX_VALUE, -Number.MAX_VALUE, Number.MAX_VALUE, -Number.MAX_VALUE, Number.MAX_VALUE, -Number.MAX_VALUE];
+    let pointCloud = null; // The loaded points from a text file.
+    let pointBounds = null; // min/max x, y, z
+
     class Point {
-      constructor(x, y) {
+      constructor(x, y, z) {
         this.x = x;
         this.y = y;
+        this.z = z;
       }
       times(s) {
-        return new Point(this.x * s, this.y * s);
+        return new Point(this.x * s, this.y * s, this.z * s);
       }
       plus(p) {
-        return new Point(this.x + p.x, this.y + p.y);
+        return new Point(this.x + p.x, this.y + p.y, this.z + p.z);
+      }
+      clone() {
+        return new Point(this.x, this.y, this.z);
+      }
+      equals(p) {
+        return this.x == p.x && this.y == p.y && this.z == p.z;
       }
     }
 
-    const _p = Math.pow;
-    const _s = Math.sqrt;
-
     function tj(ti, pi, pj, alpha) {
-      let a = _p(pj.x - pi.x, 2.0) + _p(pj.y - pi.y, 2.0);
+      let a = _p(pj.x - pi.x, 2.0) + _p(pj.z - pi.z, 2.0);
       let b = _s(a);
       let c = _p(b, alpha);
       return ti + c;
@@ -60,7 +81,7 @@
       return out;
     }
 
-    function catmullRomChain(points, alpha = 0.95, npoints = 10) {
+    function getCRSplines(points, alpha = 0.95, npoints = 10) {
       let out = [];
       for(let i = 0; i < points.length - 3; ++i)
         Array.prototype.push.apply(out, catmullRomSpline(points[i], points[i + 1], points[i + 2], points[i + 3], alpha, npoints));
@@ -71,215 +92,214 @@
 		  return [x + Math.random() * xrange, y + (Math.random() - 0.5) * 2 * yrange];
   	}
 
-  	function genPts() {
-  		let pts = [];
-  		let pt = [0, 500];
-  		for(let i = 0; i < 100; ++i) {
-  			pt = rpt(50, 100, i * 100, pt[1]);
-  			for(let j = 0; j < 10; ++j)
-  				pts.push(rpt(150, 30, pt[0], pt[1]));
-  		}
-  		return pts;
-  	}
-
-  	function p3(t) {
-  		return t*t*t;
-  	}
-
-  	function p2(t) {
-  		return t*t;
-  	}
-
   	function spline(t, p0, p1, m0, m1) {
-  		return (2 * p3(t) - 3 * p2(t) + 1) * p0 + (p3(t) - 2 * p2(t) + t) * m0 + (-2 * p3(t) + 3 * p2(t)) * p1 + (p3(t) - p2(t)) * m1;
+  		return (2 * _p3(t) - 3 * _p2(t) + 1) * p0 + (_p3(t) - 2 * _p2(t) + t) * m0 + (-2 * _p3(t) + 3 * _p2(t)) * p1 + (_p3(t) - _p2(t)) * m1;
   	}
 
   	function draw(pts, style) {
   		let ctx = document.querySelector('#canv').getContext('2d');
   		ctx.fillStyle = style;
   		pts.forEach(pt => {
-			 ctx.fillRect(pt[0] - 2, pt[1] - 2, 4, 4);
+			 ctx.fillRect(pt.x - 2, pt.z - 2, 4, 4);
   		});
   	}
 
-    function drawLines(pts, style) {
+    function drawLines(pts, style, offset = 0.0) {
       let ctx = document.querySelector('#canv').getContext('2d');
       ctx.beginPath();
       ctx.strokeStyle = style;
-      ctx.moveTo(pts[0][0], pts[0][1]);
+      ctx.moveTo(pts[0].x, pts[0].z);
       for(let i = 1; i < pts.length; ++i)
-        ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.lineTo(pts[i].x, pts[i].z + offset);
       ctx.stroke();
     }
-
-  	function drawSlopes(slopes, style) {
-  		let ctx = document.querySelector('#canv').getContext('2d');
-      ctx.beginPath();
-  		ctx.strokeStyle = style;
-  		slopes.forEach(item => {
-  			let pt = item[0];
-  			let slope = item[1];
-  			let x0 = pt[0] - 10.0;
-  			let x1 = x0 + 20.0;
-  			let y0 = pt[1] - slope * 10.0;
-  			let y1 = pt[1] + slope * 10.0;
-  			ctx.moveTo(x0, y0);
-  			ctx.lineTo(x1, y1);
-  			ctx.stroke();
-  		});
-  	}
-
-  	function drawSplines(pts, slopes, style) {
-  		let ctx = document.querySelector('#canv').getContext('2d');
-      ctx.beginPath();
-  		ctx.strokeStyle = style;
-  		let m = 0.0;
-  		for(let i = 0; i < pts.length - 2; ++i) {
-  			let a = pts[i];
-  			let b = pts[i + 1];
-  			let m0 = m;
-  			let m1 = -slopes[i][1];
-  			let p0 = a[1];
-  			let p1 = b[1];
-  			for(let j = 0; j <= 10; ++j) {
-  				let x = a[0] + (b[0] - a[0]) / 10.0 * j;
-  				let y = spline(j / 10.0, p0, p1, m0, m1);
-  				if(j == 0) {
-  					ctx.moveTo(x, y);
-  				} else {
-  					ctx.lineTo(x, y);
-  				}
-  			}
-			ctx.stroke();
-  			m = m1;
-  		}
-  	}
-
-    function drawCMSplines(pts, offset, style) {
-      let ctx = document.querySelector('#canv').getContext('2d');
-      ctx.beginPath();
-      ctx.strokeStyle = style;
-      let cmpts = catmullRomChain(pts);
-      console.log(cmpts);
-      let pt = cmpts[0];
-      ctx.moveTo(pt.x, pt.y);
-      for(let i = 1; i < cmpts.length; ++i) {
-        pt = cmpts[i];
-        ctx.lineTo(pt.x, pt.y + offset);
-      }
-      ctx.stroke();
-    }
-
-    const MAX = 1;
-    const MEAN = 2;
-
-  	function genClust(pts, num, type = MAX) {
-  		let minx = 99999999.9;
-  		let maxx = -99999999.9;
-  		let miny = 99999999.9;
-  		let maxy = -99999999.9;
-  		pts.forEach(pt => {
-  			if(minx > pt[0]) minx = pt[0];
-  			if(miny > pt[1]) miny = pt[1];
-  			if(maxx < pt[0]) maxx = pt[0];
-  			if(maxy < pt[1]) maxy = pt[1];
-  		});
-  		let w = (maxx - minx) / num;
-  		let result = new Array(num);
-  		pts.forEach(pt => {
-  			let i = parseInt((pt[0] - minx) / (maxx - minx) * num);
-  			if(!result[i]) result[i] = [];
-  			result[i].push(pt);
-  		});
-      switch(type) {
-      case MEAN:
-        for(let i = 0; i < num; ++i) {
-    			let cnt = result[i].length;
-    			if(cnt > 0) {
-      			let xsum = 0.0;
-      			let ysum = 0.0;
-      			for(let j = 0; j < cnt; ++j) {
-      				xsum += result[i][j][0];
-      				ysum += result[i][j][1];
-      			}
-      			result[i] = [xsum / cnt, ysum / cnt]
-          }
-        }
-        break;
-      case MAX:
-        for(let i = 0; i < num; ++i) {
-          let cnt = result[i].length;
-          let max = null;
-          let ymax = 99999999.0;
-          for(let j = 0; j < cnt; ++j) {
-            if(result[i][j][1] < ymax) {
-              ymax = result[i][j][1];
-              max = result[i][j];
-            }
-          }
-          result[i] = max;
-        }
-        break;
-      default:
-        throw new Error('Unknown type ' + type);
-      }
-    	return result;
-  	}
 
     function _cross(p0, p1, p) {
-      return (p0[0] - p[0]) * (p1[1] - p[1]) - (p0[1] - p[1]) * (p1[0] - p[0]);
+      return (p0.x - p.x) * (p1.z - p.z) - (p0.z - p.z) * (p1.x - p.x);
     }
 
     function _sort(p0, p1) {
-      return p0[0] == p1[0] ? p0[1] > p1[1] : p0[0] > p1[0];
+      return p0.x == p1.x ? p0.z > p1.z : p0.x > p1.x;
     }
 
     function _length(p0, p1) {
-      return _p(p0[0] - p1[0], 2) + 0; //_p(p0[1] - p1[1], 2);
+      return _p(p0.x - p1.x, 2) + 0; //_p(p0.z - p1.z, 2);
     }
 
-    function getHull(pts_, alpha) {
-      alpha = alpha * alpha;
+    // Finds the maximum z within winsize Cartesian distance of the point at idx.
+    function _zwinsize(pts, idx, winsize) {
+      let z = pts[idx].z;
+      for(let i = idx + 1; i < pts.length; ++i) {
+        if(_length(pts[idx], pts[i]) > winsize) break;
+        z = _max(z, pts[i].z);
+      }
+      for(let i = idx - 1; i >= 0; --i) {
+        if(_length(pts[idx], pts[i]) > winsize) break;
+        z = _max(z, pts[i].z);
+      }
+      return z;
+    }
+
+    function getHull(pts_, alpha, winsize = 0) {
+      alpha *= alpha;
+      winsize *= winsize;
       let pts = pts_.sort(_sort);
       let hull = [pts[0], pts[1]];
       for(let i = 2; i < pts.length; ++i) {
         // The _length call limits the range of the search for a convex point; causes an alpha-like surface.
-        while(hull.length >= 2 && _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]) <= 0 && _length(hull[hull.length - 2], pts[i]) < alpha)
+        while(hull.length >= 2 && _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]) >= 0 && _length(hull[hull.length - 2], pts[i]) <= alpha)
           hull.pop();
         hull.push(pts[i]);
+      }
+      if(winsize > 0) {
+        // Remove clusters from the hull. Take the highest elevation in the cluster and replace the remaining
+        // null nodes' z value.
+        hull0 = [hull[0].clone()];
+        let i = 0, j = 1;
+        while(i < hull.length) {
+          while(j < hull.length && _length(hull[i], hull[j]) < winsize)
+            ++j;
+          if(j == hull.length) {
+            if(!hull0[hull0.length - 1].equals(hull[j - 1]))
+              hull0.push(hull[j - 1].clone());
+            break;
+          }
+          let pt = hull[j].clone();
+          pt.z = _zwinsize(hull, j, winsize);
+          hull0.push(pt);
+          i = j + 1;
+          j = i + 1;
+        }
+        return hull0;
       }
       return hull;
     }
 
-  	function getSlopes(pts) {
-  		let slopes = [];
-  		for(let i = 1; i < pts.length - 1; ++i) {
-  			let a = pts[i - 1];
-  			let b = pts[i];
-  			let c = pts[i + 1];
-  			let sca = (c[1] - a[1]) / (c[0] - a[0]);
-  			slopes.push([b, sca])
-  		}
-  		return slopes;
-  	}
+    let alpha = 25;
+    let winsize = 10;
 
   	function run() {
-  		let pts = genPts();
-  		draw(pts, '#aaaaff');
-      let hull = getHull(pts, 100);
-      draw(hull, 'red');
-      drawLines(hull, 'red');
-      for(let i = 0; i < hull.length; ++i)
-        hull[i] = new Point(hull[i][0], hull[i][1]);
-      //drawHull(hull)
-  		//drawCMSplines(hull, 0, 'green');
-      drawCMSplines(hull, -20, 'blue');
+
+      let canv = document.querySelector('#canv'); 
+      let ctx = canv.getContext('2d');
+      ctx.clearRect(0, 0, canv.width, canv.height);
+
+      let colors = ['red', 'blue', 'orange', 'green', 'yellow', 'fuscia', 'cyan', 'purple'];
+
+      transformPointCloud();
+
+      let pc = scalePointCloud(pointCloud);
+  		draw(pc, '#aaffaa');
+
+      let hulls = [
+        getHull(pointCloud, alpha, winsize),
+        //getHull(pointCloud, 25, 0),
+        //getHull(pointCloud, 25, 25)
+      ];
+
+      let splines = [];
+      hulls.forEach(hull => { splines.push(getCRSplines(hull)); });
+
+      let hs = [];
+      hulls.forEach(hull => { hs.push(scalePointCloud(hull)); });
+
+      let sp = [];
+      splines.forEach(spline => { sp.push(scalePointCloud(spline)); });
+
+      for(let i = 0; i < hulls.length; ++i) {
+        draw(hs[i], colors[i]);
+        drawLines(hs[i], colors[i]);
+        drawLines(sp[i], colors[i], -20);
+      }
   	}
+
+    function update(evt) {
+      if(evt)
+        evt.preventDefault();
+      alpha = parseFloat(document.querySelector('#alpha').value);
+      winsize = parseFloat(document.querySelector('#winsize').value);
+      run();
+    }
+
+    /**
+     * Transforms the 3D Cartesian point cloud so that, instead of y/x coordinates,
+     * we have y=0 and x= the range from an origin at the minimum corner of the cloud.
+     */
+    function transformPointCloud() {
+      let x = pointBounds[0];
+      let y = pointBounds[2];
+      let maxD = 0;
+      for(let i = 0; i < pointCloud.length; ++i) {
+        let pt = pointCloud[i];
+        let d = _s(_p(pt.x - x, 2) + _p(pt.y - y, 2));
+        pt.x = d;
+        pt.y = 0;
+        if(d > maxD) maxD = d;
+      }
+      pointBounds[0] = 0.0;
+      pointBounds[1] = maxD;
+      pointBounds[2] = 0.0;
+      pointBounds[3] = 0.0;
+    }
+
+    /**
+     * Scales point cloud to screen coords.
+     */
+    function scalePointCloud(pc) {
+      let canv = document.querySelector('#canv');
+      let cw = canv.width;
+      let ch = canv.height;
+      let dx = pointBounds[1] - pointBounds[0];
+      let dz = pointBounds[5] - pointBounds[4];
+      let scale = _min(cw / dx, ch / dz);
+      let scaled = [];
+      for(let i = 0; i < pc.length; ++i) {
+        let pt = pc[i].clone();;
+        pt.x = (pt.x - pointBounds[0]) * scale;
+        pt.z = (ch - 20) - (pt.z - pointBounds[4]) * scale;
+        scaled.push(pt);
+      }
+      return scaled;
+    }
+
+    function loadFile(evt) {
+      evt.preventDefault();
+      pointCloud = [];
+      pointBounds = [];
+      Array.prototype.push.apply(pointBounds, defaultMaxBounds);
+      let file = document.querySelector('#filename').files[0];
+      let reader = new FileReader();
+      reader.addEventListener('load', evt => {
+        let rows = evt.target.result.split(/\n/);
+        rows.forEach(row => {
+          row = row.split(',').slice(0, 3).map(parseFloat);
+          let pt = new Point(row[0], row[1], row[2]);
+          if(isNaN(pt.x)) return;
+          pointCloud.push(pt);
+          pointBounds[0] = _min(pt.x, pointBounds[0]);
+          pointBounds[1] = _max(pt.x, pointBounds[1]);
+          pointBounds[2] = _min(pt.y, pointBounds[2]);
+          pointBounds[3] = _max(pt.y, pointBounds[3]);
+          pointBounds[4] = _min(pt.z, pointBounds[4]);
+          pointBounds[5] = _max(pt.z, pointBounds[5]);
+        });
+        update();
+      });
+      reader.readAsText(file);
+    }
   </script>
 
 </head>
 
-<body onload="run();" style="background-color: black">
-  <canvas id="canv" width="2400" height="1200" style="background-color: white"></canvas>
+<body style="background-color: black">
+  <form>
+    <table>
+      <tr><td><label for="filename">File</label></td><td><input id="filename" name="filename" type="file" /></td></tr>
+      <tr><td><label for="alpha">Alpha</label></td><td><input id="alpha" name="alpha" onchange="update(event);" value="25" /></td></tr>
+      <tr><td><label for="winsize">window Size</label></td><td><input id="winsize" name="winsize" onchange="update(event);" value="10" /></td></tr>
+      <tr><td colspan="2"><button onclick="loadFile(event);">Load</button></td></tr>
+    </table>
+  </form>
+  <canvas id="canv" width="2000" height="600" style="background-color: white"></canvas>
 </body>
 </html>
