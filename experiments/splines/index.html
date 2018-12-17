@@ -88,14 +88,6 @@
       return out;
     }
 
-  	function rpt(xrange, yrange, x = 0.0, y = 0.0) {
-		  return [x + Math.random() * xrange, y + (Math.random() - 0.5) * 2 * yrange];
-  	}
-
-  	function spline(t, p0, p1, m0, m1) {
-  		return (2 * _p3(t) - 3 * _p2(t) + 1) * p0 + (_p3(t) - 2 * _p2(t) + t) * m0 + (-2 * _p3(t) + 3 * _p2(t)) * p1 + (_p3(t) - _p2(t)) * m1;
-  	}
-
   	function draw(pts, style) {
   		let ctx = document.querySelector('#canv').getContext('2d');
   		ctx.fillStyle = style;
@@ -103,6 +95,17 @@
 			 ctx.fillRect(pt.x - 2, pt.z - 2, 4, 4);
   		});
   	}
+
+    function drawSegs(segs, style) {
+      let ctx = document.querySelector('#canv').getContext('2d');
+      ctx.strokeStyle = style;
+      segs.forEach(seg => {
+        ctx.beginPath();
+        ctx.moveTo(seg[0].x, seg[0].z);
+        ctx.lineTo(seg[1].x, seg[1].z);
+        ctx.stroke();
+      });
+    }
 
     function drawLines(pts, style, offset = 0.0) {
       let ctx = document.querySelector('#canv').getContext('2d');
@@ -114,65 +117,97 @@
       ctx.stroke();
     }
 
+    // Tests which side of the line, described by p0 and p1, p is on.
     function _cross(p0, p1, p) {
       return (p0.x - p.x) * (p1.z - p.z) - (p0.z - p.z) * (p1.x - p.x);
     }
 
+    // Sort the points on x first, then y.
     function _sort(p0, p1) {
       return p0.x == p1.x ? p0.z > p1.z : p0.x > p1.x;
     }
 
+    // Return the squared distance between the points, but only in x.
     function _length(p0, p1) {
       return _p(p0.x - p1.x, 2) + 0; //_p(p0.z - p1.z, 2);
     }
 
     // Finds the maximum z within winsize Cartesian distance of the point at idx.
-    function _zwinsize(pts, idx, winsize) {
+    function _inwindow(pts, idx, winsize) {
       let z = pts[idx].z;
+      let out = idx;
       for(let i = idx + 1; i < pts.length; ++i) {
-        if(_length(pts[idx], pts[i]) > winsize) break;
-        z = _max(z, pts[i].z);
+        if(_length(pts[idx], pts[i]) <= winsize) {
+          if(pts[i].z > z)
+            out = i;
+        } else {
+          break;
+        }
       }
       for(let i = idx - 1; i >= 0; --i) {
-        if(_length(pts[idx], pts[i]) > winsize) break;
-        z = _max(z, pts[i].z);
+        if(_length(pts[idx], pts[i]) <= winsize) {
+          if(pts[i].z > z)
+            out = i;
+        } else {
+          break;
+        }
       }
-      return z;
+      return pts[out];
     }
 
-    function getHull(pts_, alpha, winsize = 0) {
+    function getHull(pts_, alpha) {
       alpha *= alpha;
       winsize *= winsize;
       let pts = pts_.sort(_sort);
       let hull = [pts[0], pts[1]];
       for(let i = 2; i < pts.length; ++i) {
         // The _length call limits the range of the search for a convex point; causes an alpha-like surface.
-        while(hull.length >= 2 && _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]) >= 0 && _length(hull[hull.length - 2], pts[i]) <= alpha)
+        while(hull.length >= 2 && _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]) >= 0 && (alpha <= 0 || _length(hull[hull.length - 2], pts[i]) <= alpha))
           hull.pop();
         hull.push(pts[i]);
       }
-      if(winsize > 0) {
-        // Remove clusters from the hull. Take the highest elevation in the cluster and replace the remaining
-        // null nodes' z value.
-        hull0 = [hull[0].clone()];
-        let i = 0, j = 1;
-        while(i < hull.length) {
-          while(j < hull.length && _length(hull[i], hull[j]) < winsize)
-            ++j;
-          if(j == hull.length) {
-            if(!hull0[hull0.length - 1].equals(hull[j - 1]))
-              hull0.push(hull[j - 1].clone());
-            break;
-          }
-          let pt = hull[j].clone();
-          pt.z = _zwinsize(hull, j, winsize);
-          hull0.push(pt);
-          i = j + 1;
-          j = i + 1;
-        }
-        return hull0;
-      }
       return hull;
+    }
+
+    function getNormal2(pt0, pt1, length = 10) {
+      let dx = pt1.x - pt0.x;
+      let dz = pt1.z - pt0.z;
+      let h = _s(_p2(dx) + _p2(dz));
+      let p = length / h;
+      let pt2 = new Point(pt0.x + dx / 2.0, 0, pt0.z + dz / 2.0);
+      let pt3 = new Point(pt2.x + p * dz, 0, pt2.z + p * -dx);
+      return [pt2, pt3];
+    }
+
+    function getNormal3(pt0, pt1, pt2, length = 10) {
+      // These two angles are on the underside, relative to vertical.
+      let a0 = Math.atan2(pt0.z - pt1.z, pt0.x - pt1.x);  
+      let a1 = Math.atan2(pt2.z - pt1.z, pt2.x - pt1.x);
+      let a = a0 - ((a0 - a1) / 2.0);
+      while(a < 0.0) a += Math.PI * 2.0;
+      while(a > Math.PI * 2.0) a -= Math.PI * 2.0;
+      if(a > Math.PI) a -= Math.PI;
+      let pt = new Point(pt1.x + Math.cos(a) * length, 0, pt1.z + Math.sin(a) * length);
+      return [pt1, pt];
+    }
+
+    function getSlope(pt0, pt1) {
+      return (pt1.z - pt0.z) / (pt1.x - pt0.x);
+    }
+
+    function filterHull(hull) {
+      // Remove clusters from the hull. Take the highest elevation in the cluster and replace the remaining
+      // null nodes' z value.
+      let hull0 = [hull[0].clone()];
+      for(let i = 1; i < hull.length; ++i) {
+        let m = -1 / getSlope(hull[i - 1], hull[i])
+        console.log(m, Math.abs(m));
+        if(Math.abs(m) > 1)
+          hull0.push(hull[i - 1].z > hull[i].z ? hull[i - 1] : hull[i]);
+      }
+      if(!hull0[0].equals(hull[hull.length - 1]))
+        hull0.push(hull[hull.length - 1]);
+      return hull0;
     }
 
     let alpha = 25;
@@ -184,33 +219,49 @@
       let ctx = canv.getContext('2d');
       ctx.clearRect(0, 0, canv.width, canv.height);
 
-      let colors = ['red', 'blue', 'orange', 'green', 'yellow', 'fuscia', 'cyan', 'purple'];
+      let colors = ['orange', 'red', 'blue', 'green', 'yellow', 'fuscia', 'cyan', 'purple'];
 
       transformPointCloud();
 
+      // Get the upper alpha shape of the point cloud.
+      let hull = getHull(pointCloud, alpha);
+
+      // Get the perpendiculars as a new point set, with the upper points of the perps.
+      let perps = [];
+      for(let i = 0; i < hull.length - 1; ++i)
+        perps.push(scalePointCloud(getNormal2(hull[i], hull[i + 1], 20)));
+      for(let i = 0; i < hull.length - 2; ++i)
+        perps.push(scalePointCloud(getNormal3(hull[i], hull[i + 1], hull[i + 2], 20)));
+
+      // Get the alpha hull of the perpendicular end points.
+      let perphull = getHull(perps.map(perp => { return perp[1]; }), alpha);
+
+      // Get the splines from the perp hull.
+      let spline = getCRSplines(perphull);
+
+      // Scaled hull points.
+      let hs = scalePointCloud(hull);
+
+      // Scaled perps
+      let ps = [];
+      for(let i = 0; i < perps.length; ++i)
+        ps.push(scalePointCloud(perps[i]));
+
+      // Scale the spline
+      let ss = scalePointCloud(spline);
+
+      // Scale point cloud.
       let pc = scalePointCloud(pointCloud);
-  		draw(pc, '#aaffaa');
 
-      let hulls = [
-        getHull(pointCloud, alpha, winsize),
-        //getHull(pointCloud, 25, 0),
-        //getHull(pointCloud, 25, 25)
-      ];
+      // Draw point cloud
+      draw(pc, '#aaffaa');
 
-      let splines = [];
-      hulls.forEach(hull => { splines.push(getCRSplines(hull)); });
-
-      let hs = [];
-      hulls.forEach(hull => { hs.push(scalePointCloud(hull)); });
-
-      let sp = [];
-      splines.forEach(spline => { sp.push(scalePointCloud(spline)); });
-
-      for(let i = 0; i < hulls.length; ++i) {
-        draw(hs[i], colors[i]);
-        drawLines(hs[i], colors[i]);
-        drawLines(sp[i], colors[i], -20);
-      }
+      // Draw perp segments.
+      drawSegs(ps, colors[0]);
+      //draw(hs, colors[1]);
+      //drawLines(hs, colors[1]);
+      //drawLines(ss, colors[2], -20);
+      
   	}
 
     function update(evt) {
@@ -264,42 +315,68 @@
 
     function loadFile(evt) {
       evt.preventDefault();
+      document.querySelector('#loading').innerHTML = 'Loading..';
       pointCloud = [];
       pointBounds = [];
       Array.prototype.push.apply(pointBounds, defaultMaxBounds);
-      let file = document.querySelector('#filename').files[0];
-      let reader = new FileReader();
+      let file = document.querySelector('#filename').selectedOptions[0].text;
+      let reader = new XMLHttpRequest();
+      reader.overrideMimeType('text/plain');
+      reader.open('GET', file);
       reader.addEventListener('load', evt => {
-        let rows = evt.target.result.split(/\n/);
-        rows.forEach(row => {
-          row = row.split(',').slice(0, 3).map(parseFloat);
-          let pt = new Point(row[0], row[1], row[2]);
-          if(isNaN(pt.x)) return;
-          pointCloud.push(pt);
-          pointBounds[0] = _min(pt.x, pointBounds[0]);
-          pointBounds[1] = _max(pt.x, pointBounds[1]);
-          pointBounds[2] = _min(pt.y, pointBounds[2]);
-          pointBounds[3] = _max(pt.y, pointBounds[3]);
-          pointBounds[4] = _min(pt.z, pointBounds[4]);
-          pointBounds[5] = _max(pt.z, pointBounds[5]);
-        });
-        update();
+        if(reader.readyState == 4) {
+          let rows = reader.responseText.split(/\n/);
+          rows.forEach(row => {
+            row = row.split(',').slice(0, 3).map(parseFloat);
+            let pt = new Point(row[0], row[1], row[2]);
+            if(isNaN(pt.x)) return;
+            pointCloud.push(pt);
+            pointBounds[0] = _min(pt.x, pointBounds[0]);
+            pointBounds[1] = _max(pt.x, pointBounds[1]);
+            pointBounds[2] = _min(pt.y, pointBounds[2]);
+            pointBounds[3] = _max(pt.y, pointBounds[3]);
+            pointBounds[4] = _min(pt.z, pointBounds[4]);
+            pointBounds[5] = _max(pt.z, pointBounds[5]);
+          });
+          document.querySelector('#loading').innerHTML = '';
+          update();
+        }
       });
-      reader.readAsText(file);
+      reader.send();
     }
+
+    const filenames = ['mt_doug_1.txt', 'mt_doug_2.txt', 'mt_doug_3.txt'];
+
+    function init() {
+      let w = document.body.clientWidth;
+      let h = 400;//document.innerHeight;
+      let canv = document.querySelector('#canv');
+      canv.width = w;
+      canv.height = h;
+      let sel = document.querySelector('#filename');
+      sel.add(new Option('', '- Select One -'));
+      let i = 0;
+      filenames.forEach(f => {
+        sel.add(new Option(f, ++i));
+      });
+      sel.addEventListener('change', loadFile);
+    }
+
   </script>
 
 </head>
 
-<body style="background-color: black">
+<body onload="init();">
   <form>
     <table>
-      <tr><td><label for="filename">File</label></td><td><input id="filename" name="filename" type="file" /></td></tr>
+      <tr><td><label for="filename">File</label></td><td><select name="filename" id="filename"></select> <span id="loading"></span></td></tr>
       <tr><td><label for="alpha">Alpha</label></td><td><input id="alpha" name="alpha" onchange="update(event);" value="25" /></td></tr>
-      <tr><td><label for="winsize">window Size</label></td><td><input id="winsize" name="winsize" onchange="update(event);" value="10" /></td></tr>
-      <tr><td colspan="2"><button onclick="loadFile(event);">Load</button></td></tr>
+      <tr><td><label for="winsize">Window Size</label></td><td><input id="winsize" name="winsize" onchange="update(event);" value="10" /></td></tr>
+      <!--<tr><td colspan="2"><button onclick="loadFile(event);">Load</button></td></tr>-->
     </table>
   </form>
-  <canvas id="canv" width="2000" height="600" style="background-color: white"></canvas>
+  <div style="border:1px solid #ccc">
+    <canvas id="canv" width="2000" height="600" style="background-color: white"></canvas>
+  </div>
 </body>
 </html>

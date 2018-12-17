@@ -1,3 +1,4 @@
+#include <i2c_t3.h>
 
 /**
  * Register addresses for the gyroscope chip.
@@ -180,3 +181,85 @@
 // Auto increment addresses.
 #define AUTO_INC_ON  0b1
 #define AUTO_INC_OFF  0b0
+
+class MinIMU9v5 {
+private:
+  byte m_gyroAddr;
+  byte m_magAddr;
+
+  uint16_t readShort(byte* buf, int pos) {
+    return buf[pos++] | (buf[pos] << 8);
+  }
+  
+public:
+
+  MinIMU9v5(byte gyroAddr = 0x6A, byte magAddr = 0) :
+    m_gyroAddr(gyroAddr), m_magAddr(magAddr) {
+  }
+
+  void init() {
+    Wire.begin();//I2C_MASTER, m_addr, I2C_PINS_18_19, I2C_PULLUP_INT, 400000);
+
+    // Configure gyroscope
+    writeByte(m_gyroAddr, CTRL2_G, (GDR_1660Hz << 4) | (GFS_245dps << 2));
+    writeByte(m_gyroAddr, CTRL7_G, 0);
+
+    // Configure accelerometr
+    writeByte(m_gyroAddr, CTRL1_XL, (ADR_1660Hz << 4) | (AFS_2g << 2) | (AAFB_400Hz << 1));
+
+    // Configure other.
+    writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 3));
+    
+  }
+
+  void getState(uint16_t* gyro, uint16_t* accel) {
+    static byte buf[6];
+    int pos;
+
+    // Gyro and accel.
+    readBytes(m_gyroAddr, OUTX_L_G, buf, 12);
+    pos = 0;
+    gyro[0] = readShort(buf, pos);  pos += 2;
+    gyro[1] = readShort(buf, pos);  pos += 2;
+    gyro[2] = readShort(buf, pos);  pos += 2;
+
+    accel[0] = readShort(buf, pos);  pos += 2;
+    accel[1] = readShort(buf, pos);  pos += 2;
+    accel[2] = readShort(buf, pos);  pos += 2;
+  }
+  
+  byte readByte(byte addr, byte reg) {
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    Wire.endTransmission(false);
+    Wire.requestFrom(addr, (byte) 1);
+    return Wire.read();
+  }
+
+  int readBytes(byte addr, byte reg, byte* buf, int len) {
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    Wire.endTransmission(false);
+    Wire.requestFrom(addr, (byte) len);
+    int i = 0;
+    while(Wire.available())
+      buf[i++] = Wire.read();
+    return i;
+  }
+
+  void writeByte(byte addr, byte reg, byte val) {
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    Wire.write(val);
+    Wire.endTransmission(true);
+  }
+
+  void writeBytes(byte addr, byte reg, byte* buf, int len) {
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    for(int i = 0; i < len; ++i)
+      Wire.write(buf[i]);
+    Wire.endTransmission(true);
+  }
+  
+};

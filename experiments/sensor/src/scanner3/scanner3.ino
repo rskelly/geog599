@@ -1,6 +1,7 @@
-#include <i2c_t3.h>
+//#include <ADC.h>
+#include "minimu9v5.h"
 
-#define BUFFER_SIZE 64
+#define BUFFER_SIZE 512
 #define SERIAL_SIZE 255               // Has to be a byte
 
 #define PWM_1       ((byte) 23)       // PWM output pin 1
@@ -10,33 +11,48 @@
 volatile unsigned long rangeTimes[BUFFER_SIZE];   // Time of next laser pulse on serial.
 volatile unsigned short ranges[BUFFER_SIZE];   // Time of next laser pulse on serial.
 volatile unsigned short angles[BUFFER_SIZE];      // Current angle reading. 12 bits > 0 - 4096
+volatile unsigned short adcValue;
 volatile size_t rangeTimeIdx = 0;
 volatile size_t rangeIdx = 0;
 volatile size_t lastIdx = 0;
 
+//ADC adc;
+//MinIMU9v5 imu;
+
 void setup() {
 
   // Set up the serial port for output.
-  Serial.begin(921600);
+  Serial.begin(115200);//921600);
   
   // Set up the serial port for the laser.
-  Serial1.begin(921600);
+  Serial1.begin(115200);//921600);
   Serial1.setTX(1);
   Serial1.setRX(0);
 
+  //imu.init();
+  
   analogReference(DEFAULT);
+
+  /*
+  adc.setAveraging(10);
+  adc.setResolution(16);
+  adc.setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED);
+  adc.setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED);
+  adc.enableInterrupts(ADC_0);
+  adc.startContinuous(ENC_OUT, ADC_0);
+  */
   
   // Pins for the drive motor speed.
   pinMode(PWM_1, OUTPUT);
   
   // Input pin for encoder.
-  pinMode(ENC_OUT, INPUT);
+  //pinMode(ENC_OUT, INPUT);
   
   // Pin for laser sync
   pinMode(LASER_SYNC, INPUT);
   
   // Start the motor.
-  analogWrite(PWM_1, 64);
+  //analogWrite(PWM_1, 255);
 
   // Interrupts for laser pulse and encoder update.
   attachInterrupt(LASER_SYNC, laserSyncISR, FALLING); // Falls when the shot is taken.
@@ -46,6 +62,8 @@ void setup() {
 void loop() {
 
   static byte buf[SERIAL_SIZE] = {'#'};
+  static uint16_t gyro[3];
+  static uint16_t accel[3];
   static size_t idx;
   static size_t i;
   
@@ -53,21 +71,31 @@ void loop() {
     laserRange();
 
   idx = 2;
+
+  unsigned short range;
   
-  while(lastIdx < rangeIdx && idx < (SERIAL_SIZE - 16)) {
+  while(lastIdx < rangeIdx && idx < (SERIAL_SIZE - 14)) {
     i = lastIdx % BUFFER_SIZE;
-    buf[idx++] = 'R';
-    idx = writeUShort(buf, idx, ranges[i]);
-    idx = writeUShort(buf, idx, angles[i]);
-    idx = writeULong(buf, idx, rangeTimes[i]);
+    range = ranges[i];
+    //imu.getState(gyro, accel);
+    if(range > 0) {
+      buf[idx++] = '!';
+      buf[idx++] = 'R';
+      idx = writeUShort(buf, idx, range);
+      idx = writeUShort(buf, idx, gyro[1]); //angles[i]);
+      idx = writeULong(buf, idx, rangeTimes[i]);
+    }
     ++lastIdx;
   }
 
   if(idx > 2) {
-    buf[1] = idx;
+    buf[1] = idx - 2;
     Serial.write(buf, idx);
-    delay(1);
   }
+}
+
+void adc0_isr() {
+  adcValue = 1; //adc.analogReadContinuous(ADC_0);
 }
 
 /**
@@ -77,8 +105,8 @@ void laserSyncISR() {
   // Get the range of the measured time.
   rangeTimes[rangeTimeIdx % BUFFER_SIZE] = micros();
   
-  // Get the current angle. There will be a ~10us delay here.
-  angles[rangeTimeIdx % BUFFER_SIZE] = analogRead(ENC_OUT);
+  // Get the current angle. 
+  angles[rangeTimeIdx % BUFFER_SIZE] = adcValue;
   
   ++rangeTimeIdx;
 }
@@ -88,23 +116,25 @@ void laserSyncISR() {
  */
 void laserRange() {
   static byte laserBuf[BUFFER_SIZE];
+  static size_t bufIdx = 0;
+  static size_t readIdx = 0;
+
+  while(Serial1.available()) {
+    laserBuf[bufIdx % BUFFER_SIZE] = Serial1.read();
+    ++bufIdx;
+  }
+
+  size_t i;
   
-  size_t avail;
-  byte a = 0, b;
-  
-  while((avail = Serial1.available()) >= 2) {  
-    if(avail > BUFFER_SIZE) avail = BUFFER_SIZE;
-    int rd = Serial1.readBytes(laserBuf, (avail / 2) * 2);
-    for(int i = 0; i < rd; i += 2) {
-      if(laserBuf[i + 1] & 0x80) {
-        --i;  // TODO: Are we one ahead, or one behind?
-        continue;
-      }
-      a = laserBuf[i];
-      b = laserBuf[i + 1];
-      ranges[rangeIdx % BUFFER_SIZE] = ((a & 0x7f) << 7) | (b & 0x7f);
-      ++rangeIdx;
+  while(readIdx < bufIdx - 1) {
+    i = readIdx % BUFFER_SIZE;  
+    if(!(laserBuf[i] & 0x80)) {
+      ++readIdx;
+      continue;
     }
+    ranges[rangeIdx % BUFFER_SIZE] = ((laserBuf[i] & 0x7f) << 7) | (laserBuf[i + 1] & 0x7f);
+    readIdx += 2;
+    ++rangeIdx;
   }
 }
 

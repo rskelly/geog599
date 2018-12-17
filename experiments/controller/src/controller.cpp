@@ -48,7 +48,7 @@ public:
 			return false;
 		}
 		*/
-		if(!m_scanner.open("/dev/ttyACM0", B921600)) {
+		if(!m_scanner.open("/dev/ttyACM0", B115200)) {//B921600)) {
 			std::cerr << "Failed to connect to scanner.\n";
 			return false;
 		}
@@ -89,19 +89,18 @@ public:
 			l.pop_front();
 	}
 
-	bool step(double t) {
+	bool step(double t, sensor::Range& range, sensor::Orientation& orientation) {
 		// IMU
 		//const sensor::MinIMU9v5State& imu = m_imu.getState();
 		//if(imu.updated())
 		//	imu.print(std::cout);
 
 		// Laser
-		sensor::Range range;
-		sensor::Orientation orientation;
 		if(m_scanner.readData(range, orientation)) {
-			if(range.status() == 0)
-				std::cout << range.angle() << ", " << range.range() << ", " << range.x() << ", " << range.y() << ", " << range.timestamp() << "\n";
-			//std::cout << range.x() << ", " << range.y() << ", " << range.z() << "\n";
+			if(range.status() == 0) {
+				//std::cout << range.angle() << ", " << range.range() << ", " << range.x() << ", " << range.y() << ", " << range.timestamp() << "\n";
+				std::cout << range.x() << ", " << range.y() << ", " << range.z() << "\n";
+			}
 		}
 
 		// Encoder
@@ -126,11 +125,14 @@ public:
 int main(int argc, char** argv) {
 
 	Controller cont;
+	sensor::Range range(59030, 1);
+	sensor::Orientation orientation;
+
 	double t = 0.0;
 	if(cont.start()) {
 		while(true) {
 			t += 1.0;
-			if(!cont.step(t))
+			if(!cont.step(t, range, orientation))
 				break;
 			std::this_thread::yield();
 		}

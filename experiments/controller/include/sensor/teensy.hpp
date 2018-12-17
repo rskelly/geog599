@@ -81,10 +81,14 @@ public:
 
 	float angle() {
 		if(m_angleUpdate) {
-			int a = 0;
-			for(size_t i = 0; i < m_angles.size(); ++i)
-				a += m_angles[i];
-			m_angle = ((float) a / m_angles.size()) / m_maxAngle;
+			if(m_angles.size() == 1) {
+				m_angle = m_angles[0];
+			} else {
+				int a = 0;
+				for(size_t i = 0; i < m_angles.size(); ++i)
+					a += m_angles[i];
+				m_angle = ((float) a / m_angles.size()) / m_maxAngle;
+			}
 			m_angleUpdate = false;
 		} else {
 			return m_angle;
@@ -93,7 +97,7 @@ public:
 
 	// Relative to scan axis; cm.
 	float x() {
-		return std::sin((angle() / m_maxAngle) * M_PI * 2.0) * m_range;
+		return std::sin(angle() / m_maxAngle * M_PI * 2.0) * m_range;
 	}
 
 	// Relative to scan axis; cm.
