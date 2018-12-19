@@ -157,7 +157,6 @@
 
     function getHull(pts_, alpha) {
       alpha *= alpha;
-      winsize *= winsize;
       let pts = pts_.sort(_sort);
       let hull = [pts[0], pts[1]];
       for(let i = 2; i < pts.length; ++i) {
@@ -175,6 +174,7 @@
       let h = _s(_p2(dx) + _p2(dz));
       let p = length / h;
       let pt2 = new Point(pt0.x + dx / 2.0, 0, pt0.z + dz / 2.0);
+      if(dx > 0) p = -p; // If the normal slopes down, reverse it. dx controls the z because the slope is reversed in the normal.
       let pt3 = new Point(pt2.x + p * dz, 0, pt2.z + p * -dx);
       return [pt2, pt3];
     }
@@ -210,8 +210,9 @@
       return hull0;
     }
 
-    let alpha = 25;
-    let winsize = 10;
+    let nalpha = 25;
+    let pcalpha = 25;
+    let altitude = 10;
 
   	function run() {
 
@@ -224,17 +225,17 @@
       transformPointCloud();
 
       // Get the upper alpha shape of the point cloud.
-      let hull = getHull(pointCloud, alpha);
+      let hull = getHull(pointCloud, pcalpha);
 
       // Get the perpendiculars as a new point set, with the upper points of the perps.
       let perps = [];
       for(let i = 0; i < hull.length - 1; ++i)
-        perps.push(scalePointCloud(getNormal2(hull[i], hull[i + 1], 20)));
+        perps.push(getNormal2(hull[i], hull[i + 1], altitude));
       for(let i = 0; i < hull.length - 2; ++i)
-        perps.push(scalePointCloud(getNormal3(hull[i], hull[i + 1], hull[i + 2], 20)));
+        perps.push(getNormal3(hull[i], hull[i + 1], hull[i + 2], altitude));
 
       // Get the alpha hull of the perpendicular end points.
-      let perphull = getHull(perps.map(perp => { return perp[1]; }), alpha);
+      let perphull = getHull(perps.map(perp => { return perp[1]; }), nalpha);
 
       // Get the splines from the perp hull.
       let spline = getCRSplines(perphull);
@@ -243,9 +244,10 @@
       let hs = scalePointCloud(hull);
 
       // Scaled perps
-      let ps = [];
-      for(let i = 0; i < perps.length; ++i)
-        ps.push(scalePointCloud(perps[i]));
+      let ps = perps.map(perp => { return scalePointCloud(perp); });
+
+      // Scaled perp hull
+      let phs = scalePointCloud(perphull);
 
       // Scale the spline
       let ss = scalePointCloud(spline);
@@ -258,17 +260,18 @@
 
       // Draw perp segments.
       drawSegs(ps, colors[0]);
-      //draw(hs, colors[1]);
-      //drawLines(hs, colors[1]);
-      //drawLines(ss, colors[2], -20);
+      draw(hs, colors[1]);
+      drawLines(hs, colors[1]);
+      drawLines(phs, colors[2]);
       
   	}
 
     function update(evt) {
       if(evt)
         evt.preventDefault();
-      alpha = parseFloat(document.querySelector('#alpha').value);
-      winsize = parseFloat(document.querySelector('#winsize').value);
+      nalpha = parseFloat(document.querySelector('#nalpha').value);
+      pcalpha = parseFloat(document.querySelector('#pcalpha').value);
+      altitude = parseFloat(document.querySelector('#altitude').value);
       run();
     }
 
@@ -370,8 +373,9 @@
   <form>
     <table>
       <tr><td><label for="filename">File</label></td><td><select name="filename" id="filename"></select> <span id="loading"></span></td></tr>
-      <tr><td><label for="alpha">Alpha</label></td><td><input id="alpha" name="alpha" onchange="update(event);" value="25" /></td></tr>
-      <tr><td><label for="winsize">Window Size</label></td><td><input id="winsize" name="winsize" onchange="update(event);" value="10" /></td></tr>
+      <tr><td><label for="pcalpha">Point Cloud Hull Alpha</label></td><td><input id="pcalpha" name="pcalpha" onchange="update(event);" value="25" /></td></tr>
+      <tr><td><label for="nalpha">Normal Hull Alpha</label></td><td><input id="nalpha" name="nalpha" onchange="update(event);" value="25" /></td></tr>
+      <tr><td><label for="altitude">Altitude</label></td><td><input id="altitude" name="altitude" onchange="update(event);" value="10" /></td></tr>
       <!--<tr><td colspan="2"><button onclick="loadFile(event);">Load</button></td></tr>-->
     </table>
   </form>
