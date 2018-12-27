@@ -173,9 +173,9 @@ class PointCloud {
     	let b = new Bounds();
     	for(let i = 0; i < this.points.length; ++i) {
     		let pt = this.points[i];
-    		pt.x = pcbounds.width == 0 ? 0 : ((pt.x - pcbounds.min.x) / pcbounds.width) * scrbounds.width + scrbounds.min.x;
+    		pt.x = pcbounds.width == 0 ? 0 : ((pt.x - pcbounds.min.x) / pcbounds.length) * scrbounds.length + scrbounds.min.x;
     		pt.y = pcbounds.length == 0 ? 0 : ((pt.y - pcbounds.min.y) / pcbounds.length) * scrbounds.length + scrbounds.min.y;
-    		pt.z = pcbounds.height == 0 ? 0 : ((pt.z - pcbounds.min.z) / pcbounds.height) * scrbounds.height + scrbounds.min.z;
+    		pt.z = pcbounds.height == 0 ? 0 : ((pt.z - pcbounds.min.z) / pcbounds.length) * scrbounds.length + scrbounds.min.z;
     		b.extend(pt);
     	}
     	this.sortY();

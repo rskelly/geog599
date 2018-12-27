@@ -18,29 +18,23 @@
     const filenames = ['mt_doug_1.txt', 'mt_doug_2.txt', 'mt_doug_3.txt'];
     const pc = new PointCloud();
     
-    let drawPc;
-
-    let speed = 4.0;
-    let nalpha = 25;
-    let pcalpha = 25;
-    let altitude = 10;
-    let startTime;
     let running = false;
-
-    let animY0 = 0;
-    let animY1 = 0;
-    let lookAhead = 20;
+    let speed = 10.0;
+    let altitude = 100.0;
+    let angle = 30.0; // Down from horizontal.
+    let binsize = 2.0;
+    let spread = 0.3;
 
     const stylePoint = '#aaffaa';
 
     function update(evt) {
       if(evt)
         evt.preventDefault();
-      nalpha = parseFloat(document.querySelector('#nalpha').value);
-      pcalpha = parseFloat(document.querySelector('#pcalpha').value);
       altitude = parseFloat(document.querySelector('#altitude').value);
       speed = parseFloat(document.querySelector('#speed').value);
-      lookAhead = parseFloat(document.querySelector('#lookahead').value);
+      binsize = parseFloat(document.querySelector('#binsize').value);
+      angle = parseFloat(document.querySelector('#angle').value);
+      spread = parseFloat(document.querySelector('#spread').value);
     }
 
     function loadFile(evt) {
@@ -50,48 +44,6 @@
           pc.transform();
         document.querySelector('#loading').innerHTML = msg;
       });
-    }
-
-    function animateHull(timestamp) {
-      if(startTime == null) {
-        startTime = timestamp;
-        requestAnimationFrame(animate);
-        return;
-      }
-      const canv = document.querySelector('#canv');
-      const ctx = canv.getContext('2d');
-      const screen = new Bounds(0, 0, 0, canv.width, 0, canv.height);
-      const t = (timestamp - startTime) / 1000.0;
-
-      animY0 = t * speed;
-      animY1 = animY0 + lookAhead;
-
-      let slice = pc.sliceY(animY0, animY1);
-      let hull = new PointCloud(getHull(slice.points, pcalpha));
-
-      slice.scale(screen, pc.bounds);
-
-      ctx.clearRect(0, 0, screen.length, screen.height);
-      ctx.fillStyle = stylePoint;
-      slice.points.forEach(pt => {
-        ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
-      });
-
-      hull.scale(screen, pc.bounds);
-
-      ctx.fillStyle = 'red';
-      ctx.strokeStyle = 'red';
-      ctx.beginPath();
-      ctx.fillRect(hull.points[0].y - 2, screen.zmax - hull.points[0].z - 2, 4, 4);
-      ctx.moveTo(hull.points[0].y, screen.zmax - hull.points[0].z);
-      for(let i = 1; i < hull.points.length; ++i) {
-        ctx.fillRect(hull.points[i].y - 2, screen.zmax - hull.points[i].z - 2, 4, 4);
-        ctx.lineTo(hull.points[i].y, screen.zmax - hull.points[i].z);
-      }
-      ctx.stroke();
-
-      if(running)
-        requestAnimationFrame(animate);
     }
 
     let bins = new Map();
@@ -111,16 +63,16 @@
       let bounds = pc.bounds.clone();
 
       let y = t * speed;
-      let z = 100;
+      let z = altitude;
 
       let uav = new Point(0, y, z);
       let uavpc = new PointCloud([uav]);
       bounds.extend(uav);
 
-      let slice = pc.sliceYRay(y, z, -Math.PI * 0.05, Math.PI / 180);
+      let slice = pc.sliceYRay(y, z, -angle * Math.PI / 180, spread * Math.PI / 180);
 
       slice.points.forEach(pt => {
-        let y = parseInt(pt.y / 10) * 10;
+        let y = parseInt(pt.y / binsize) * binsize;
         if(!bins.has(y) || pt.z > bins.get(y).z)
           bins.set(y, pt.clone());
       });
@@ -177,6 +129,13 @@
         sel.add(new Option(f, ++i));
       });
       sel.addEventListener('change', loadFile);
+
+      document.querySelector('#altitude').value = altitude;
+      document.querySelector('#speed').value = speed;
+      document.querySelector('#binsize').value = binsize;
+      document.querySelector('#angle').value = angle;
+      document.querySelector('#spread').value = spread;
+
     }
 
   </script>
@@ -186,13 +145,41 @@
 <body onload="init();">
   <form>
     <table>
-      <tr><td><label for="filename">File</label></td><td><select name="filename" id="filename"></select> <span id="loading"></span></td></tr>
-      <tr><td><label for="speed">Speed (m/s)</label></td><td><input name="speed" id="speed" value="4" /></td></tr>
-      <tr><td><label for="lookahead">Look Ahead (m)</label></td><td><input name="lookahead" id="lookahead" value="4" /></td></tr>
-      <tr><td><label for="pcalpha">Point Cloud Hull Alpha</label></td><td><input id="pcalpha" name="pcalpha" onchange="update(event);" value="25" /></td></tr>
-      <tr><td><label for="nalpha">Normal Hull Alpha</label></td><td><input id="nalpha" name="nalpha" onchange="update(event);" value="25" /></td></tr>
-      <tr><td><label for="altitude">Altitude</label></td><td><input id="altitude" name="altitude" onchange="update(event);" value="10" /></td></tr>
-      <tr><td colspan="2"><button onclick="start(event);">Start</button> <button onclick="stop(event);">Stop</button></td></tr>
+      <tr>
+        <td width="200"><label for="filename">File</label></td>
+        <td width="300"><select name="filename" id="filename"></select> <span id="loading"></span></td>
+        <td rowspan="7" style="padding-left: 20px;">
+          <p>This thing demonstrates what the forward-looking laser will see. Choose a <strong>File</strong> and click <strong>Start</strong>.</p>
+          <p>The laser angle is the angle down from horizontal, in degrees. The beam angle is the spread of the beam (nominally 0.3˚).</p>
+          <p>The green dots are a point cloud extracted from a real lidar campaign. The laser sweeps back and forth across the swath, but the points are collapsed into a vertical plane, preserving only the y (forward) and z (vertical) dimensions.</p>
+          <p>The red dots represent the highest point seen in the point cloud within a given bin in the y-space. As the laser penetrates the canopy, the maximum hight is revised up until the laser passes.</p>
+          <p>The space between the "laser frontier" and the spot directly below the UAV is the space from which the trajectory must be derived. The length of this space is dynamic and depends on the altitude of the UAV above the surface. There is no accounting for occlusion.</p>
+          <p>The black dot is the UAV.</p>
+          <p>Next step: calculating the trajectory and following it.</p>
+      </tr>
+      <tr>
+        <td><label for="speed">Speed (m/s)</label></td>
+        <td><input name="speed" id="speed"  onchange="update(event);"/></td>
+      </tr>
+      <tr>
+        <td><label for="angle">Laser Angle (˚, down)</label></td>
+        <td><input name="angle" id="angle" onchange="update(event);" /></td>
+      </tr>
+      <tr>
+        <td><label for="spread">Beam Angle (˚)</label></td>
+        <td><input name="spread" id="spread" onchange="update(event);" /></td>
+      </tr>
+      <tr>
+        <td><label for="binsize">Bin size (m)</label></td>
+        <td><input id="binsize" name="binsize" onchange="update(event);" value="25" /></td>
+      </tr>
+      <tr>
+        <td><label for="altitude">Altitude</label></td>
+        <td><input id="altitude" name="altitude" onchange="update(event);" enabled="false" /></td>
+      </tr>
+      <tr>
+        <td colspan="2"><button onclick="start(event);">Start</button> <button onclick="stop(event);">Stop</button></td>
+      </tr>
     </table>
   </form>
   <div style="border:1px solid #ccc">
