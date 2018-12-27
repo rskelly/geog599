@@ -87,13 +87,9 @@ void Clock::addObserver(ClockObserver* obs, double delay) {
 
 	{
 		std::lock_guard<std::mutex> lk(inst.m_mtx);
-		if(items.find(obs) == items.end()) {
-			ClockObserverItem& item = items[obs];
-			item.item = obs;
-			item.delay = delay;
-		} else {
-			items[obs].delay = delay;
-		}
+		ClockObserverItem& item = items[obs]; // Will construct if not available.
+		item.item = obs;
+		item.delay = delay;
 	}
 
 	// Reset minStep

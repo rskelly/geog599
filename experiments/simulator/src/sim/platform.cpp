@@ -164,23 +164,18 @@ void Platform::tick(double time) {
 
 	Eigen::Vector3d Pp(m_platformState.position());
 	Eigen::Vector3d Po(m_platformState.orientation());
+	Eigen::Vector3d Pl(m_platformState.linearVelocity());
+	Eigen::Vector3d Pr(m_platformState.angularVelocity());
 
 	if(!std::isnan(m_controlInput.altitude())) {
 		double adj = (m_controlInput.altitude() - m_platformState.altitude()) / 2.0;
 		Pp[2] += adj;
 	}
+
 	m_controlInput.reset();
 
-
-	const Eigen::Vector3d& lVel = m_platformState.linearVelocity();
-
-	Pp[0] += lVel[0] * PF_CLOCK_DELAY; // m_posPoisson.next(lVel[0] * PF_CLOCK_DELAY); // m/s multiplied by the delay
-	//Pp[1] += m_posPoisson.nextCentered();
-	//Pp[2] += m_posPoisson.nextCentered();
-
-	//Po[0] += m_rotPoisson.nextCentered();
-	//Po[1] += m_rotPoisson.nextCentered();
-	//Po[2] += m_rotPoisson.nextCentered();
+	Pp += Pl * PF_CLOCK_DELAY;
+	Po += Pr;
 
 	m_platformState.setPosition(Pp);
 	m_platformState.setOrientation(Po);

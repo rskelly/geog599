@@ -22,39 +22,39 @@
 #include "sim/terrain.hpp"
 #include "sim/simulator.hpp"
 #include "sim/gimbal.hpp"
-#include "sim/controller.hpp"
 #include "viewer/sim1viewer.hpp"
+
+#include "impl/gimbalminimu9v5.hpp"
+#include "impl/rangefindersf30c.hpp"
 
 using namespace uav::util;
 using namespace uav::sim;
 using namespace uav::surface;
+using namespace uav::impl;
 
 Simulator::Simulator() :
 	m_running(false) {
 
-	m_controller = new Controller();
+	m_controller = new uav::sim::Controller();
 
 	// Instantiate the terrain. Will load the DEM later.
 	m_terrain = new Terrain();
 
 	// These are parameters that organize the components of the laser system w/r/t the
 	// UAV platform.
-	SinGimbal* gimbal = new SinGimbal(PI / 2, 4);
+	Gimbal* gimbal = new GimbalMinIMU9v5();
 	//NetGimbal* gimbal = new NetGimbal("10.0.0.16", 9000);
-	gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
+
+	//gimbal->setPosition(Eigen::Vector3d(0, 0, -0.02)); // The laser sits on a mount 2cm high, upside down.
 	gimbal->setStaticPosition(Eigen::Vector3d(0.2, 0, -0.05)); // 20cm forward, 0cm to side, 5cm down
 	gimbal->setStaticOrientation(Eigen::Vector3d(0, 0, 0)); // down (around the y axis.) TODO: This seems to be upside-down...
 
-	// Set up the forward rangefinder using a range bridge and the terrain.
-	RangeBridge* rb1 = new RangeBridge();
-	rb1->setTerrain(m_terrain);
-	Rangefinder* rangefinder = new Rangefinder();
-	rangefinder->setRangeBridge(rb1);
-	rangefinder->setPulseFrequency(866); // TODO: The gimbal's update frequency must be higher than this.
+	// Set up the forward rangefinder.
+	RangefinderSF30C* rangefinder = new RangefinderSF30C();
 
 	// Set up the nadir rangefinder using a range bridge and the terrain.
-	rb1 = new RangeBridge();
-	rb1->setTerrain(m_terrain);
+	RangeBridge* rb1 = new RangeBridge();
+	//rb1->setTerrain(m_terrain);
 	Rangefinder* nadirRangefinder = new Rangefinder();
 	nadirRangefinder->setRangeBridge(rb1);
 	nadirRangefinder->setPulseFrequency(10);

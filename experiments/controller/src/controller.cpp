@@ -24,7 +24,7 @@
 #include "sensor/teensy.hpp"
 //#include "sensor/minimu9v5.hpp"
 
-constexpr double PI = 3.141592653589793;
+//constexpr double PI = 3.141592653589793;
 
 class Controller {
 private:
@@ -89,31 +89,9 @@ public:
 			l.pop_front();
 	}
 
-	bool step(double t, sensor::Range& range, sensor::Orientation& orientation) {
-		// IMU
-		//const sensor::MinIMU9v5State& imu = m_imu.getState();
-		//if(imu.updated())
-		//	imu.print(std::cout);
-
-		// Laser
-		if(m_scanner.readData(range, orientation)) {
-			if(range.status() == 0) {
-				//std::cout << range.angle() << ", " << range.range() << ", " << range.x() << ", " << range.y() << ", " << range.timestamp() << "\n";
-				std::cout << range.x() << ", " << range.y() << ", " << range.z() << "\n";
-			}
-		}
-
-		// Encoder
-		/*
-		int cur, max;
-		if(!m_adc.readValue(0b101, cur))
-			return false;
-		if(!m_adc.readValue(0b100, max))
-			return false;
-		std::cout << cur << ", " << max << "\n";
-		std::cout << "Angle: " << (double) cur / max * 360.0 << "\n";
-		*/
-		return true;
+	bool step(double t, std::vector<sensor::Range>& ranges, sensor::Orientation& orientation) {
+		// Laser package (laser/IMU)
+		return m_scanner.readData(ranges, orientation);
 	}
 
 	~Controller() {
@@ -122,21 +100,67 @@ public:
 
 };
 
+#define G 9.80665
+
 int main(int argc, char** argv) {
 
 	Controller cont;
-	sensor::Range range(59030, 1);
+	std::vector<sensor::Range> ranges;
 	sensor::Orientation orientation;
 
+	Eigen::Vector3d g(0.0, 0.0, 1.0); // Down
+
+	double px = 0, py = 0, pz = 0;
+	double rx = 0, ry = 0, rz = 0;
+	double vpx = 0, vpy = 0, vpz = 0;
+	double vrx = 0, vry = 0, vrz = 0;
+	uint64_t ot0 = 0, ot1 = 0;
 	double t = 0.0;
 	if(cont.start()) {
 		while(true) {
 			t += 1.0;
-			if(!cont.step(t, range, orientation))
+			if(!cont.step(t, ranges, orientation)) {
 				break;
+			} else {
+				for(sensor::Range& r : ranges) {
+					//std::cerr << "Range: " << r.range() << ", " << r.timestamp() << "\n";
+				}
+				ranges.clear();
+				if(ot0 == 0) {
+					ot0 = ot1 = orientation.timestamp();
+				} else {
+					ot1 = orientation.timestamp();
+				}
+				Eigen::Vector3d accel = orientation.accel();
+				Eigen::Vector3d gyro = orientation.gyro();
+				std::cerr << "Accel: " << accel.norm() << ", " << accel[0] << ", " << accel[1] << ", " << accel[2] << ", " << ot1 << "\n";
+				std::cerr << "Gyro: " << gyro.norm() << ", " << gyro[0] << ", " << gyro[1] << ", " << gyro[2] << ", " << ot1 << "\n";
+				if(ot1 - ot0 > 0) {
+					double ot = (double) (ot1 - ot0) / 1000000.0;
+					vpx += accel[0] * ot;
+					vpy += accel[1] * ot;
+					vpz += accel[2] * ot;
+					vrx += gyro[0] * ot;
+					vry += gyro[1] * ot;
+					vrz += gyro[2] * ot;
+					px += vpx * ot;
+					py += vpy * ot;
+					pz += vpz * ot;
+					rx += vrx * ot;
+					ry += vry * ot;
+					rz += vrz * ot;
+					//std::cerr << "Orient: gyro: " << ot << ", " << o.gyro() << ", accel: " << a << ", " << o.timestamp() << "\n";
+					//std::cerr << "Pos: " << px << ", " << py << ", " << pz << "\n";
+					//std::cerr << "Ori: " << rx << ", " << ry << ", " << rz << "\n";
+					//std::cerr << "a " << accel[0] << ", " << accel[1] << ", " << accel[2] << "\n";
+					//std::cerr << "g " << gyro[0] << ", " << gyro[1] << ", " << gyro[2] << "\n";
+				}
+				ot0 = ot1;
+			}
 			std::this_thread::yield();
 		}
 		cont.stop();
+		std::cerr << "Stopped.\n";
 	}
 
 	return 0;

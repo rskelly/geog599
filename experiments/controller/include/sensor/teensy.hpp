@@ -8,6 +8,16 @@
 #ifndef INCLUDE_LWSF30C_HPP_
 #define INCLUDE_LWSF30C_HPP_
 
+#define PI 			3.1415926535
+#define IMU_DIVISOR 32767
+#define IMU_ASCALE 	2.0
+#define IMU_GSCALE 	245.0
+#define TO_RAD 		(PI / 180.0)
+
+#define G_CONV ((1.0 / IMU_DIVISOR) * IMU_GSCALE * TO_RAD)
+#define A_CONV ((1.0 / IMU_DIVISOR) * IMU_ASCALE)
+
+
 #include <string>
 #include <iostream>
 
@@ -15,6 +25,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cstring>
+
+#include <Eigen/Dense>
 
 #include "comm/serial.hpp"
 
@@ -24,94 +36,146 @@ namespace sensor {
 
 class Range {
 private:
-	int m_maxAngle;
-	int m_average;
-	std::vector<int> m_angles;
-	size_t m_angleIdx;
-	bool m_angleUpdate;
-	float m_angle;
-	int m_status;
-	int m_range;
-	unsigned long m_timestamp;
+	uint16_t m_range;
+	uint64_t m_timestamp;
 
 public:
 
-	Range(int maxAngle = 1023, int average = 5) :
-		m_maxAngle(maxAngle),
-		m_average(average),
-		m_angleIdx(0),
-		m_angleUpdate(false),
-		m_angle(0),
-		m_status(0),
-		m_range(0),
-		m_timestamp(0) {
-		
-		m_angles.resize(m_average);
+	Range(uint16_t range = 0, uint64_t timestamp = 0) :
+		m_range(range), m_timestamp(timestamp) {
 	}
 
-	void setStatus(int status) {
-		m_status = status;
-	}
-
-	int status() const {
-		return m_status;
-	}
-
-	void addRange(int range) {
+	void update(uint16_t range, uint64_t time) {
 		m_range = range;
+		m_timestamp = time;
 	}
 
-	int range() const {
+	uint16_t range() const {
 		return m_range;
 	}
 
-	void setTimestamp(unsigned long timestamp) {
-		m_timestamp = timestamp;
-	}
-
-	unsigned long timestamp() const {
+	uint64_t timestamp() const {
 		return m_timestamp;
-	}
-
-	void addAngle(int angle) {
-		m_angleUpdate = true;
-		m_angles[m_angleIdx % m_angles.size()] = angle;
-		++m_angleIdx;
-	}
-
-	float angle() {
-		if(m_angleUpdate) {
-			if(m_angles.size() == 1) {
-				m_angle = m_angles[0];
-			} else {
-				int a = 0;
-				for(size_t i = 0; i < m_angles.size(); ++i)
-					a += m_angles[i];
-				m_angle = ((float) a / m_angles.size()) / m_maxAngle;
-			}
-			m_angleUpdate = false;
-		} else {
-			return m_angle;
-		}
-	}
-
-	// Relative to scan axis; cm.
-	float x() {
-		return std::sin(angle() / m_maxAngle * M_PI * 2.0) * m_range;
-	}
-
-	// Relative to scan axis; cm.
-	float y() {
-		return std::cos((angle() / m_maxAngle) * M_PI * 2.0) * m_range;
-	}
-
-	float z() {
-		return 0.0;
 	}
 
 };
 
+template <class T>
+class MovingAverage {
+private:
+	int m_count;				///<! The number of elements in the list.
+	size_t m_idx;				///<! The current index for adding.
+	double m_offset;			///<! The zero-offset for zeroing the output.
+	std::vector<T> m_elements;	///<! The list of elements (a circular buffer.)
+
+public:
+
+	/**
+	 * Construct a moving average filter with the given number of elements.
+	 * @param count The number of elements (default 5).
+	 */
+	MovingAverage(int count = 5, T offset = 0) :
+		m_idx(0) {
+		setCount(count);
+		setOffset(offset);
+	}
+
+	/**
+	 * Set the number of elements.
+	 * @param count The number of elements.
+	 */
+	void setCount(int count) {
+		m_count = count;
+		m_elements.resize(count);
+	}
+
+	/**
+	 * Set the zero offset.
+	 * @param offset The zero offset
+	 */
+	void setOffset(double offset) {
+		m_offset = offset;
+	}
+
+	/**
+	 * Add an element to the list.
+	 * @param v A value to add.
+	 */
+	void add(T v) {
+		m_elements[m_idx++ % m_count] = v;
+	}
+
+	/**
+	 * Return the average of the elements in the list.
+	 * @return The average of the elements in the list.
+	 */
+	double value() const {
+		double s = 0;
+		for(const T& v : m_elements)
+			s += (double) v;
+		return s / m_count + m_offset;
+	}
+};
+
 class Orientation {
+private:
+	MovingAverage<int16_t> m_g0;
+	MovingAverage<int16_t> m_g1;
+	MovingAverage<int16_t> m_g2;
+	MovingAverage<int16_t> m_a0;
+	MovingAverage<int16_t> m_a1;
+	MovingAverage<int16_t> m_a2;
+	uint64_t m_timestamp;
+	size_t m_count;
+
+public:
+
+	Orientation() :
+		m_timestamp(0),
+		m_count(0) {
+	}
+
+	void update(int16_t g0, int16_t g1, int16_t g2, 
+		int16_t a0, int16_t a1, int16_t a2, 
+		uint64_t timestamp) {
+		m_g0.add(g0);
+		m_g1.add(g1);
+		m_g2.add(g2);
+		m_a0.add(a0);
+		m_a1.add(a1);
+		m_a2.add(a2);
+		m_timestamp = timestamp;
+		/*
+		if(++m_count = 100) {
+			m_g0.setOffset(-m_g0.value());
+			m_g1.setOffset(-m_g1.value());
+			m_g2.setOffset(-m_g2.value());
+			m_a0.setOffset(-m_a0.value());
+			m_a1.setOffset(-m_a1.value());
+			m_a2.setOffset(-m_a2.value());
+		}
+		*/
+	}
+
+	Eigen::Vector3d gyro() const {
+		return Eigen::Vector3d(
+			m_g0.value() * G_CONV,
+			m_g1.value() * G_CONV,
+			m_g2.value() * G_CONV
+		);
+	}
+
+	Eigen::Vector3d accel() const {
+		return Eigen::Vector3d(
+			m_a0.value() * A_CONV, 
+			m_a1.value() * A_CONV, 
+			m_a2.value() * A_CONV
+		);
+	}
+	
+uint64_t timestamp() const {
+		return m_timestamp;
+	}
 
 };
 
@@ -152,7 +216,7 @@ public:
 	 */
 	bool open(const std::string& dev, int speed = B115200);
 
-	bool readData(Range& range, Orientation& orientation);
+	bool readData(std::vector<Range>& ranges, Orientation& orientation);
 
 };
 

@@ -24,21 +24,21 @@
 #define G_WHO_AM_I  0x0F
 
 // Accel and gyro control
-#define CTRL1_XL  0x10 // Accel: data rate power mode; full-scale selection; anti-aliasing filter bandwidth selection
-#define CTRL2_G  0x11 // Gyro: data rate; full-scale selection; full-scale at 125dps
-#define CTRL3_C  0x12 // Reboot memory; block data update; interrupt activation level; etc.
-#define CTRL4_C  0x13 // Accel bandwidth; gyro sleep mode; interrupts; temperature in fifo; disable i2c; etc.
-#define CTRL5_C  0x14 // Circular burst mode rounding; self tests
-#define CTRL6_C  0x15 // Gyro: edge-sensitive trigger; data level trigger; level-sensitive latch; high-perf disable for accel
-#define CTRL7_G  0x16 // Gyro: high-perf disable; high-pass filter enable; high-pass filter reset; rounding; high-pass cutoff
-#define CTRL8_XL  0x17 // Accel: low-pass filter selection; slope filter high-pass filter; slope filter; low-pass on 6D
-#define CTRL9_XL  0x18 // Accel: axis output enable
-#define CTRL10_C  0x19 // Gyro axis enable; embedded functions etc.
+#define CTRL1_XL  0x10  // Accel: data rate power mode; full-scale selection; anti-aliasing filter bandwidth selection
+#define CTRL2_G   0x11  // Gyro: data rate; full-scale selection; full-scale at 125dps
+#define CTRL3_C   0x12  // Reboot memory; block data update; interrupt activation level; etc.
+#define CTRL4_C   0x13  // Accel bandwidth; gyro sleep mode; interrupts; temperature in fifo; disable i2c; etc.
+#define CTRL5_C   0x14  // Circular burst mode rounding; self tests
+#define CTRL6_C   0x15  // Gyro: edge-sensitive trigger; data level trigger; level-sensitive latch; high-perf disable for accel
+#define CTRL7_G   0x16  // Gyro: high-perf disable; high-pass filter enable; high-pass filter reset; rounding; high-pass cutoff
+#define CTRL8_XL  0x17  // Accel: low-pass filter selection; slope filter high-pass filter; slope filter; low-pass on 6D
+#define CTRL9_XL  0x18  // Accel: axis output enable
+#define CTRL10_C  0x19  // Gyro axis enable; embedded functions etc.
 
-#define WAKE_UP_SRC  0x1B
-#define TAP_SRC    0x1C
-#define D6D_SRC    0x1D
-#define G_STATUS_REG  0x1E
+#define WAKE_UP_SRC   0x1B
+#define TAP_SRC       0x1C
+#define D6D_SRC       0x1D
+#define STATUS_REG  0x1E
 
 // Temperature registers (2 bytes)
 #define OUT_TEMP_L  0x20
@@ -59,12 +59,12 @@
 #define OUTZ_H_XL  0x2D
 
 // FIFO stuff
-#define FIFO_STATUS1  0x3A
-#define FIFO_STATUS2  0x3B
-#define FIFO_STATUS3  0x3C
-#define FIFO_STATUS4  0x3D
-#define FIFO_DATA_OUT_L  0x3E
-#define FIFO_DATA_OUT_H  0x3F
+#define FIFO_STATUS1      0x3A
+#define FIFO_STATUS2      0x3B
+#define FIFO_STATUS3      0x3C
+#define FIFO_STATUS4      0x3D
+#define FIFO_DATA_OUT_L   0x3E
+#define FIFO_DATA_OUT_H   0x3F
 
 // Timestamp (24-bit word)
 #define TIMESTAMP0_REG  0x40
@@ -74,18 +74,18 @@
 // Step counter and timestamp
 #define STEP_TIMESTAMP_L  0x49
 #define STEP_TIMESTAMP_H  0x4A
-#define STEP_COUNTER_L  0x4B
-#define STEP_COUNTER_H  0x4C
+#define STEP_COUNTER_L    0x4B
+#define STEP_COUNTER_H    0x4C
 
 // Detect significant motion
 #define FUNC_SRC   0x53
 
 // Tap-related
-#define TAP_CFG   0x58
+#define TAP_CFG     0x58
 #define TAP_THS_6D  0x59
-#define INT_DUR2   0x5A
-#define WAKE_UP_THS  0x5B
-#define WAKE_UP_DUR  0x5C
+#define INT_DUR2    0x5A
+#define WAKE_UP_THS 0x5B
+#define WAKE_UP_DUR 0x5C
 
 // Free fall duration.
 #define FREE_FALL  0x5D
@@ -116,11 +116,13 @@
 #define OUT_Y_H  0x2B
 #define OUT_Z_L  0x2C // Output z-axis (2 bytes)
 #define OUT_Z_H  0x2D
-#define TEMP_OUT_L   0x2E // Temperature (2 bytes)
+
+#define TEMP_OUT_L  0x2E // Temperature (2 bytes)
 #define TEMP_OUT_H  0x2F
 
 #define INT_CFG  0x30
 #define INT_SRC  0x31
+
 #define INT_THS_L  0x32
 #define INT_THS_H  0x33
 
@@ -131,36 +133,36 @@
 
 // CTRL2_G
 // Gyro data rate.
-#define GDR_OFF  0b0000
-#define GDR_13Hz  0b0001
-#define GDR_26Hz  0b0010
-#define GDR_52Hz  0b0011
-#define GDR_104Hz  0b0100
-#define GDR_208Hz  0b0101
-#define GDR_416Hz  0b0110
-#define GDR_833Hz  0b0111
+#define GDR_OFF     0b0000
+#define GDR_13Hz    0b0001
+#define GDR_26Hz    0b0010
+#define GDR_52Hz    0b0011
+#define GDR_104Hz   0b0100
+#define GDR_208Hz   0b0101
+#define GDR_416Hz   0b0110
+#define GDR_833Hz   0b0111
 #define GDR_1660Hz  0b1000
 
 // Gyro full-scale selection
 #define GFS_245dps  0b00
 #define GFS_500dps  0b01
-#define GFS_1000dps  0b10
-#define GFS_2000dps  0b11
+#define GFS_1000dps 0b10
+#define GFS_2000dps 0b11
 
 // Gyro full-scale at 125dps
-#define GFS_125dps_DISABLED  0b0
+#define GFS_125dps_DISABLED 0b0
 #define GFS_125dps_ENABLED  0b1
 
 // CTRL1_XL
 // Accel data rate.
-#define ADR_OFF  0b0000
-#define ADR_13Hz  0b0001
-#define ADR_26Hz  0b0010
-#define ADR_52Hz  0b0011
-#define ADR_104Hz  0b0100
-#define ADR_208Hz  0b0101
-#define ADR_416Hz  0b0110
-#define ADR_833Hz  0b0111
+#define ADR_OFF     0b0000
+#define ADR_13Hz    0b0001
+#define ADR_26Hz    0b0010
+#define ADR_52Hz    0b0011
+#define ADR_104Hz   0b0100
+#define ADR_208Hz   0b0101
+#define ADR_416Hz   0b0110
+#define ADR_833Hz   0b0111
 #define ADR_1660Hz  0b1000
 #define ADR_3330Hz  0b1001
 #define ADR_6660Hz  0b1010
@@ -169,17 +171,17 @@
 #define AFS_2g  0b00
 #define AFS_4g  0b01// TODO: Assuming the datasheet settings are wrong. This is my interpretation.
 #define AFS_8g  0b10
-#define AFS_16g  0b11
+#define AFS_16g 0b11
 
 // Accel anti-aliasing filter bandwidth. Interacts with data rate; see table 45.
 #define AAFB_400Hz  0b00
 #define AAFB_200Hz  0b01
 #define AAFB_100Hz  0b10
-#define AAFB_50Hz  0b11
+#define AAFB_50Hz   0b11
 
 // CTRL3_C
 // Auto increment addresses.
-#define AUTO_INC_ON  0b1
+#define AUTO_INC_ON   0b1
 #define AUTO_INC_OFF  0b0
 
 class MinIMU9v5 {
@@ -187,51 +189,67 @@ private:
   byte m_gyroAddr;
   byte m_magAddr;
 
-  uint16_t readShort(byte* buf, int pos) {
-    return buf[pos++] | (buf[pos] << 8);
+  // Read the short out of the buffer. The low byte is first.
+  inline int16_t readShort(byte* buf, int pos) {
+    return buf[pos] | (buf[pos + 1] << 8);
   }
   
 public:
 
-  MinIMU9v5(byte gyroAddr = 0x6A, byte magAddr = 0) :
+  MinIMU9v5(byte gyroAddr = 0x6B, byte magAddr = 0) :
     m_gyroAddr(gyroAddr), m_magAddr(magAddr) {
   }
 
   void init() {
-    Wire.begin();//I2C_MASTER, m_addr, I2C_PINS_18_19, I2C_PULLUP_INT, 400000);
+    Wire.begin();
+    Wire.setRate(F_BUS, 400000);
+    Wire.pinConfigure(I2C_PINS_18_19, I2C_PULLUP_INT);
 
     // Configure gyroscope
     writeByte(m_gyroAddr, CTRL2_G, (GDR_1660Hz << 4) | (GFS_245dps << 2));
     writeByte(m_gyroAddr, CTRL7_G, 0);
 
     // Configure accelerometr
-    writeByte(m_gyroAddr, CTRL1_XL, (ADR_1660Hz << 4) | (AFS_2g << 2) | (AAFB_400Hz << 1));
+    writeByte(m_gyroAddr, CTRL1_XL, (ADR_1660Hz << 4) | (AFS_2g << 2) | AAFB_400Hz);
 
     // Configure other.
-    writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 3));
+    writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 2));
     
   }
 
-  void getState(uint16_t* gyro, uint16_t* accel) {
-    static byte buf[6];
+  /**
+   * Populates the given 3-element arrays with the values (x,y,z) from
+   * the accelerometer and gyroscope. Returns true if
+   * values are available to be read, false otherwise or if something
+   * goes wrong.
+   */
+  bool getState(int16_t* gyro, int16_t* accel) {
+    static byte buf[12] = {0};
     int pos;
+    
+    byte stat = readByte(m_gyroAddr, STATUS_REG);
 
-    // Gyro and accel.
-    readBytes(m_gyroAddr, OUTX_L_G, buf, 12);
-    pos = 0;
-    gyro[0] = readShort(buf, pos);  pos += 2;
-    gyro[1] = readShort(buf, pos);  pos += 2;
-    gyro[2] = readShort(buf, pos);  pos += 2;
-
-    accel[0] = readShort(buf, pos);  pos += 2;
-    accel[1] = readShort(buf, pos);  pos += 2;
-    accel[2] = readShort(buf, pos);  pos += 2;
+    if(stat & 0b11) {
+      // Gyro and accel.
+      int r = readBytes(m_gyroAddr, OUTX_L_G, buf, 12);
+      if(r >= 12) {
+        pos = 0;
+        gyro[0] = readShort(buf, pos);  pos += 2;
+        gyro[1] = readShort(buf, pos);  pos += 2;
+        gyro[2] = readShort(buf, pos);  pos += 2;
+        accel[0] = readShort(buf, pos);  pos += 2;
+        accel[1] = readShort(buf, pos);  pos += 2;
+        accel[2] = readShort(buf, pos);  pos += 2;
+        return true;
+      }
+    }
+    return false;
   }
-  
+
   byte readByte(byte addr, byte reg) {
     Wire.beginTransmission(addr);
     Wire.write(reg);
-    Wire.endTransmission(false);
+    Wire.endTransmission(I2C_NOSTOP, 0);
     Wire.requestFrom(addr, (byte) 1);
     return Wire.read();
   }
@@ -239,10 +257,15 @@ public:
   int readBytes(byte addr, byte reg, byte* buf, int len) {
     Wire.beginTransmission(addr);
     Wire.write(reg);
-    Wire.endTransmission(false);
+    Wire.endTransmission(I2C_NOSTOP, 0);
     Wire.requestFrom(addr, (byte) len);
+    unsigned long t1 = micros();
+    while(Wire.available() < len) {
+      if(micros() - t1 > 1000000)
+        return 0;
+    }
     int i = 0;
-    while(Wire.available())
+    while(len--)
       buf[i++] = Wire.read();
     return i;
   }
@@ -251,7 +274,7 @@ public:
     Wire.beginTransmission(addr);
     Wire.write(reg);
     Wire.write(val);
-    Wire.endTransmission(true);
+    Wire.endTransmission(I2C_STOP);
   }
 
   void writeBytes(byte addr, byte reg, byte* buf, int len) {
@@ -259,7 +282,7 @@ public:
     Wire.write(reg);
     for(int i = 0; i < len; ++i)
       Wire.write(buf[i]);
-    Wire.endTransmission(true);
+    Wire.endTransmission(I2C_STOP);
   }
   
 };

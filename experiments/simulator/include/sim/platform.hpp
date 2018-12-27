@@ -22,6 +22,9 @@ namespace sim {
 class PlatformControlInput : public uav::PlatformControlInput {
 private:
 	double m_altitude;
+	Eigen::Vector3d m_angularVelocity;
+	Eigen::Vector3d m_acceleration;
+
 public:
 	PlatformControlInput() :
 		m_altitude(std::numeric_limits<double>::quiet_NaN()) {
@@ -44,6 +47,35 @@ public:
 	double altitude() const {
 		return m_altitude;
 	}
+
+	void setAngularVelocity(double x, double y, double z) {
+		m_angularVelocity[0] = x;
+		m_angularVelocity[1] = y;
+		m_angularVelocity[2] = z;
+	}
+
+	void setAngularVelocity(const Eigen::Vector3d& av) {
+		m_angularVelocity = av;
+	}
+
+	const Eigen::Vector3d& angularVelocity() const {
+		return m_angularVelocity;
+	}
+
+	void setAcceleration(double x, double y, double z) {
+		m_acceleration[0] = x;
+		m_acceleration[1] = y;
+		m_acceleration[2] = z;
+	}
+
+	void setAcceleration(const Eigen::Vector3d& acc) {
+		m_acceleration = acc;
+	}
+
+	const Eigen::Vector3d& acceleration() const {
+		return m_acceleration;
+	}
+
 	/**
 	 * Merge the input into the current input.
 	 *
@@ -51,6 +83,8 @@ public:
 	 */
 	void operator<<(const uav::PlatformControlInput& input) {
 		setAltitude(input.altitude());
+		setAcceleration(input.acceleration());
+		setAngularVelocity(input.angularVelocity());
 	}
 
 	/**
