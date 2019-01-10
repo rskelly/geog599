@@ -211,6 +211,13 @@
         sel.add(new Option(f, ++i));
       });
       sel.addEventListener('change', loadFile);
+
+      document.querySelector('#altitude').value = altitude;
+      document.querySelector('#speed').value = speed;
+      document.querySelector('#binsize').value = binsize;
+      document.querySelector('#angle').value = angle;
+      document.querySelector('#spread').value = spread;
+
     }
 
   </script>
@@ -220,7 +227,18 @@
 <body onload="init();">
   <form>
     <table>
-      <tr><td><label for="filename">File</label></td><td><select name="filename" id="filename"></select> <span id="loading"></span></td></tr>
+      <tr>
+        <td><label for="filename">File</label></td><td><select name="filename" id="filename"></select> <span id="loading"></span></td>
+        <td rowspan="7" style="padding-left: 20px;">
+          <p>This thing demonstrates what the forward-looking laser will see. Choose a <strong>File</strong> and click <strong>Start</strong>.</p>
+          <p>The laser angle is the angle down from horizontal, in degrees. The beam angle is the spread of the beam (nominally 0.3˚).</p>
+          <p>The green dots are a point cloud extracted from a real lidar campaign. The laser sweeps back and forth across the swath, but the points are collapsed into a vertical plane, preserving only the y (forward) and z (vertical) dimensions.</p>
+          <p>The red dots represent the highest point seen in the point cloud within a given bin in the y-space. As the laser penetrates the canopy, the maximum hight is revised up until the laser passes.</p>
+          <p>The space between the "laser frontier" and the spot directly below the UAV is the space from which the trajectory must be derived. The length of this space is dynamic and depends on the altitude of the UAV above the surface. There is no accounting for occlusion.</p>
+          <p>The black dot is the UAV.</p>
+          <p>Next step: calculating the trajectory and following it.</p>
+        </td>
+      </tr>
       <tr><td><label for="speed">Speed (m/s)</label></td><td><input name="speed" id="speed" value="4" /></td></tr>
       <tr><td><label for="angle">Beam Angle (Down)</label></td><td><input id="angle" name="angle" onchange="update(event);" value="25" /></td></tr>
       <tr><td><label for="divergence">Beam Divergence</label></td><td><input id="divergence" name="divergence" onchange="update(event);" value="1" /></td></tr>

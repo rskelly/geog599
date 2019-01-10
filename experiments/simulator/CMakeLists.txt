@@ -60,11 +60,13 @@ find_library (GL_LIBRARY GL)
 #find_library (GLEW_LIBRARY GLEW)
 find_library (GLU_LIBRARY GLU)
 
+set (UAV_LIBS encoder uav_i2c uav_serial uav_teensy)
+
 project (test)
 
 # Configure directories###################################################################################
 
-include_directories(BEFORE SYSTEM ./include ./src
+include_directories(BEFORE SYSTEM ./include ./src ../controller/include ../controller/src
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR})
 	
@@ -73,7 +75,8 @@ if(${WITH_GUI})
 		${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
 endif()
  
-link_directories(. ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
+link_directories(. ../controller/build/lib
+	${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
 
 if(${WITH_GUI})
@@ -89,9 +92,9 @@ if(${WITH_GUI})
 	add_executable (sim1 src/sim1.cpp 
 		src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp 
 		src/sim/gimbal.cpp src/viewer/sim1viewer.cpp src/viewer/renderwidget.cpp 
-		src/surface.cpp src/sim/controller.cpp)
+		src/surface.cpp src/sim/controller.cpp src/impl/gimbalminimu9v5.cpp src/impl/rangefindersf30c.cpp src/impl/serialbridge.cpp)
 	target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} 
-		${GL_LIBRARY} ${GLU_LIBRARY} ${Boost_LIBRARIES} Qt5::Gui Qt5::Core Qt5::Widgets) 
+		${GL_LIBRARY} ${GLU_LIBRARY} ${Boost_LIBRARIES} Qt5::Gui Qt5::Core Qt5::Widgets ${UAV_LIBS}) 
 else()
 
 endif()

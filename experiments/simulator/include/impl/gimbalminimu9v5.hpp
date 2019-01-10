@@ -1,36 +1,30 @@
 /*
- * gimbal.hpp
+ * gimbalminimu9v5.hpp
  *
- *  Created on: May 18, 2018
+ *  Created on: Dec 26, 2018
  *      Author: rob
  */
 
-#ifndef INCLUDE_GIMBAL_HPP_
-#define INCLUDE_GIMBAL_HPP_
+#ifndef INCLUDE_IMPL_GIMBALMINIMU9V5_HPP_
+#define INCLUDE_IMPL_GIMBALMINIMU9V5_HPP_
 
-#include <Eigen/Core>
-
-#include "util.hpp"
+#include "gimbal.hpp"
+#include "impl/serialbridge.hpp"
 
 namespace uav {
+namespace impl {
 
-/**
- * The gimbal is a device upon which another device, such as a rangefinder is mounted.
- * It may have a fixed position, or it may move, either on command or
- * by a regular internal drive sequence. The gimbal's only job
- * is to calculate a position and orientation matrix, given its own
- * position and orientation, and its state.
- *
- * Example: If this is a rangefinder, its nodal point is at the dynamic position,
- * and its beam is aligned with the dynamic orientation. The gimbal itself is positioned
- * at the static orientation and aligned with the dynamic position.
- */
-class Gimbal : public uav::util::ClockObserver {
-protected:
-
-	Gimbal() {}
+class GimbalMinIMU9v5 : public uav::Gimbal, public uav::util::ClockObserver, public uav::impl::SerialBridgeListener {
+private:
+	Eigen::Vector3d m_orientation;
+	Eigen::Vector3d m_position;
+	Eigen::Vector3d m_staticOrientation;
+	Eigen::Vector3d m_staticPosition;
+	uint64_t m_timestamp;
 
 public:
+
+	void serialBridgeUpdate(SerialBridge* bridge);
 
 	/**
 	 * Set the dynamic orientation of the object mounted on this gimbal.
@@ -38,7 +32,7 @@ public:
 	 *
 	 * @param orientation The dynamic orientation of the object mounted on this gimbal.
 	 */
-	virtual void setOrientation(const Eigen::Vector3d& orientation) = 0;
+	void setOrientation(const Eigen::Vector3d& orientation);
 
 	/**
 	 * Return the dynamic orientation of the object mounted on this gimbal.
@@ -46,7 +40,7 @@ public:
 	 *
 	 * @return The dynamic orientation of the object mounted on this gimbal.
 	 */
-	virtual const Eigen::Vector3d& orientation() const = 0;
+	const Eigen::Vector3d& orientation() const;
 
 	/**
 	 * Set the dynamic position of the object mounted on this gimbal.
@@ -54,14 +48,14 @@ public:
 	 *
 	 * @param position The dynamic position of the object mounted on this gimbal.
 	 */
-	virtual void setPosition(const Eigen::Vector3d& position) = 0;
+	void setPosition(const Eigen::Vector3d& position);
 
 	/**
 	 * The dynamic position of the object mounted on this gimbal.
 	 *
 	 * @return The dynamic position of the object mounted on this gimbal.
 	 */
-	virtual const Eigen::Vector3d& position() const = 0;
+	const Eigen::Vector3d& position() const;
 
 	/**
 	 * Set the static orientation of the gimbal. This is the orientation relative
@@ -69,7 +63,7 @@ public:
 	 *
 	 * @param mtx The static orientation of the gimbal.
 	 */
-	virtual void setStaticOrientation(const Eigen::Vector3d& mtx) = 0;
+	void setStaticOrientation(const Eigen::Vector3d& mtx);
 
 	/**
 	 * Get the static orientation of the gimbal. This is the orientation relative
@@ -77,7 +71,7 @@ public:
 	 *
 	 * @return The static orientation of the gimbal.
 	 */
-	virtual const Eigen::Vector3d& staticOrientation() const = 0;
+	const Eigen::Vector3d& staticOrientation() const;
 
 	/**
 	 * Set the static position of the gimbal. This is the position relative
@@ -85,7 +79,7 @@ public:
 	 *
 	 * @param mtx The static position of the gimbal.
 	 */
-	virtual void setStaticPosition(const Eigen::Vector3d& mtx) = 0;
+	void setStaticPosition(const Eigen::Vector3d& mtx);
 
 	/**
 	 * Get the static position of the gimbal. This is the orientation relative
@@ -93,21 +87,27 @@ public:
 	 *
 	 * @return The static position of the gimbal.
 	 */
-	virtual const Eigen::Vector3d& staticPosition() const = 0;
+	const Eigen::Vector3d& staticPosition() const;
 
 	/**
 	 * Start the gimbal's operation.
 	 */
-	virtual void start() = 0;
+	void start();
 
 	/**
 	 * Stop the gimbal's operation.
 	 */
-	virtual void stop() = 0;
+	void stop();
 
-	virtual ~Gimbal() {}
+	void tick(double time = 0);
+
+	~GimbalMinIMU9v5();
+
 };
 
+} // impl
 } // uav
 
-#endif /* INCLUDE_GIMBAL_HPP_ */
+
+
+#endif /* INCLUDE_IMPL_GIMBALMINIMU9V5_HPP_ */

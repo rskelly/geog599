@@ -33,41 +33,47 @@ bool Teensy::open(const std::string& dev, int speed) {
 }
 
 inline unsigned long __readULong(uint8_t* buf, size_t start) {
+	size_t end = start + 8;
 	unsigned long u = 0;
-	for(size_t i = 0; i < 8; ++i)
-		u |= (buf[(start + i) % BUFFER_SIZE] << ((7 - i) * 8));
+	while(start < end) {
+		u |= (buf[start % BUFFER_SIZE] << ((end - start - 1) * 8));
+		++start;
+	}
 	return u;
 }
 
 inline unsigned short __readUShort(uint8_t* buf, size_t start) {
-	unsigned short s = 0;
-	for(size_t i = 0; i < 2; ++i)
-		s |= (buf[(start + i) % BUFFER_SIZE] << ((1 - i) * 8));
-	return s;
+	return (buf[start % BUFFER_SIZE] << 8) | buf[(start + 1)  % BUFFER_SIZE];
+}
+
+inline short __readShort(uint8_t* buf, size_t start) {
+	return (buf[start % BUFFER_SIZE] << 8) | buf[(start + 1) % BUFFER_SIZE];
 }
 
 // Read short low byte first
 inline short __readShortR(uint8_t* buf, size_t start) {
-	short s = 0;
-	for(size_t i = 0; i < 2; ++i)
-		s |= (buf[(start + i) % BUFFER_SIZE] << (i * 8));
-	return s;
+	return (buf[(start + 1) % BUFFER_SIZE] << 8) | buf[start % BUFFER_SIZE];
 }
 
 
-bool Teensy::readData(Range& range, Orientation& orientation) {
+bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 	static uint8_t buf[BUFFER_SIZE];
 	static uint8_t readBuf[BUFFER_SIZE];
 	static size_t bufIdx = 0;
 	static size_t bufEnd = 0;
 	static int mode = 0;
-	static size_t need = 1;
+	static size_t need = 3;
 
-	range.setStatus(1);
+	size_t nRanges;
+	char headChar;
+	uint64_t time;
+	uint16_t range;
+	int16_t g0, g1, g2;
+	int16_t a0, a1, a2;
 
 	while(true) {
 
-		while((bufEnd - bufIdx) < need) {
+		while(bufEnd < bufIdx || (bufEnd - bufIdx) < need) {
 			std::this_thread::yield();
 			int rd = read((char *) readBuf, BUFFER_SIZE);
 			if(rd > 0) {
@@ -80,57 +86,62 @@ bool Teensy::readData(Range& range, Orientation& orientation) {
 		
 		if(mode == 0) {
 			while(bufIdx < bufEnd) {
-				if(buf[bufIdx % BUFFER_SIZE] == '#') {
+				char a = buf[bufIdx % BUFFER_SIZE];		++bufIdx;
+				char b = buf[bufIdx % BUFFER_SIZE];		++bufIdx;
+				char c = buf[bufIdx % BUFFER_SIZE];		++bufIdx;
+//				std::cerr << a << ", " << b << ", " << (int) c << "\n";
+				if(a == '#' && b == '!') {
 					mode = 1;
-					need = 1;
-					++bufIdx;
+					need = c > 0 ? (size_t) c : 0;
+					if(need == 0) { // Something is seriously wrong.
+						mode = 0;
+						need = 1;
+					}
 					break;
 				}
-				++bufIdx;
+				bufIdx -= 2; // Back up and try again.
 			}
 			continue;
 		}
 
 		if(mode == 1) {
-			need = buf[bufIdx % BUFFER_SIZE];
-			mode = 2;
-			++bufIdx;
-			continue;
-		}
-
-		if(mode == 2) {
 			while(bufIdx < bufEnd) {
-				char t0 = (char) buf[bufIdx % BUFFER_SIZE];			++bufIdx;
-				if(t0 != '!') {
+				headChar = (char) buf[bufIdx % BUFFER_SIZE];		++bufIdx;
+				switch(headChar) {
+				case 'R':
+					if(bufEnd - bufIdx < 1)
+						goto need_more;
+					nRanges = (size_t) buf[bufIdx % BUFFER_SIZE];	++bufIdx;
+					if(bufEnd - bufIdx < nRanges * 10)
+						goto need_more;
+					for(size_t i = 0; i < nRanges; ++i) {
+						range = __readUShort(buf, bufIdx);			bufIdx += 2;
+						time = __readULong(buf, bufIdx); 			bufIdx += 8;
+						ranges.emplace_back(range, time);
+					}
+					break;
+				case 'I':
+					if(bufEnd - bufIdx < 20)
+						goto need_more;
+					g0 = __readShort(buf, bufIdx);		bufIdx += 2;
+					g1 = __readShort(buf, bufIdx);		bufIdx += 2;
+					g2 = __readShort(buf, bufIdx);		bufIdx += 2;
+					a0 = __readShort(buf, bufIdx);		bufIdx += 2;
+					a1 = __readShort(buf, bufIdx);		bufIdx += 2;
+					a2 = __readShort(buf, bufIdx);		bufIdx += 2;
+					time = __readULong(buf, bufIdx);   	bufIdx += 8;
+					orientation.update(g0, g1, g2, a0, a1, a2, time);
+					break;
+				need_more:
+					std::cerr << "need more\n";
+				default: 
 					--bufIdx;
 					mode = 0;
-					need = 1;
-					return false;
-				}
-				char t1 = (char) buf[bufIdx % BUFFER_SIZE];			++bufIdx;
-				switch(t1) {
-				case 'R':
-					range.addRange(__readUShort(buf, bufIdx));    	bufIdx += 2;
-					range.addAngle(__readUShort(buf, bufIdx)); 		bufIdx += 2;
-					range.setTimestamp(__readULong(buf, bufIdx));	bufIdx += 8;
-					range.setStatus(range.range() == 9999);
+					need = 3;
 					return true;
-				//case 'I':
-					//gyroTime = __readULong(buf, i);   i += 8;
-					//gyro[0] = __readShortR(buf, i);	  i += 2;
-					//gyro[1] = __readShortR(buf, i);	  i += 2;
-					//gyro[2] = __readShortR(buf, i);	  i += 2;
-					//acc[0] = __readShortR(buf, i);	  i += 2;
-					//acc[1] = __readShortR(buf, i);	  i += 2;
-					//acc[2] = __readShortR(buf, i);	  i += 2;
-					break;
-				default: 
-					bufIdx -= 2;
-					mode = 0;
-					need = 1;
-					return false;
 				}
 			}
+			return true;
 		}
 	}
 	return false;

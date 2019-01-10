@@ -39,6 +39,7 @@ set (JSON_INCLUDEDIR "/usr/include/jsoncpp")
 set (THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package (Threads REQUIRED)
+find_package (Eigen3 REQUIRED)
 #find_package (Boost 1.58 COMPONENTS system filesystem date_time thread REQUIRED)
 #find_package (GDAL 2.2 REQUIRED)
 #find_package (CGAL REQUIRED COMPONENTS Core)
@@ -59,7 +60,7 @@ find_package (Threads REQUIRED)
 #find_library (GL_LIBRARY GL)
 #find_library (GLEW_LIBRARY GLEW)
 #find_library (GLU_LIBRARY GLU)
-find_library (I2C_LIBRARY i2c)
+#find_library (I2C_LIBRARY i2c)
 
 project (test)
 
@@ -67,7 +68,7 @@ project (test)
 
 include_directories(BEFORE SYSTEM ./include ./src
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
-	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR})
+	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR} ${EIGEN3_INCLUDE_DIR})
 	
 if(${WITH_GUI})
 	include_directories(./build/sim1_autogen/include ${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} 
@@ -86,23 +87,23 @@ endif()
 
 # Build support libraries ################################################################################
 
-add_library (uav_serial src/comm/serial.cpp)
+add_library (uav_serial SHARED src/comm/serial.cpp)
 
-add_library (uav_i2c src/comm/i2c.cpp)
+add_library (uav_i2c SHARED src/comm/i2c.cpp)
 if (I2C_LIBRARY)
 	target_link_libraries (uav_i2c i2c)
 endif()
 
-#add_library (uav_imu src/sensor/minimu9v5.cpp)
+#add_library (uav_imu SHARED src/sensor/minimu9v5.cpp)
 #target_link_libraries (uav_imu uav_i2c)
 
-#add_library (uav_sf30c src/sensor/lwsf30c.cpp)
+#add_library (uav_sf30c SHARED src/sensor/lwsf30c.cpp)
 #target_link_libraries (uav_sf30c uav_serial)
 
-add_library (uav_teensy src/sensor/teensy.cpp)
+add_library (uav_teensy SHARED src/sensor/teensy.cpp)
 target_link_libraries (uav_teensy uav_serial)
 
-#add_library (uav_encoder src/sensor/ads1115.cpp)
+#add_library (uav_encoder SHARED src/sensor/ads1115.cpp)
 #target_link_libraries (uav_encoder uav_i2c)
  
 add_executable (controller src/controller.cpp)

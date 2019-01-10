@@ -141,6 +141,20 @@ public:
 	 */
 	virtual double altitude() const = 0;
 
+	/**
+	 * Return the 3D linear acceleration vector.
+	 *
+	 * @return The 3D linear acceleration vector.
+	 */
+	virtual const Eigen::Vector3d& acceleration() const = 0;
+
+	/**
+	 * Return the 3D angular velocity vector.
+	 *
+	 * @return The 3D angular velocity vector.
+	 */
+	virtual const Eigen::Vector3d& angularVelocity() const = 0;
+
 	virtual ~PlatformControlInput() {}
 };
 
