@@ -12,19 +12,36 @@ function _p2(t) {
 }
 
 
-function tj(ti, pi, pj, alpha) {
-  let a = _p(pj.x - pi.x, 2.0) + _p(pj.z - pi.z, 2.0);
+function crTJ(ti, pi, pj, alpha) {
+  let a = _p(pj.y - pi.y, 2.0) + _p(pj.z - pi.z, 2.0);
   let b = _s(a);
   let c = _p(b, alpha);
   return ti + c;
 }
 
+function catmullRomSplineT(t, p0, p1, p2, p3, alpha = 0.5, npoints = 10) {
+
+  const t0 = 0.0;
+  const t1 = crTJ(t0, p0, p1, alpha);
+  const t2 = crTJ(t1, p1, p2, alpha);
+  const t3 = crTJ(t2, p2, p3, alpha);
+
+  let a1 = p0.times((t1 - t) / (t1 - t0)).plus(p1.times((t - t0) / (t1 - t0)));
+  let a2 = p1.times((t2 - t) / (t2 - t1)).plus(p2.times((t - t1) / (t2 - t1)));
+  let a3 = p2.times((t3 - t) / (t3 - t2)).plus(p3.times((t - t2) / (t3 - t2)));
+  let b1 = a1.times((t2 - t) / (t2 - t0)).plus(a2.times((t - t0) / (t2 - t0)));
+  let b2 = a2.times((t3 - t) / (t3 - t1)).plus(a3.times((t - t1) / (t3 - t1)));
+  let c  = b1.times((t2 - t) / (t2 - t1)).plus(b2.times((t - t1) / (t2 - t1)));
+
+  return c;
+}
+
 function catmullRomSpline(p0, p1, p2, p3, alpha = 0.5, npoints = 10) {
 
-  t0 = 0.0;
-  t1 = tj(t0, p0, p1, alpha);
-  t2 = tj(t1, p1, p2, alpha);
-  t3 = tj(t2, p2, p3, alpha);
+  const t0 = 0.0;
+  const t1 = crTJ(t0, p0, p1, alpha);
+  const t2 = crTJ(t1, p1, p2, alpha);
+  const t3 = crTJ(t2, p2, p3, alpha);
 
   let out = []
 

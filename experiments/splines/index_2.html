@@ -21,26 +21,28 @@
     let drawPc;
 
     let speed = 4.0;
-    let nalpha = 25;
-    let pcalpha = 25;
     let altitude = 10;
+    let angle = 25.0;
+    let divergence = 1.0;
     let startTime;
     let running = false;
+    let alpha = 0.5;
+    let binSize = 10.0;
 
     let animY0 = 0;
     let animY1 = 0;
-    let lookAhead = 20;
 
     const stylePoint = '#aaffaa';
 
     function update(evt) {
       if(evt)
         evt.preventDefault();
-      nalpha = parseFloat(document.querySelector('#nalpha').value);
-      pcalpha = parseFloat(document.querySelector('#pcalpha').value);
+      angle = parseFloat(document.querySelector('#angle').value);
+      divergence = parseFloat(document.querySelector('#divergence').value);
       altitude = parseFloat(document.querySelector('#altitude').value);
       speed = parseFloat(document.querySelector('#speed').value);
-      lookAhead = parseFloat(document.querySelector('#lookahead').value);
+      alpha = parseFloat(document.querySelector('#alpha').value);
+      binSize = parseFloat(document.querySelector('#binSize').value);
     }
 
     function loadFile(evt) {
@@ -52,99 +54,130 @@
       });
     }
 
-    function animateHull(timestamp) {
-      if(startTime == null) {
-        startTime = timestamp;
-        requestAnimationFrame(animate);
-        return;
-      }
-      const canv = document.querySelector('#canv');
-      const ctx = canv.getContext('2d');
-      const screen = new Bounds(0, 0, 0, canv.width, 0, canv.height);
-      const t = (timestamp - startTime) / 1000.0;
-
-      animY0 = t * speed;
-      animY1 = animY0 + lookAhead;
-
-      let slice = pc.sliceY(animY0, animY1);
-      let hull = new PointCloud(getHull(slice.points, pcalpha));
-
-      slice.scale(screen, pc.bounds);
-
-      ctx.clearRect(0, 0, screen.length, screen.height);
-      ctx.fillStyle = stylePoint;
-      slice.points.forEach(pt => {
-        ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
-      });
-
-      hull.scale(screen, pc.bounds);
-
-      ctx.fillStyle = 'red';
-      ctx.strokeStyle = 'red';
-      ctx.beginPath();
-      ctx.fillRect(hull.points[0].y - 2, screen.zmax - hull.points[0].z - 2, 4, 4);
-      ctx.moveTo(hull.points[0].y, screen.zmax - hull.points[0].z);
-      for(let i = 1; i < hull.points.length; ++i) {
-        ctx.fillRect(hull.points[i].y - 2, screen.zmax - hull.points[i].z - 2, 4, 4);
-        ctx.lineTo(hull.points[i].y, screen.zmax - hull.points[i].z);
-      }
-      ctx.stroke();
-
-      if(running)
-        requestAnimationFrame(animate);
-    }
-
+    let accum = new PointCloud();
     let bins = new Map();
     let finals = new Map();
+    let tick = 0;
+    let pcframe = null;
 
     function animate(timestamp) {
+
+      tick += 100;
+
       if(startTime == null) {
-        startTime = timestamp;
+        // If this is the first frame, get the time and reschedule.
+        startTime = tick;
         requestAnimationFrame(animate);
         return;
       }
+
       const canv = document.querySelector('#canv');
       const ctx = canv.getContext('2d');
+
       const screen = new Bounds(0, 0, 0, canv.width, 0, canv.height);
-      const t = (timestamp - startTime) / 1000.0;
+      const t = (tick - startTime) / 1000.0;
 
       let bounds = pc.bounds.clone();
 
+      // The y (left to right) position is dictated by time.
       let y = t * speed;
-      let z = 100;
+      let z = altitude;
 
+      // Create a point to represent the UAV and a point cloud containing
+      // only the UAV (for display).
       let uav = new Point(0, y, z);
       let uavpc = new PointCloud([uav]);
       bounds.extend(uav);
 
-      let slice = pc.sliceYRay(y, z, -Math.PI * 0.05, Math.PI / 180);
+      // Get a copy of the point cloud.
+      let spc = new PointCloud(pc.points);
 
+      // The slice of the point cloud that will be displayed.
+      let slice = pc.sliceYRay(y, z, -angle * Math.PI / 180, divergence * Math.PI / 180);
+
+      // Bin the points from the slice. This is done to locate the highest
+      // point in each bin, for both display and analysis.
       slice.points.forEach(pt => {
-        let y = parseInt(pt.y / 10) * 10;
-        if(!bins.has(y) || pt.z > bins.get(y).z)
-          bins.set(y, pt.clone());
+        let yy = parseInt(pt.y / binSize) * binSize;
+        if(!bins.has(yy) || pt.z > bins.get(yy).z)
+          bins.set(yy, pt.clone());
+        accum.addPoint(pt.clone());
       });
 
-      slice.scale(screen, bounds);
+      // Get the convex hull of the accumulated points.
+      let hull = accum.getHull(binSize);
 
+      // A new point cloud from the points in the bins. Scale for display.
       let heights = new PointCloud(Array.from(bins.values()));
+
+      // Get the spline throught the binned heights.
+      let spline = getCRSplines(hull.points, alpha);
+
+      let tslice = hull.sliceSeg(y, 4);
+      let traj = null;
+      if(tslice.length == 4) {
+        const t0 = y;
+        const t1 = crTJ(t0, tslice[0], tslice[1], alpha);
+        const t2 = crTJ(t1, tslice[1], tslice[2], alpha);
+        let t = t1 + (t2 - t1) / 2;//(y - tslice[1].y);// / (tslice[2].y - tslice[1].y);
+        traj = new PointCloud([catmullRomSplineT(t, tslice[0], tslice[1], tslice[2], tslice[3], alpha)]);
+      }
+
+      // Scale point clouds for display.
       heights.scale(screen, bounds);
+      slice.scale(screen, bounds);
+      spc.scale(screen, bounds);
+      uavpc.scale(screen, bounds);
+      hull.scale(screen, bounds);
+      Point.scale(spline, screen, bounds);
+      if(traj)
+        traj.scale(screen, bounds);
 
       ctx.clearRect(0, 0, screen.length, screen.height);
+
+      // Draw the whole cloud lightly.
+      ctx.fillStyle = '#dddddd';
+      spc.points.forEach(pt => {
+        ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
+      });
+
+      // Draw the slice points.
       ctx.fillStyle = stylePoint;
       slice.points.forEach(pt => {
         ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
       });
 
+      // Draw the binned points.
       ctx.fillStyle = 'red';
       heights.points.forEach(pt => {
         ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
       });
 
-      uavpc.scale(screen, bounds);
+      ctx.fillStyle = 'green';
+      hull.points.forEach(pt => {
+        ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
+      });
+
+      // Draw the UAV.
       let uavpt = uavpc.points[0];
       ctx.fillStyle = 'black';
       ctx.fillRect(uavpt.y - 3, screen.zmax - uavpt.z - 3, 6, 6);
+
+      // Draw the height spline
+      if(spline.length) {
+        ctx.lineStyle = '1px solid blue';
+        ctx.beginPath();
+        ctx.moveTo(spline[0].y, spline[0].z);
+        for(let i = 1; i < spline.length; ++i)
+          ctx.lineTo(spline[i].y, screen.zmax - spline[i].z);
+        ctx.stroke();
+      }
+
+      if(traj) {
+        ctx.lineStyle = '1px solid fuscia';
+        ctx.fillStyle = 'fuscia';
+        ctx.fillRect(traj.points[0].y - 3, screen.zmax - traj.points[0].z - 3, 6, 6);
+      }
 
       if(running)
         requestAnimationFrame(animate);
@@ -154,6 +187,7 @@
       evt.preventDefault();
       update();
       startTime = null;
+      pcframe = null;
       running = true;
       bins.clear();
       requestAnimationFrame(animate);
@@ -188,10 +222,11 @@
     <table>
       <tr><td><label for="filename">File</label></td><td><select name="filename" id="filename"></select> <span id="loading"></span></td></tr>
       <tr><td><label for="speed">Speed (m/s)</label></td><td><input name="speed" id="speed" value="4" /></td></tr>
-      <tr><td><label for="lookahead">Look Ahead (m)</label></td><td><input name="lookahead" id="lookahead" value="4" /></td></tr>
-      <tr><td><label for="pcalpha">Point Cloud Hull Alpha</label></td><td><input id="pcalpha" name="pcalpha" onchange="update(event);" value="25" /></td></tr>
-      <tr><td><label for="nalpha">Normal Hull Alpha</label></td><td><input id="nalpha" name="nalpha" onchange="update(event);" value="25" /></td></tr>
-      <tr><td><label for="altitude">Altitude</label></td><td><input id="altitude" name="altitude" onchange="update(event);" value="10" /></td></tr>
+      <tr><td><label for="angle">Beam Angle (Down)</label></td><td><input id="angle" name="angle" onchange="update(event);" value="25" /></td></tr>
+      <tr><td><label for="divergence">Beam Divergence</label></td><td><input id="divergence" name="divergence" onchange="update(event);" value="1" /></td></tr>
+      <tr><td><label for="alpha">Alpha</label></td><td><input id="alpha" name="divergence" onchange="update(event);" value="0.75" /></td></tr>
+      <tr><td><label for="altitude">Altitude</label></td><td><input id="altitude" name="altitude" onchange="update(event);" value="100" /></td></tr>
+      <tr><td><label for="binSize">Bin Size</label></td><td><input id="binSize" name="binSize" onchange="update(event);" value="10" /></td></tr>
       <tr><td colspan="2"><button onclick="start(event);">Start</button> <button onclick="stop(event);">Stop</button></td></tr>
     </table>
   </form>
