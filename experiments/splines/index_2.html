@@ -21,9 +21,9 @@
     let drawPc;
 
     let speed = 4.0;
-    let altitude = 10;
+    let altitude = 100;
     let angle = 25.0;
-    let divergence = 1.0;
+    let divergence = 0.2;
     let startTime;
     let running = false;
     let alpha = 0.5;
@@ -55,8 +55,6 @@
     }
 
     let accum = new PointCloud();
-    let bins = new Map();
-    let finals = new Map();
     let tick = 0;
     let pcframe = null;
 
@@ -95,20 +93,13 @@
       // The slice of the point cloud that will be displayed.
       let slice = pc.sliceYRay(y, z, -angle * Math.PI / 180, divergence * Math.PI / 180);
 
-      // Bin the points from the slice. This is done to locate the highest
-      // point in each bin, for both display and analysis.
+      // Collect the accumulated points.
       slice.points.forEach(pt => {
-        let yy = parseInt(pt.y / binSize) * binSize;
-        if(!bins.has(yy) || pt.z > bins.get(yy).z)
-          bins.set(yy, pt.clone());
         accum.addPoint(pt.clone());
       });
 
       // Get the convex hull of the accumulated points.
       let hull = accum.getHull(binSize);
-
-      // A new point cloud from the points in the bins. Scale for display.
-      let heights = new PointCloud(Array.from(bins.values()));
 
       // Get the spline throught the binned heights.
       let spline = getCRSplines(hull.points, alpha);
@@ -124,7 +115,6 @@
       }
 
       // Scale point clouds for display.
-      heights.scale(screen, bounds);
       slice.scale(screen, bounds);
       spc.scale(screen, bounds);
       uavpc.scale(screen, bounds);
@@ -147,12 +137,7 @@
         ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
       });
 
-      // Draw the binned points.
-      ctx.fillStyle = 'red';
-      heights.points.forEach(pt => {
-        ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
-      });
-
+      // Draw the hull points.
       ctx.fillStyle = 'green';
       hull.points.forEach(pt => {
         ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
@@ -165,7 +150,7 @@
 
       // Draw the height spline
       if(spline.length) {
-        ctx.lineStyle = '1px solid blue';
+        ctx.strokeStyle = 'blue';
         ctx.beginPath();
         ctx.moveTo(spline[0].y, spline[0].z);
         for(let i = 1; i < spline.length; ++i)
@@ -174,10 +159,31 @@
       }
 
       if(traj) {
-        ctx.lineStyle = '1px solid fuscia';
+        ctx.strokeStyle = 'black';
         ctx.fillStyle = 'fuscia';
         ctx.fillRect(traj.points[0].y - 3, screen.zmax - traj.points[0].z - 3, 6, 6);
       }
+
+      let lookAhead = new PointCloud([
+        new Point(0, y + speed, altitude), 
+        new Point(0, y + speed * 2, altitude), 
+        new Point(0, y + speed * 3, altitude),
+        new Point(0, y + speed * 4, altitude),
+        new Point(0, y + speed * 5, altitude),
+        new Point(0, y + speed * 6, altitude),
+        new Point(0, y + speed * 7, altitude),
+        new Point(0, y + speed * 8, altitude),
+        new Point(0, y + speed * 9, altitude),
+        new Point(0, y + speed * 10, altitude)
+      ]);
+      lookAhead.scale(screen, bounds);
+      ctx.strokeStyle = '#ff00ff22';
+      lookAhead.points.forEach(pt => {
+        ctx.beginPath();
+        ctx.moveTo(pt.y - 2, screen.zmax);
+        ctx.lineTo(pt.y - 2, screen.zmin);
+        ctx.stroke();
+      });
 
       if(running)
         requestAnimationFrame(animate);
@@ -189,7 +195,7 @@
       startTime = null;
       pcframe = null;
       running = true;
-      bins.clear();
+      accum.reset();
       requestAnimationFrame(animate);
     }
 
@@ -214,9 +220,9 @@
 
       document.querySelector('#altitude').value = altitude;
       document.querySelector('#speed').value = speed;
-      document.querySelector('#binsize').value = binsize;
+      document.querySelector('#binSize').value = binSize;
       document.querySelector('#angle').value = angle;
-      document.querySelector('#spread').value = spread;
+      document.querySelector('#divergence').value = divergence;
 
     }
 
@@ -231,17 +237,16 @@
         <td><label for="filename">File</label></td><td><select name="filename" id="filename"></select> <span id="loading"></span></td>
         <td rowspan="7" style="padding-left: 20px;">
           <p>This thing demonstrates what the forward-looking laser will see. Choose a <strong>File</strong> and click <strong>Start</strong>.</p>
-          <p>The laser angle is the angle down from horizontal, in degrees. The beam angle is the spread of the beam (nominally 0.3˚).</p>
-          <p>The green dots are a point cloud extracted from a real lidar campaign. The laser sweeps back and forth across the swath, but the points are collapsed into a vertical plane, preserving only the y (forward) and z (vertical) dimensions.</p>
-          <p>The red dots represent the highest point seen in the point cloud within a given bin in the y-space. As the laser penetrates the canopy, the maximum hight is revised up until the laser passes.</p>
+          <p>The laser angle is the angle down from horizontal, in degrees. The beam angle is the spread of the beam (nominally 0.2˚).</p>
+          <p>The light green dots are a point cloud extracted from a real lidar campaign. The laser sweeps back and forth across the swath, but the points are collapsed into a vertical plane, preserving only the y (forward) and z (vertical) dimensions.</p>
+          <p>The dark green dots represent the concave hull of the accumulated point cloud. The concave hull is like the convex hull, except the length of a segment is limited by the <strong>Bin Size</strong> attribute. This is similar but not identical to an <em>alpha shape</em>.</p>
           <p>The space between the "laser frontier" and the spot directly below the UAV is the space from which the trajectory must be derived. The length of this space is dynamic and depends on the altitude of the UAV above the surface. There is no accounting for occlusion.</p>
           <p>The black dot is the UAV.</p>
-          <p>Next step: calculating the trajectory and following it.</p>
         </td>
       </tr>
       <tr><td><label for="speed">Speed (m/s)</label></td><td><input name="speed" id="speed" value="4" /></td></tr>
       <tr><td><label for="angle">Beam Angle (Down)</label></td><td><input id="angle" name="angle" onchange="update(event);" value="25" /></td></tr>
-      <tr><td><label for="divergence">Beam Divergence</label></td><td><input id="divergence" name="divergence" onchange="update(event);" value="1" /></td></tr>
+      <tr><td><label for="divergence">Beam Divergence</label></td><td><input id="divergence" name="divergence" onchange="update(event);" value="0.2" /></td></tr>
       <tr><td><label for="alpha">Alpha</label></td><td><input id="alpha" name="divergence" onchange="update(event);" value="0.75" /></td></tr>
       <tr><td><label for="altitude">Altitude</label></td><td><input id="altitude" name="altitude" onchange="update(event);" value="100" /></td></tr>
       <tr><td><label for="binSize">Bin Size</label></td><td><input id="binSize" name="binSize" onchange="update(event);" value="10" /></td></tr>

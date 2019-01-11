@@ -62,6 +62,8 @@ function catmullRomSpline(p0, p1, p2, p3, alpha = 0.5, npoints = 10) {
 }
 
 function getCRSplines(points, alpha = 0.95, npoints = 10) {
+  if(points.length < 4)
+    return [];
   let out = [];
   for(let i = 0; i < points.length - 3; ++i)
     Array.prototype.push.apply(out, catmullRomSpline(points[i], points[i + 1], points[i + 2], points[i + 3], alpha, npoints));

@@ -273,6 +273,8 @@ class PointCloud {
     }
 
     getHull(alpha) {
+      if(this.points.length < 3)
+        return new PointCloud([]);
       alpha *= alpha;
       const pts = this.points;
       pts.sort(_sortY);
