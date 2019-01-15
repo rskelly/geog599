@@ -148,9 +148,10 @@ class PointCloud {
 
 	constructor(points = null) {
 		this.reset();
+    this._set = new Set();
 		if(points) {
-      points.sort(_sortY);
 			points.forEach(pt => { this.addPoint(pt.clone()); });
+      this.sortY();
     }
 	}
 
@@ -160,13 +161,21 @@ class PointCloud {
 	}
 
 	addPoint(pt) {
-        this.points.push(pt);
-        this.bounds.extend(pt);		
+    if(!this._set.has(pt)) {
+      this.points.push(pt);
+      this.bounds.extend(pt);		
+    }
 	}
 
 	sortY() {
 		this.points.sort(_sortY);
 	}
+
+  filterY(ymin = -Number.MAX_VALUE, ymax = Number.MAX_VALUE) {
+    this.points = this.points.filter(pt => (pt.y >= ymin && pt.y <= ymax));
+    this.bounds.collapse();
+    this.points.forEach(pt => this.bounds.extend(pt));
+  }
 
 	/**
 	 * Load the given text file containing points as x, y, z.
@@ -281,12 +290,29 @@ class PointCloud {
       let hull = [pts[0], pts[1]];
       for(let i = 2; i < pts.length; ++i) {
         // The _length call limits the range of the search for a convex point; causes an alpha-like surface.
-        let c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]);
-        let l = _lengthY(hull[hull.length - 2], pts[i]);
+        let c, l;
         while(hull.length >= 2 && (c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i])) >= 0 && (alpha <= 0 || (l = _lengthY(hull[hull.length - 2], pts[i])) <= alpha))
           hull.pop();
         hull.push(pts[i]);
       }
+      let len;
+      do {
+        len = hull.length;
+        for(let i = 1; i < hull.length - 1; ++i) {
+          for(let j = i + 1; j < hull.length; ++j) {
+            console.log(i, j);
+            if(_lengthY(hull[i], hull[j]) < alpha) {
+              if(hull[i].z > hull[j].z) {
+                hull.splice(j, 1);
+                --j;
+              } else {
+                hull.splice(i, 1);
+                --i;
+              }
+            }
+          }
+        }
+      } while(len != hull.length);
       return new PointCloud(hull);
     }
 
