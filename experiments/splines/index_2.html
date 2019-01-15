@@ -31,11 +31,11 @@
         </td>
       </tr>
       <tr><td><label for="speed">Speed (m/s)</label></td><td><input name="speed" id="speed" value="4" /></td></tr>
+      <tr><td><label for="altitude">Altitude</label></td><td><input id="altitude" name="altitude" onchange="update(event);" value="100" /></td></tr>
       <tr><td><label for="angle">Beam Angle (Down)</label></td><td><input id="angle" name="angle" onchange="update(event);" value="25" /></td></tr>
       <tr><td><label for="divergence">Beam Divergence</label></td><td><input id="divergence" name="divergence" onchange="update(event);" value="0.2" /></td></tr>
-      <tr><td><label for="alpha">Alpha</label></td><td><input id="alpha" name="divergence" onchange="update(event);" value="0.75" /></td></tr>
-      <tr><td><label for="altitude">Altitude</label></td><td><input id="altitude" name="altitude" onchange="update(event);" value="100" /></td></tr>
-      <tr><td><label for="binSize">Bin Size</label></td><td><input id="binSize" name="binSize" onchange="update(event);" value="10" /></td></tr>
+      <tr><td><label for="spline_alpha">Spline Alpha</label></td><td><input id="spline_alpha" name="spline_alpha" onchange="update(event);" value="0.5" /></td></tr>
+      <tr><td><label for="hull_alpha">Hull Alpha</label></td><td><input id="hull_alpha" name="hull_alpha" onchange="update(event);" value="25" /></td></tr>
       <tr><td colspan="2"><button onclick="start(event);">Start</button> <button onclick="stop(event);">Stop</button></td></tr>
     </table>
   </form>

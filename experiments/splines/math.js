@@ -85,6 +85,10 @@ function _lengthY(p0, p1) {
   return _p(p0.y - p1.y, 2);
 }
 
+function _length(p0, p1) {
+  return _p(p0.y - p1.y, 2) + _p(p0.z - p1.z, 2) + _p(p0.x - p1.x, 2);
+}
+
 // Finds the maximum z within winsize Cartesian distance of the point at idx.
 function _inwindow(pts, idx, winsize) {
   let z = pts[idx].z;

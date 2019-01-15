@@ -4,29 +4,40 @@ const pc = new PointCloud();
 
 let drawPc;
 
-let speed = 4.0;
+let speed = 10.0;
 let altitude = 100;
 let angle = 25.0;
 let divergence = 0.2;
-let startTime;
 let running = false;
-let alpha = 0.5;
-let binSize = 10.0;
+let splineAlpha = 0.5;
+let hullAlpha = 10.0;
 
 let animY0 = 0;
 let animY1 = 0;
 
+let startTime;
+
 const stylePoint = '#aaffaa';
+
+function inputFloat(id) {
+  return parseFloat(document.querySelector(id).value);
+}
+
+function inputFloat(id, v = null) {
+  if(v !== null)
+    document.querySelector(id).value = v;
+  return parseFloat(document.querySelector(id).value);
+}
 
 function update(evt) {
   if(evt)
     evt.preventDefault();
-  angle = parseFloat(document.querySelector('#angle').value);
-  divergence = parseFloat(document.querySelector('#divergence').value);
-  altitude = parseFloat(document.querySelector('#altitude').value);
-  speed = parseFloat(document.querySelector('#speed').value);
-  alpha = parseFloat(document.querySelector('#alpha').value);
-  binSize = parseFloat(document.querySelector('#binSize').value);
+  angle = inputFloat('#angle');
+  divergence = inputFloat('#divergence');
+  altitude = inputFloat('#altitude');
+  speed = inputFloat('#speed');
+  splineAlpha = inputFloat('#spline_alpha');
+  hullAlpha = inputFloat('#hull_alpha');
 }
 
 function loadFile(evt) {
@@ -42,25 +53,6 @@ let accum = new PointCloud();
 let tick = 0;
 let pcframe = null;
 
-function drawPointCloud() {
-  const canv = document.querySelector('#canv');
-  const ctx = canv.getContext('2d');
-  const screen = new Bounds(0, 0, 0, canv.width, 0, canv.height);
-  const bounds = pc.bounds.clone();
-
-  let spc = new PointCloud(pc.points);
-  spc.scale(screen, bounds);
-
-  ctx.clearRect(0, 0, screen.length, screen.height);
-
-  // Draw the whole cloud lightly.
-  ctx.fillStyle = '#dddddd';
-  spc.points.forEach(pt => {
-    ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
-  });
-
-  pcframe = ctx.getImageData(0, 0, screen.length, screen.height);
-}
 
 function animate(timestamp) {
 
@@ -91,30 +83,44 @@ function animate(timestamp) {
   let uavpc = new PointCloud([uav]);
   bounds.extend(uav);
 
+  if(!pcframe) {
+    let spc = new PointCloud(pc.points);
+    spc.scale(screen, bounds);
+    ctx.clearRect(0, 0, screen.length, screen.height);
+    // Draw the whole cloud lightly.
+    ctx.fillStyle = '#dddddd';
+    spc.points.forEach(pt => {
+      ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
+    });
+    pcframe = ctx.getImageData(0, 0, screen.length, screen.height);
+    ctx.clearRect(0, 0, screen.length, screen.height);
+  }
+
   // The slice of the point cloud that will be displayed.
   let slice = pc.sliceYRay(y, z, -angle * Math.PI / 180, divergence * Math.PI / 180);
 
   // Remove points behind the craft.
-  accum.filterY(y - binSize);
+  accum.filterY(y - hullAlpha * 3);
 // Collect the accumulated points.
   slice.points.forEach(pt => {
     accum.addPoint(pt.clone());
   });
   
   // Get the convex hull of the accumulated points.
-  let hull = accum.getHull(binSize);
+  let hull = accum.getHull(hullAlpha);
 
   // Get the spline throught the binned heights.
-  let spline = getCRSplines(hull.points, alpha);
+  let spline = getCRSplines(hull.points, splineAlpha);
 
+  // Get a slice of the hull. Use this to try to compute the location of the UAV on the spline.s
   let tslice = hull.sliceSeg(y, 4);
   let traj = null;
   if(tslice.length == 4) {
     const t0 = y;
-    const t1 = crTJ(t0, tslice[0], tslice[1], alpha);
-    const t2 = crTJ(t1, tslice[1], tslice[2], alpha);
+    const t1 = crTJ(t0, tslice[0], tslice[1], splineAlpha);
+    const t2 = crTJ(t1, tslice[1], tslice[2], splineAlpha);
     let t = t1 + (t2 - t1) / 2;//(y - tslice[1].y);// / (tslice[2].y - tslice[1].y);
-    traj = new PointCloud([catmullRomSplineT(t, tslice[0], tslice[1], tslice[2], tslice[3], alpha)]);
+    traj = new PointCloud([catmullRomSplineT(t, tslice[0], tslice[1], tslice[2], tslice[3], splineAlpha)]);
   }
 
   // Scale point clouds for display.
@@ -155,25 +161,20 @@ function animate(timestamp) {
     ctx.stroke();
   }
 
+  // If there's a trajectory, draw it.
   if(traj) {
     ctx.strokeStyle = 'black';
     ctx.fillStyle = 'fuscia';
     ctx.fillRect(traj.points[0].y - 3, screen.zmax - traj.points[0].z - 3, 6, 6);
   }
 
-  let lookAhead = new PointCloud([
-    new Point(0, y + speed, altitude), 
-    new Point(0, y + speed * 2, altitude), 
-    new Point(0, y + speed * 3, altitude),
-    new Point(0, y + speed * 4, altitude),
-    new Point(0, y + speed * 5, altitude),
-    new Point(0, y + speed * 6, altitude),
-    new Point(0, y + speed * 7, altitude),
-    new Point(0, y + speed * 8, altitude),
-    new Point(0, y + speed * 9, altitude),
-    new Point(0, y + speed * 10, altitude)
-  ]);
+  // Set up a series of look-ahead lines, 1 second eachl
+  let lookAhead = new PointCloud();
+  for(let i = 0; i < 10; ++i) 
+    lookAhead.addPoint(new Point(0, y + speed * i, altitude));
   lookAhead.scale(screen, bounds);
+
+  // Draw the look-ahead.
   ctx.strokeStyle = '#ff00ff22';
   lookAhead.points.forEach(pt => {
     ctx.beginPath();
@@ -193,7 +194,6 @@ function start(evt) {
   pcframe = null;
   running = true;
   accum.reset();
-  drawPointCloud();
   requestAnimationFrame(animate);
 }
 
@@ -216,10 +216,11 @@ function init() {
   });
   sel.addEventListener('change', loadFile);
 
-  document.querySelector('#altitude').value = altitude;
-  document.querySelector('#speed').value = speed;
-  document.querySelector('#binSize').value = binSize;
-  document.querySelector('#angle').value = angle;
-  document.querySelector('#divergence').value = divergence;
+  inputFloat('#altitude', altitude);
+  inputFloat('#speed', speed);
+  inputFloat('#spline_alpha', splineAlpha);
+  inputFloat('#angle', angle);
+  inputFloat('#divergence', divergence);
+  inputFloat('#hull_alpha', hullAlpha);
 
 }

@@ -291,28 +291,33 @@ class PointCloud {
       for(let i = 2; i < pts.length; ++i) {
         // The _length call limits the range of the search for a convex point; causes an alpha-like surface.
         let c, l;
-        while(hull.length >= 2 && (c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i])) >= 0 && (alpha <= 0 || (l = _lengthY(hull[hull.length - 2], pts[i])) <= alpha))
+        while(hull.length >= 2 && (c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i])) >= 0)// && (alpha <= 0 || (l = _length(hull[hull.length - 2], pts[i])) <= alpha))
           hull.pop();
         hull.push(pts[i]);
       }
+      /*
       let len;
       do {
         len = hull.length;
         for(let i = 1; i < hull.length - 1; ++i) {
           for(let j = i + 1; j < hull.length; ++j) {
-            console.log(i, j);
             if(_lengthY(hull[i], hull[j]) < alpha) {
               if(hull[i].z > hull[j].z) {
-                hull.splice(j, 1);
-                --j;
+                if(j > i) {
+                  hull.splice(j, 1);
+                  --j;
+                }
               } else {
-                hull.splice(i, 1);
-                --i;
+                if(i > 0) {
+                  hull.splice(i, 1);
+                  --i;
+                }
               }
             }
           }
         }
       } while(len != hull.length);
+      */
       return new PointCloud(hull);
     }
 

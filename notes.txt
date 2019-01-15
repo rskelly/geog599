@@ -1,6 +1,6 @@
 - minimize/stabilize geometric scale distortion, along and across track
 - minimize/stabilize point density variation (same as scale)
-- minimize/stabilize SNR
+- maximize/stabilize SNR
 - minimize battery usage
 
 - requirements
@@ -13,7 +13,7 @@
 
 - platform thrust and rotation vectors
 	- thrust is always in line with the platform's z axis. platform rotates in y to direct thrust
-	  rearward or forward to control velocity in x.
+	  rearward or forward to control velocity in y.
 	- when grounded, thrust vector magnitude is zero; rotation vector is [0, 0, 0]
 	- when hovering, thrust vector in body and intertial frames is [0, 0, >0], rotation vector is [0, 0, 0]
 	- when moving, thrust vector in body frame is t0 = [0, 0, >0], inertial frame is t1 = [x > 0, y = 0, 0 < z < t0[2]]
@@ -65,6 +65,24 @@
 	- may be an opportunity to adjust trajectory to maximize efficiency without harming imagery metrics.
 	
 
+- surface reconstruction
+	- there will be no surface reconstructon. though the laser scans back and forth, there is no affordable/precise/accurate
+  	  way to measure it, so this will not be done (the hall effect encoder is pretty, but it has too much hysteresis.)
+  	- the points measured by the laser will be collapsed into a plane along the y and z axes. this will constitute the
+  	  "surface" along which the vehicle flies. imagine the plan extruded in x for a solid representing the landscape.
+  	- the surface hull is estimated by something approximating the alpha-shape (concave hull): the convex hull algorithm is used,
+  	  but an upper-bound is placed by the length (in y) of a segment. a second pass identifies all locations where two vertices
+  	  are nearer than this distance and the one with the larger z-coordinate is kept. the other is discarded.
+  	- an interpolating cubic spline is used with the hull points to generate a curve parallel to the trajectory.
+
+- trajectory spline
+	- the spline traces the path through the points on the hull; offset, this serves as a prototype for the trajectory.
+	- several types of splines exist -- weighted and constrained cubic splines reduce over-shoot at vertices where
+	  a rapid change in trajectory occurs.
+
+
+
+deprecated
 
 - surface reconstruction
 	- there are lots of ways to build surfaces from point clouds, some of them fast, some not.
