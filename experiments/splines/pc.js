@@ -291,34 +291,38 @@ class PointCloud {
       for(let i = 2; i < pts.length; ++i) {
         // The _length call limits the range of the search for a convex point; causes an alpha-like surface.
         let c, l;
-        while(hull.length >= 2 && (c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i])) >= 0)// && (alpha <= 0 || (l = _length(hull[hull.length - 2], pts[i])) <= alpha))
+        while(hull.length >= 2 && (c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i])) >= 0 && (alpha <= 0 || (l = _lengthY(hull[hull.length - 2], pts[i])) <= alpha))
           hull.pop();
         hull.push(pts[i]);
       }
-      /*
-      let len;
+      let i = 1;
+      let p = 0;
+      let m = -1;
       do {
-        len = hull.length;
-        for(let i = 1; i < hull.length - 1; ++i) {
-          for(let j = i + 1; j < hull.length; ++j) {
-            if(_lengthY(hull[i], hull[j]) < alpha) {
-              if(hull[i].z > hull[j].z) {
-                if(j > i) {
-                  hull.splice(j, 1);
-                  --j;
-                }
-              } else {
-                if(i > 0) {
-                  hull.splice(i, 1);
-                  --i;
-                }
-              }
-            }
-          }
+        m = i;// m < 0 || hull[i].z > hull[m].z ? i : m;
+        if(_lengthY(hull[p], hull[i]) >= alpha) {
+          hull[++p] = hull[m];
+          m = -1;
         }
-      } while(len != hull.length);
-      */
+      } while(++i < hull.length)
+      hull = hull.slice(0, p + 1);
+
       return new PointCloud(hull);
+    }
+
+    getBinned(size) {
+      let map = new Map();
+      this.points.forEach(pt => {
+        let y = parseInt(pt.y / size) * size;
+        if(!map.has(y)) {
+          map.set(y, pt.clone());
+        } else if(pt.z > map.get(y).z) {
+          let p = pt.clone();
+          p.y = y + size / 2;
+          map.set(y, p);
+        }
+      });
+      return new PointCloud(Array.from(map.values()));
     }
 
     clone() {

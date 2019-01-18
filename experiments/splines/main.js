@@ -52,6 +52,7 @@ function loadFile(evt) {
 let accum = new PointCloud();
 let tick = 0;
 let pcframe = null;
+let uav;
 
 
 function animate(timestamp) {
@@ -61,6 +62,7 @@ function animate(timestamp) {
   if(startTime == null) {
     // If this is the first frame, get the time and reschedule.
     startTime = tick;
+    uav.update(startTime);
     requestAnimationFrame(animate);
     return;
   }
@@ -77,10 +79,11 @@ function animate(timestamp) {
   let y = t * speed;
   let z = altitude;
 
+  uav.update(tick);
+
   // Create a point to represent the UAV and a point cloud containing
   // only the UAV (for display).
-  let uav = new Point(0, y, z);
-  let uavpc = new PointCloud([uav]);
+  let uavpc = new PointCloud([new Point(uav.x, uav.y, uav.z)]);
   bounds.extend(uav);
 
   if(!pcframe) {
@@ -100,14 +103,14 @@ function animate(timestamp) {
   let slice = pc.sliceYRay(y, z, -angle * Math.PI / 180, divergence * Math.PI / 180);
 
   // Remove points behind the craft.
-  accum.filterY(y - hullAlpha * 3);
+  //accum.filterY(y - hullAlpha * 3);
 // Collect the accumulated points.
   slice.points.forEach(pt => {
     accum.addPoint(pt.clone());
   });
   
   // Get the convex hull of the accumulated points.
-  let hull = accum.getHull(hullAlpha);
+  let hull = accum.getBinned(hullAlpha); //accum.getHull(hullAlpha);
 
   // Get the spline throught the binned heights.
   let spline = getCRSplines(hull.points, splineAlpha);
@@ -194,6 +197,8 @@ function start(evt) {
   pcframe = null;
   running = true;
   accum.reset();
+  uav = UAV.createMatrice600([pc.points[0].x, pc.points[0].y, altitude]);
+  uav.setVelocity([0, speed, 0]);
   requestAnimationFrame(animate);
 }
 
