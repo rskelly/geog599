@@ -1,3 +1,5 @@
+const G = 9.80665;
+
 /**
  * Gives the vertical component of thrust for the given angle in radians (from vertical).
  */
@@ -41,16 +43,25 @@ class UAV {
 		this.position = position;
 		this.config = config;
 		this.thrust = 0;
-		this.rotation = [0, 0, 0];
+		this.rotation = [0, 0, 1];
 		this.rotVelocity = [0, 0, 0];
 		this.linVelocity = [0, 0, 0];
+
+		this.rotTarget = null;
 	}
 
 	/**
 	 * Set the thrust to a value between 0-1.
 	 */
 	setThrust(v) {
-		this.thrust = this.config.maxthrust * _limit(0, 1);
+		this.thrust = this.config.maxthrust * _limit(0, 1) * G;
+	}
+
+	rotateTo(r, v = null) {
+		//this.rotTarget = r;
+		//if(v)
+		//	this.setRotationalVelocity(v);
+		this.rotation = r; // TODO
 	}
 
 	/**
