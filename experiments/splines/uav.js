@@ -43,7 +43,7 @@ class UAV {
 		this.position = position;
 		this.config = config;
 		this.thrust = 0;
-		this.rotation = [0, 0, 1];
+		this.rotation = [0, 0, ]1;
 		this.rotVelocity = [0, 0, 0];
 		this.linVelocity = [0, 0, 0];
 

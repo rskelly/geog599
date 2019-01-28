@@ -1,9 +1,16 @@
+#include "Stepper.h"
+
 #include "minimu9v5.h"
 
 #define BUFFER_SIZE 512
 #define SERIAL_SIZE 255               // Has to be a byte
 
-#define PWM_1       ((byte) 23)       // PWM output pin 1
+#define PWM_1       23       // PWM output pin 1
+#define STP_A1      5        // Stepper A1
+#define STP_A2      6        // Stepper A2
+#define STP_B1      3        // Stepper B1
+#define STP_B2      4        // Stepper B2
+#define STEPS       20
 #define ENC_OUT     A7                // Encoder OUT pin
 #define LASER_SYNC  ((byte) 2)        // Laser sync pin
 
@@ -16,6 +23,7 @@ volatile size_t rangeIdx = 0;
 volatile size_t lastIdx = 0;
 
 MinIMU9v5 imu;
+Stepper stp(STEPS, STP_A1, STP_A2, STP_B1, STP_B2);
 
 void setup() {
 
@@ -31,8 +39,16 @@ void setup() {
   
   analogReference(DEFAULT);
   
-  // Pins for the drive motor speed.
+  // Pins for the drive motor.
   pinMode(PWM_1, OUTPUT);
+
+  // Pins for the stepper.
+  pinMode(STP_A1, OUTPUT);
+  pinMode(STP_A2, OUTPUT);
+  pinMode(STP_B1, OUTPUT);
+  pinMode(STP_B2, OUTPUT);
+
+  stp.setSpeed(1000);
   
   // Pin for laser sync
   pinMode(LASER_SYNC, INPUT);
@@ -49,6 +65,8 @@ void loop() {
   static byte buf[SERIAL_SIZE] = {'#', '!', 0};
   static int16_t gyro[3] = {0};
   static int16_t accel[3] = {0};
+  static float gyrof[3] = {0};
+  static float accelf[3] = {0};
   static size_t idx;
   static size_t i;
   static size_t headChunk = 3;
@@ -68,8 +86,10 @@ void loop() {
 
   // Get the IMU state and times.
   imuTime0 = micros();
-  if((hasImu = imu.getState(gyro, accel)))
+  if((hasImu = imu.getState(gyro, accel))) {
     imuTime1 = micros();
+    imu.convertState(gyro, accel, gyrof, accelf); // Convert to float values.
+  }
   
   // The data start index is 3. 2 is where the packet length will go.
   idx = 3;

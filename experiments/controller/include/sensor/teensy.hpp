@@ -13,6 +13,8 @@
 #define IMU_ASCALE 	2.0
 #define IMU_GSCALE 	245.0
 #define TO_RAD 		(PI / 180.0)
+#define GRAVITY		9.80665
+
 
 #define G_CONV ((1.0 / IMU_DIVISOR) * IMU_GSCALE * TO_RAD)
 #define A_CONV ((1.0 / IMU_DIVISOR) * IMU_ASCALE)

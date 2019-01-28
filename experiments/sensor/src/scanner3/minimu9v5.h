@@ -188,6 +188,10 @@ class MinIMU9v5 {
 private:
   byte m_gyroAddr;
   byte m_magAddr;
+  byte m_gyroConfig;
+  byte m_accelConfig;
+  float m_gyroFullScale;
+  float m_accelFullScale;
 
   // Read the short out of the buffer. The low byte is first.
   inline int16_t readShort(byte* buf, int pos) {
@@ -206,15 +210,18 @@ public:
     Wire.pinConfigure(I2C_PINS_18_19, I2C_PULLUP_INT);
 
     // Configure gyroscope
-    writeByte(m_gyroAddr, CTRL2_G, (GDR_1660Hz << 4) | (GFS_245dps << 2));
+    m_gyroFullScale = 1.0 / (245.0 * 0xffff);
+    m_gyroConfig = (GDR_1660Hz << 4) | (GFS_245dps << 2);
+    writeByte(m_gyroAddr, CTRL2_G, m_gyroConfig);
     writeByte(m_gyroAddr, CTRL7_G, 0);
 
     // Configure accelerometr
-    writeByte(m_gyroAddr, CTRL1_XL, (ADR_1660Hz << 4) | (AFS_2g << 2) | AAFB_400Hz);
+    m_accelFullScale = 1.0 / (2.0 * 0xffff);
+    m_accelConfig = (ADR_1660Hz << 4) | (AFS_2g << 2) | AAFB_400Hz;
+    writeByte(m_gyroAddr, CTRL1_XL, m_accelConfig);
 
     // Configure other.
     writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 2));
-    
   }
 
   /**
@@ -228,7 +235,6 @@ public:
     int pos;
     
     byte stat = readByte(m_gyroAddr, STATUS_REG);
-
     if(stat & 0b11) {
       // Gyro and accel.
       int r = readBytes(m_gyroAddr, OUTX_L_G, buf, 12);
@@ -243,6 +249,16 @@ public:
         return true;
       }
     }
+    return false;
+  }
+
+  bool convertState(int16_t* gyro, int16_t* accel, float* gyrof, float* accelf) {
+    gyrof[0] = gyro[0] * m_gyroFullScale;
+    gyrof[1] = gyro[1] * m_gyroFullScale;
+    gyrof[2] = gyro[2] * m_gyroFullScale;
+    accelf[0] = accel[0] * m_accelFullScale;
+    accelf[1] = accel[1] * m_accelFullScale;
+    accelf[2] = accel[2] * m_accelFullScale;
     return false;
   }
 

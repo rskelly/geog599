@@ -20,9 +20,7 @@
 #include <list>
 #include <thread>
 
-#include "sensor/ads1115.hpp"
 #include "sensor/teensy.hpp"
-//#include "sensor/minimu9v5.hpp"
 
 //constexpr double PI = 3.141592653589793;
 
@@ -38,39 +36,17 @@ public:
 
 	bool start() {
 		using namespace sensor;
-		/*
-		m_imu.setGyroDataRate(GDR_1660Hz);
-		m_imu.setGyroFullScale(GFS_245dps);
-		m_imu.setAccelDataRate(ADR_1660Hz);
-		m_imu.setAccelFullScale(AFS_2g);
-		if(!m_imu.open("/dev/i2c-1", 0x6b, 0x1e)) {
-			std::cerr << "Failed to connect to IMU.\n";
-			return false;
-		}
-		*/
+
 		if(!m_scanner.open("/dev/ttyACM0", B115200)) {//B921600)) {
 			std::cerr << "Failed to connect to scanner.\n";
 			return false;
 		}
-		/*
-		if(m_adc.open("/dev/i2c-1", 0x48)) {
-			m_adc.setGain(0);
-			m_adc.setDataRate(0b111);
-			m_adc.setOneShot();
-			if(!m_adc.saveConfig()) {
-				std::cerr << "Failed to save ADC config.\n";
-				return false;
-			}
-		} else {
-			std::cerr << "Failed to connect to ADC.\n";
-			return false;
-		}
-		*/
+
 		return true;
 	}
 
 	void stop() {
-		//m_imu.close();
+		m_scanner.close();
 	}
 
 	std::list<double> __range;
@@ -100,20 +76,15 @@ public:
 
 };
 
-#define G 9.80665
-
 int main(int argc, char** argv) {
 
 	Controller cont;
 	std::vector<sensor::Range> ranges;
 	sensor::Orientation orientation;
 
-	Eigen::Vector3d g(0.0, 0.0, 1.0); // Down
-
-	double px = 0, py = 0, pz = 0;
-	double rx = 0, ry = 0, rz = 0;
-	double vpx = 0, vpy = 0, vpz = 0;
-	double vrx = 0, vry = 0, vrz = 0;
+	Eigen::Vector3d g(0.0, 0.0, GRAVITY); // Down
+	Eigen::Matrix3d orientI; // Initial orientation
+	
 	uint64_t ot0 = 0, ot1 = 0;
 	double t = 0.0;
 	if(cont.start()) {
@@ -122,19 +93,30 @@ int main(int argc, char** argv) {
 			if(!cont.step(t, ranges, orientation)) {
 				break;
 			} else {
-				for(sensor::Range& r : ranges) {
+				//for(sensor::Range& r : ranges) {
 					//std::cerr << "Range: " << r.range() << ", " << r.timestamp() << "\n";
-				}
-				ranges.clear();
+				//}
+				//ranges.clear();
+				Eigen::Vector3d accelBody = orientation.accel();
+
 				if(ot0 == 0) {
 					ot0 = ot1 = orientation.timestamp();
+					Eigen::AngleAxisd roll(accelBody[1], Eigen::Vector3d::UnitY());
+					Eigen::AngleAxisd pitch(accelBody[0], Eigen::Vector3d::UnitX());
+					Eigen::AngleAxisd yaw(accelBody[2], Eigen::Vector3d::UnitZ());
+					Eigen::Quaternion<double> q = roll * yaw * pitch;
+					orientI = q.matrix();
+					std::cerr << "Initial orientation: " << orientI << "\n";
 				} else {
 					ot1 = orientation.timestamp();
 				}
-				Eigen::Vector3d accel = orientation.accel();
-				Eigen::Vector3d gyro = orientation.gyro();
-				std::cerr << "Accel: " << accel.norm() << ", " << accel[0] << ", " << accel[1] << ", " << accel[2] << ", " << ot1 << "\n";
-				std::cerr << "Gyro: " << gyro.norm() << ", " << gyro[0] << ", " << gyro[1] << ", " << gyro[2] << ", " << ot1 << "\n";
+				//Eigen::Vector3d accelBody = orientation.accel();
+				Eigen::Vector3d gyroBody = orientation.gyro();
+				std::cerr << "Accel: " << accelBody.norm() << ", " << accelBody[0] << ", " << accelBody[1] << ", " << accelBody[2] << ", " << ot1 << "\n";
+				//std::cerr << "Gyro: " << gyroBody.norm() << ", " << gyroBody[0] << ", " << gyroBody[1] << ", " << gyroBody[2] << ", " << ot1 << "\n";
+				Eigen::Vector3d accelInert = accelBody - orientI * g;
+				//std::cerr << "Accel: " << accelInert.norm() << ", " << accelInert[0] << ", " << accelInert[1] << ", " << accelInert[2] << "\n";
+				/*
 				if(ot1 - ot0 > 0) {
 					double ot = (double) (ot1 - ot0) / 1000000.0;
 					vpx += accel[0] * ot;
@@ -155,6 +137,7 @@ int main(int argc, char** argv) {
 					//std::cerr << "a " << accel[0] << ", " << accel[1] << ", " << accel[2] << "\n";
 					//std::cerr << "g " << gyro[0] << ", " << gyro[1] << ", " << gyro[2] << "\n";
 				}
+				*/
 				ot0 = ot1;
 			}
 			std::this_thread::yield();
