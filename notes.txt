@@ -80,7 +80,12 @@
 	- several types of splines exist -- weighted and constrained cubic splines reduce over-shoot at vertices where
 	  a rapid change in trajectory occurs.
 
-
+- the spline through binned or hull points traces what looks like an ideal path.
+  	- because velocity in y must remain constant, the velocity in z will vary independently, along with the combined velocity.
+  	- as the vehicle travels down the slope, its velocity must be constrained by thrust. it must anticipate the leveling-out
+  	  by looking a certain distance ahead. this distance depends on the slope, the downward velocity, the change in slope
+  	  and the amount of available thrust.
+  	  
 
 deprecated
 

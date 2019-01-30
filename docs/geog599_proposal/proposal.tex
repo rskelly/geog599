@@ -38,11 +38,11 @@ etc...
 
 \section{Problem Statement}
 
-In the field of remote sensing with unmanned aerial vehicles (UAVs), the flight plan is generally pre-defined using purpose-built software and followed automonmously by the aircraft. Currently-available software allows the creation of flight plans only in the horizontal plane \cite{AruPilot2018,DJI2018a,Microdrones2018,Group2018,UAVToolbox2018}, leaving it to the pilot to set an altitude sufficient to clear the terrain and any obstacles in the study area. Some software packages allow the selection or production of a digital elevation model (DEM) \cite{PrecisionHawk2018,UgCS2018}, but these are either tied to coarse, publicly-available datasets (which may be out of date, poorly-documented, incompatible with the working coordinate system or of doubtful provenance), or require a pre-flight and subsequent photogrammetric or LiDAR processing to produce a DEM. In either case, the resulting three-dimensional flight plan is oriented primarly towards \emph{terrain avoidance} rather than \emph{surface following}.
+In the field of remote sensing with unmanned aerial vehicles (UAVs), the flight plan is generally pre-defined using purpose-built software and followed (semi-) automonmously by the aircraft. Most currently-available software allows the creation of flight plans only in the horizontal plane \cite{AruPilot2018,DJI2018a,Microdrones2018,Group2018,UAVToolbox2018}, leaving it to the pilot to set an altitude sufficient to clear the terrain and any obstacles in the study area. Some software packages allow the selection or production of a digital elevation model (DEM) \cite{PrecisionHawk2018,UgCS2018}, but these are either tied to coarse, publicly-available datasets (which may be out of date, poorly-documented, incompatible with the working coordinate system or of doubtful provenance), or require a pre-flight and subsequent photogrammetric or LiDAR processing to produce a DEM. In either case, the resulting three-dimensional flight plan is oriented primarly towards \emph{terrain} or \emph{obstacle avoidance} rather than \emph{surface following}.
 
-In the remote sensing context, the notion of surface following has a particular significance. The objective is not merely to avoid colliding with the terrain, but to maintain an altitude and attitude with respect to the sensed surface which preserves the quality -- image scale and distortion, point density, signal-to-noise ratio, etc. -- of the data products. Given limitations on the energy-density of current batteries, and thus flight time, the ability to follow a trajectory safely and efficiently is also a major concern.
+In the remote sensing context, the notion of surface following has a particular significance. The objective is not merely to avoid colliding with the terrain, but to maintain an altitude and attitude with respect to the sensed surface (which may be a vegetative canopy or the terrain itself) which preserves the quality -- image scale and distortion, point density, signal-to-noise ratio, etc. -- of the data products. Given limitations on the energy-density of current batteries, and thus flight duration, the ability to follow a trajectory safely and efficiently is also a major concern.
 
-The present research concerns the development of a real-time, predictive, optimal flight-planning system for UAV remote sensing; to satisfy the objectives of a remote-sensing mission while resolving some of the inadequacies of existing mission-planning software packages. The system will use a forward-looking laser rangefinder to generate a two-dimensional point cloud from which a trajectory will be computed, in the form of a piecwise cubic spline. Specifically, this document proposes a rationale and procedures for selecting the type of spline (e.g., natural, constrained, weighted) and a method for parameterizing the spline to satisfy the data-quality, efficiency and safety constraints as described. 
+The present research concerns the development of a real-time, predictive, optimal flight-planning system for UAV remote sensing, to satisfy the objectives of a remote-sensing mission while resolving some of the inadequacies of existing mission-planning software packages. The system will use a forward-looking laser rangefinder to generate a two-dimensional point cloud from which a trajectory will be computed, in the form of a piecwise cubic spline. Specifically, this document proposes a rationale and procedures for selecting the type of spline (e.g., natural, constrained, weighted) and a method for parameterizing the spline to satisfy the data-quality, efficiency and safety constraints as described. 
 
 \section{Background}
 
@@ -91,6 +91,17 @@ In the foregoing instances, a regular pattern of variation prevails, but there a
 
 
 \subsection{Cubic Splines}
+
+The word "spline" originates in construction, where long, flexible wooden beams, called splines, were used to model curves. Splines have a tendency, when held at two or more points, called "ducks," to seek a shape which minimizes stored energy in the beam. As such, the spline could be considered an optimal interpolator \cite{Wegman2016}. In mathematics, the spline is usually represented by piecewise cubic polynomials, one for each pair of ducks, or \emph{knots}, distinguished by the permissible dicontinuities at the ends. The minimum-energy constraint is modelled by minimizing mean square curvature of the polynomial \cite{Wegman2016}.
+
+The mechanical spline is, of course, an interpolator -- it passes through each of the "ducks." At
+
+The constraints placed on the spline's ends determine the type of spline. In a "free" spline, the ends are free to assume any angle. In a "natural" spline, the ends are held at a specific angle. 
+
+In mathematics, the spline is an attempt to model this physical behaviour. 
+
+
+
 
 
 The purpose of this research is to develop a forward-looking, predictive, terrain-following system for the control of unmanned aerial vehicles for remote sensing. 
