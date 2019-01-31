@@ -25,6 +25,8 @@ if(${WITH_GUI})
 	set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu/cmake/Qt5")
 endif()
 
+set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};/opt/dji")
+
 set (Boost_DEBUG OFF)
 set (Boost_USE_STATIC_LIBS OFF)
 set (Boost_USE_STATIC_RUNTIME OFF)
@@ -45,7 +47,7 @@ find_package (Eigen3 REQUIRED)
 #find_package (CGAL REQUIRED COMPONENTS Core)
 #find_package (PCL 1.8 REQUIRED)
 #find_package (OpenCV REQUIRED)
-
+find_package (DJIOSDK REQUIRED)
 #if(${WITH_GUI})
 #	find_package(Qt5 REQUIRED Core Widgets Gui)
 #endif()
@@ -66,12 +68,13 @@ project (test)
 
 # Configure directories###################################################################################
 
-include_directories(BEFORE SYSTEM ./include ./src
+include_directories(BEFORE SYSTEM ./include ./src /opt/dji/include
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR} ${EIGEN3_INCLUDE_DIR})
 	
 if(${WITH_GUI})
-	include_directories(./build/sim1_autogen/include ${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} 
+	include_directories(./build/sim1_autogen/include /opt/dji/lib 
+		${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} 
 		${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
 endif()
  
@@ -106,5 +109,5 @@ target_link_libraries (uav_teensy uav_serial)
 #add_library (uav_encoder SHARED src/sensor/ads1115.cpp)
 #target_link_libraries (uav_encoder uav_i2c)
  
-add_executable (controller src/controller.cpp)
-target_link_libraries (controller uav_teensy)# uav_imu uav_teensy uav_encoder)
+add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
+target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
