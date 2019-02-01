@@ -21,7 +21,7 @@ function tridiagonal(a, b, c, r, u, n) {
 	const gamc = gam.column(0);
 	let bet = b.get(0);
 	u.set(0, r.get(0) / bet);
-	for(let j = 1; j < n) {
+	for(let j = 1; j < n; ++j) {
 		gamc.set(j, c.get(j - 1) / bet);
 		bet = b.get(j) - a.get(j) * gamc.get(j);
 		if(bet == 0)
@@ -70,7 +70,7 @@ function luDecomp(a, n, indx) {
 	let sum, dum;
 	let d = 1;
 	for(let i = 0; i < n; ++i) {
-		for(let j = 0, j < n; ++j) {
+		for(let j = 0; j < n; ++j) {
 			if((aa = abs(a.get(i, j))) > aamax) aamax = aa;
 		}
 		if(aamax == 0.0)
@@ -425,7 +425,7 @@ class UAV {
 		this.position = position;
 		this.config = config;
 		this.thrust = 0;
-		this.rotation = [0, 0, ]1;
+		this.rotation = [0, 0, 1];
 		this.rotVelocity = [0, 0, 0];
 		this.linVelocity = [0, 0, 0];
 

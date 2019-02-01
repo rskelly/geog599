@@ -295,6 +295,7 @@ class PointCloud {
           hull.pop();
         hull.push(pts[i]);
       }
+      /*
       let i = 1;
       let p = 0;
       let m = -1;
@@ -306,7 +307,7 @@ class PointCloud {
         }
       } while(++i < hull.length)
       hull = hull.slice(0, p + 1);
-
+      */
       return new PointCloud(hull);
     }
 

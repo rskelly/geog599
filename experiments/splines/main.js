@@ -62,7 +62,7 @@ function animate(timestamp) {
   if(startTime == null) {
     // If this is the first frame, get the time and reschedule.
     startTime = tick;
-    uav.update(startTime);
+    //uav.update(startTime);
     requestAnimationFrame(animate);
     return;
   }
@@ -79,11 +79,12 @@ function animate(timestamp) {
   let y = t * speed;
   let z = altitude;
 
-  uav.update(tick);
+  //uav.update(tick);
 
   // Create a point to represent the UAV and a point cloud containing
   // only the UAV (for display).
-  let uavpc = new PointCloud([new Point(uav.x, uav.y, uav.z)]);
+  let uav = new Point(y, 0, z);
+  let uavpc = new PointCloud([uav]); //new Point(uav.x, uav.y, uav.z)]);
   bounds.extend(uav);
 
   if(!pcframe) {
@@ -110,7 +111,8 @@ function animate(timestamp) {
   });
   
   // Get the convex hull of the accumulated points.
-  let hull = accum.getBinned(hullAlpha); //accum.getHull(hullAlpha);
+  let bins = accum.getBinned(hullAlpha); 
+  let hull = accum.getHull(hullAlpha);
 
   // Get the spline throught the binned heights.
   let spline = getCRSplines(hull.points, splineAlpha);
@@ -130,6 +132,7 @@ function animate(timestamp) {
   slice.scale(screen, bounds);
   uavpc.scale(screen, bounds);
   hull.scale(screen, bounds);
+  bins.scale(screen, bounds);
   Point.scale(spline, screen, bounds);
   if(traj)
     traj.scale(screen, bounds);
@@ -144,17 +147,50 @@ function animate(timestamp) {
   });
 
   // Draw the hull points.
-  ctx.fillStyle = 'green';
-  hull.points.forEach(pt => {
-    ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
-  });
+  let drawHull = true;
+  if(drawHull) {
+    ctx.fillStyle = 'green';
+    ctx.strokeStyle = 'green';
+    let first = true;
+    ctx.beginPath();
+    hull.points.forEach(pt => {
+      ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
+      if(first) {
+        ctx.moveTo(pt.y, screen.zmax - pt.z);
+        first = false;
+      } else {
+        ctx.lineTo(pt.y, screen.zmax - pt.z);
+      }
+    });
+    ctx.stroke();
+  }
 
+  // Draw the binned points.
+  let drawBinned = true;
+  if(drawBinned) {
+    ctx.fillStyle = 'purple';
+    ctx.strokeStyle = 'purple';
+    let first = true;
+    ctx.beginPath();
+    bins.points.forEach(pt => {
+      ctx.fillRect(pt.y - 2, screen.zmax - pt.z - 2, 4, 4);
+      if(first) {
+        ctx.moveTo(pt.y, screen.zmax - pt.z);
+        first = false;
+      } else {
+        ctx.lineTo(pt.y, screen.zmax - pt.z);
+      }
+    });
+    ctx.stroke();
+  }
+  
   // Draw the UAV.
   let uavpt = uavpc.points[0];
   ctx.fillStyle = 'black';
   ctx.fillRect(uavpt.y - 3, screen.zmax - uavpt.z - 3, 6, 6);
 
   // Draw the height spline
+  /*
   if(spline.length) {
     ctx.strokeStyle = 'blue';
     ctx.beginPath();
@@ -163,6 +199,7 @@ function animate(timestamp) {
       ctx.lineTo(spline[i].y, screen.zmax - spline[i].z);
     ctx.stroke();
   }
+  */
 
   // If there's a trajectory, draw it.
   if(traj) {
@@ -178,6 +215,7 @@ function animate(timestamp) {
   lookAhead.scale(screen, bounds);
 
   // Draw the look-ahead.
+  /*
   ctx.strokeStyle = '#ff00ff22';
   lookAhead.points.forEach(pt => {
     ctx.beginPath();
@@ -185,6 +223,7 @@ function animate(timestamp) {
     ctx.lineTo(pt.y - 2, screen.zmin);
     ctx.stroke();
   });
+  */
 
   if(running)
     requestAnimationFrame(animate);
@@ -197,8 +236,8 @@ function start(evt) {
   pcframe = null;
   running = true;
   accum.reset();
-  uav = UAV.createMatrice600([pc.points[0].x, pc.points[0].y, altitude]);
-  uav.setVelocity([0, speed, 0]);
+  //uav = UAV.createMatrice600([pc.points[0].x, pc.points[0].y, altitude]);
+  //uav.setVelocity([0, speed, 0]);
   requestAnimationFrame(animate);
 }
 
