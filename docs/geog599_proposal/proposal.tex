@@ -117,17 +117,33 @@ Any surface-following system must be able to accomodate the different surface ch
 
 \subsection{Cubic Splines}
 
-The word ``spline'' originates in drafting, where long, flexible wooden beams, called splines, were used to model curves. A spline would be placed on the drawing, held down by two or more lead weights called ``ducks,'' and would seek a shape which minimized the energy stored in the beam. In this sense, the spline could be considered an optimal interpolator \parencite{Wegman2016}. 
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/draftspline.pdf} 
+\caption{A draftsman's spline and ``ducks.'' \parencite{DeBoor2006}}
+\label{fig:spline}
+\end{figure}
+
+The word ``spline'' originates in drafting, where long, flexible wooden or plastic beams, called splines (figure \ref{fig:spline}), were used to model curves. A spline would be placed on the drawing, held down by two or more lead weights called ``ducks,'' and would seek a shape which minimized the energy stored in the beam. In this sense, the spline could be considered an optimal interpolator \parencite{Wegman2016}. 
 
 In mathematics, the spline is consists of a set of piecewise (usually cubic) polynomials, one each between each pair of ducks, or \emph{knots}. At each intermediate knot, the first, and possibly higher, derivatives of the adjoining polynomials are held equal, resulting an a curve that is smooth and differentiable along its entire length. The minimum-energy constraint is modelled by minimizing mean square curvature of the polynomial \parencite{Wegman2016}.
 
-The mechanical spline and its mathematical equivalent are, of course, interpolators -- they pass through each of the knots. An alternative construction -- the smoothing or approximating spline -- allows the spline to pass through clusters of knots, preserving the overall shape of the data distribution without passing through each knot exactly. 
+The mechanical spline and its mathematical equivalent are interpolators -- they pass through each of the knots. An alternative construction -- the smoothing or approximating spline -- allows the spline preserve the overall shape of the data distribution without passing through each knot exactly. 
 
 Weighted cubic spline.
 
 Both the interpolating and smoothing spline are candidates for trajectory construction.
 
 Natural cubic spline S' is 0 at the ends.
+
+If a cubic spline is smooth and twice differentiable everywhere, the first and second derivatives of the trajectory will be free of discontinuities, as whould be expected for a physical body moving in space where they represent velocity and acceleration, respectively. The second derivative is of particular interest because it is constrained by the aircraft's dynamic properties: when the second derivative is positive, its magnitude can be no greater than the acceleration provided by gravity on the airframe with zero thrust, minus aerodynamic drag. When when negative, its magnitude can be no greater than the acceleration provided by thrust, minus drag and gravity. These constraints may be derived from the aircraft's mass, thrust and air resistance characteristics. 
+
+Figure \ref{fig:cubic_derivatives} shows the derivatives for an arbitrary cubic function, with the blue line representing acceleration.
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/cubic_derivatives.pdf} 
+\caption{An arbitrary cubic function showing the first and second derivatives. If the function represents altitude, the first and second derivatives represent vertical velocity and acceleration, respectively.}
+\label{fig:cubic_derivatives}
+\end{figure}
 
 
 \subsection{Surface Reconstruction}
