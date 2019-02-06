@@ -68,9 +68,9 @@ Specifically, this proposal outlines a rationale and methodology for selecting t
 
 Unmanned aerial vehicles (UAVs) are small reusable aircraft, controlled remotely by a human operator or (semi-)autonomously, which can range in size from insect-scale to jet-powered military aircraft \parencite{Avadhanula2002,Deng2003} and are subject to an ongoing explosion in engineering, scientific, military and commercial interest. 
 
-Military interest in UAV research is a given and indeed drives much of the development of related technologies. Perhaps surprisingly, the development in UAVs began in 1916 and continued with the support of the United States military, culminating in extensive utilization of UAVs during the war in Vietnam \parencite{Valavanis2007,Cook2007} and continuing into the 21st century in the Middle East. 
+%Military interest in UAV research is a given and indeed drives much of the development of related technologies. Perhaps surprisingly, the development in UAVs began in 1916 and continued with the support of the United States military, culminating in extensive utilization of UAVs during the war in Vietnam \parencite{Valavanis2007,Cook2007} and continuing into the 21st century in the Middle East. 
 
-Recently, the emergence of an entrepreneurial technological culture and the ability of firms to design and produce highly sophisticated, miniaturized components and high-capacity, lightweight batteries, has enabled basement tinkerers, commercial startups and academics alike exploit the capabilities offered by UAVs, rapidly and at little cost.
+%Recently, the emergence of an entrepreneurial technological culture and the ability of firms to design and produce highly sophisticated, miniaturized components and high-capacity, lightweight batteries, has enabled basement tinkerers, commercial startups and academics alike exploit the capabilities offered by UAVs, rapidly and at little cost.
 
 In the scientific remote-sensing field, where the execution of an aerial survey could entail hundreds of thousands of dollars in costs for planning, permitting, instrumentation, pilots and aircraft, the advent of UAVs provides researchers with the opportunity to conduct research at much lower cost with little turnaround time. 
 
@@ -121,7 +121,7 @@ A scanning laser rangefinder is used to generate a point cloud representing the 
 
 Where the surface is porous, as in the case of a vegetative canopy, laser pulse returns will indicate not only the ultimate surface, but surfaces beneath it, including intermediate reflectors in the canopy and the terrain itself. These are undesireable, and must be filtered out. 
 
-Two methods of surface-point extraction are proposed: 
+Two methods of surface-point extraction come to mind: 
 
 \begin{enumerate}
 \item Longitudinal binning: a lag distance is selected, which defines a series of ``bins'' of equal width in the y-direction. As each point arrives, it is placed in the appropriate bin. Each bin is represented by the point with the maximum z-coordinate. All others are discarded. The y-coordinate of the point is replaced by the coordinate of the bin's centre.
@@ -153,10 +153,6 @@ The word ``spline'' originates in drafting, where long, flexible wooden or plast
 
 In mathematics, the spline is consists of a set of piecewise (usually cubic) polynomials, one each between each pair of ducks, or ``knots.'' At each knot, the first, and possibly higher, derivatives of the adjoining polynomials are held equal, resulting an a curve that is smooth and differentiable along its entire length. The minimum-energy constraint is modelled by minimizing mean square curvature of the polynomial \parencite{Wegman2016}.
 
-The mechanical spline and its mathematical equivalent are interpolators and pass through each of the knots. A variation on the interpolating spline, the weighted spline, allows the calculation of a weight, applied at each knot, which can suppress the tendency for overshoots \parencite{lancaster1986curve}.
-
-An alternative construction -- the smoothing or approximating spline -- allows the spline preserve the overall shape of the data distribution without passing through each knot exactly. The smoothing spline adds two parameters to the interpolating spline, a general smoothness factor and a per-knot weight \parencite{lancaster1986curve,deBoor1980}, which may be chosen arbitrarily or by some method such as cross-validation.
-
 In this instance, the spline function is used to model the behaviour of a physical body in space, with velocity and acceleration given by the first and second derivatives, respectively. The second derivative is of particular interest because it is constrained by the aircraft's dynamic properties given by Newton's second law,
 
 \begin{equation}
@@ -170,20 +166,22 @@ Though cubic splines are smooth and twice differentiable, it will be observed th
 Figure \ref{fig:cubic_derivatives} shows a cubic smoothing spline and derivatives derived from a real-world LiDAR point cloud, using the concave hull ($\alpha = 10m$) for surface-point extraction.
 
 \begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
-\includegraphics[width=1.0\linewidth]{tmp/splines_derivs_smooth_0.pdf} 
-\includegraphics[width=1.0\linewidth]{tmp/splines_derivs_smooth_0_5.pdf} 
-\includegraphics[width=1.0\linewidth]{tmp/splines_derivs_smooth_0_8.pdf} 
+\includegraphics[width=1.0\linewidth]{tmp/splines_derivs_smooth_0_0_weight_0_1.pdf} 
+\includegraphics[width=1.0\linewidth]{tmp/splines_derivs_smooth_0_5_weight_0_1.pdf} 
+\includegraphics[width=1.0\linewidth]{tmp/splines_derivs_smooth_0_8_weight_0_1.pdf} 
 \caption{Smoothing cubic spline through the vertices of concave hull derived from a real-world point cloud. First and second derivatives correspond velocity and acceleration, assuming horizontal velocity of 1m/s. Note the decreasing magnitude of derivatives with increasing smoothness.}
 \label{fig:cubic_derivatives}
 \end{figure}
 
-Carl de Boor's \parencite{deBoor1980} method of solving smoothing splines uses both a smoothing parameter ($p$) and a weight ($\delta$) to minimize the function, 
+The mechanical spline and its mathematical equivalent are interpolators and pass through each of the knots. A variation on the interpolating spline, the weighted spline, allows the calculation of a weight, applied at each knot, which can suppress the tendency for overshoots \parencite{lancaster1986curve}. However this breaks the continuity of the second derivative, which breaks the physical model.
+
+An alternative construction -- the smoothing or approximating spline -- allows the spline preserve the overall shape of the data distribution without passing through each knot exactly. The smoothing spline uses two parameters, a general smoothing factor, $p$, and a per-knot weight, $\delta$ \parencite{lancaster1986curve,deBoor1980}, which may be chosen arbitrarily or by some method such as cross-validation. de Boor's \parencite{deBoor1980} method minimizes the function, 
 
 \begin{equation}
 p \sum_{i=1}^{n} \left( {{Y_i - \hat{f}(x_i)} \over {\delta_i}} \right) + (1 - p) \int{ \left( \hat{f}^{(m)}(x) \right)^2 } dx.
 \end{equation}
 
-Here, $Y_i$ is the ordinate value and $\hat{f}$ is the fit function. $\delta$, an estimate for the standard deviation of $Y_i$, controls the fit of the curve to the data in the least-squares sense. $p$ has the effect of controlling the number of knots: as $p$ approaches $1$, the first term is emphasised, forcing a closer fit to the data, while as $p$ approaces $0$, the integral is emphasized, forcing a straighter (smoother) curve. 
+Here, $Y_i$ is the ordinate value and $\hat{f}$ is the fit function. $\delta$, an estimate of the standard deviation of $Y_i$, controls the fit of the curve to the data in the least-squares sense. $p$ has the effect of controlling the number of knots: as $p$ approaches $1$, the first term is emphasised, forcing a closer fit to the data, while as $p$ approaces $0$, the integral is emphasized, forcing a straighter (smoother) curve. 
 
 It is evident that the smoothing spline is a good candidate for examination as a trajectory function, as its derivatives provide a means of modeling the physical dynamics of the vehicle and it can be adjusted to satisfy the dynamic and data-quality constraints. The ability to interpret the general shape of a surface without interpolating all points exactly -- which would result in deleterious, difficult-to-resolve artifacts -- is a boon.
 
@@ -191,7 +189,7 @@ What remains is to develop a methodology for selecting weight and smoothness par
 
 \section{Proposal}
 
-To show that the smoothing spline is an appropriate mechanism for computing trajectories for remote-sensing UAVs, it will be necessary implement a computational pipeline to determine the spline coefficients from a stream of instrument outputs (e.g.,  range, orientation, position.) The steps in this pipeline entail, in part,
+To show that the smoothing spline is an appropriate mechanism for computing trajectories for remote-sensing UAVs, it will be necessary implement a computational pipeline to determine the spline coefficients from a stream of measurements. The steps in this pipeline entail, in part,
 
 \begin{enumerate}
 \item calculating each 2-dimensional Cartesian coordinate based on the measured range, the position and  orientation of the UAV's body frame relative to the intertial frame, and the position and orientation of the laser relative to the body frame;
@@ -200,16 +198,16 @@ To show that the smoothing spline is an appropriate mechanism for computing traj
 \item configuring and computing the spline using the vertices of the concave hull.
 \end{enumerate}
 
-These steps will be performed using existing LiDAR point cloud extracts, modified to mimic the output of the scanning LiDAR which will ultimately be employed.
+These steps will be performed using existing LiDAR point cloud extracts produced by the Hyperspectral-LiDAR Research Group at the University of Victoria, using a DJI Matrice 600 hexacopter and a Velodyne VLP-16 LiDAR. The point cloud will be modified to mimic the output of the scanning laser rangefinder by extracting a swath from the point cloud, measuring the Cartesian distance from an origin to each point (the y-coordinate) and keeping the z-coordinate.
 
-It will then be necessary to quantify the suitability of the spline coefficients by calculating,
+It will then be necessary to quantify the suitability of the spline coefficients by calculating, for example,
 
 \begin{enumerate}
 \item the error between the altitude of the trajectory and the elevation of actual terrain (as modeled using standard GIS techniques), at a suitable interval;
 \item the error between the altitude of the vehicle and the the trajectory at any point, given its dynamic properties, including whether the vehicle can navigate a trajectory at all.
 \end{enumerate}
 
-The first error is important, as the altitude error is a proxy for the variability the data quality. The second, of course, determines whether or not the vehicle will crash, but also gives some sense of how much power it must use, and whether it must exceed its nominal capabilities.
+The first error is important, as the altitude error is a proxy for the variability of data quality. The second determines whether or not the vehicle will crash, but also gives some sense of how much power it must use, and whether it must exceed its nominal capabilities.
 
 The deliverables from this effort will include,
 
