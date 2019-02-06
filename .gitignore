@@ -98,3 +98,4 @@ node_modules
 client/planner/node_modules
 *.bcf
 *.run.xml
+figures/splines_*.png

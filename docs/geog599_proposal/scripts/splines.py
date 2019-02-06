@@ -79,48 +79,60 @@ def load(filename):
 	return (xx, yy, hx, hy)
 
 
-x, y, hx, hy = load('mt_doug_3.txt')
+def generate(smooth, weight):
+	x, y, hx, hy = load('mt_doug_3.txt')
 
-w = [0.1] * len(hx)
+	w = [weight] * len(hx)
 
-fig = plt.figure(figsize=(8, 4))
-ax1 = fig.add_subplot(111)
+	fig = plt.figure(figsize=(8, 3.5))
+	ax1 = fig.add_subplot(111)
 
-spl = UnivariateSpline(hx, hy, k=3, s = 10, w = w)
-spl.set_smoothing_factor(0.8)
-d1 = spl.derivative(n=1)
-d2 = spl.derivative(n=2)
-kx = spl.get_knots()
-xs = np.linspace(hx[0], hx[-1], 1000.)
+	spl = UnivariateSpline(hx, hy, k=3, s = 10, w = w)
+	spl.set_smoothing_factor(smooth)
+	d1 = spl.derivative(n=1)
+	d2 = spl.derivative(n=2)
+	kx = spl.get_knots()
+	xs = np.linspace(hx[0], hx[-1], 1000.)
 
 
-l_pts, = ax1.plot(x, y, color='#cccccc', marker='o', linestyle='None', ms=1)
-l_hull, = ax1.plot(hx, hy, 'ro', ms=1)
-l_spl, = ax1.plot(xs, spl(xs), 'g', lw=1)
-l_skn, =ax1.plot(kx, spl(kx), 'go', ms=3)
-ax1.set_ylabel('Elevation (m)')
-ax1.set_xlabel('Distance (m)')
-for tl in ax1.get_yticklabels():
-    tl.set_color('g')
+	l_pts, = ax1.plot(x, y, color='#cccccc', marker='o', linestyle='None', ms=1)
+	l_hull, = ax1.plot(hx, hy, 'ro', ms=1)
+	l_spl, = ax1.plot(xs, spl(xs), 'g', lw=1)
+	l_skn, =ax1.plot(kx, spl(kx), 'go', ms=3)
+	ax1.set_ylabel('Elevation (m)')
+	ax1.set_xlabel('Distance (m)')
+	ax1.set_title("Smoothing Cubic Spline (p = {s}, w = {w})".format(s = smooth, w = weight))
+	for tl in ax1.get_yticklabels():
+	    tl.set_color('g')
 
-ax2 = ax1.twinx()
-ax2.axhline(0, color='#cccccc')
-l_vel, = ax2.plot(xs, d1(xs), 'm', lw=1)
-for tl in ax2.get_yticklabels():
-    tl.set_color('m')
-ymax = max(map(abs, ax2.get_ylim()))
-ax2.set_ylim((-ymax, ymax))
+	ax2 = ax1.twinx()
+	ax2.axhline(0, color='#cccccc')
+	l_vel, = ax2.plot(xs, d1(xs), 'm', lw=1)
+	for tl in ax2.get_yticklabels():
+	    tl.set_color('m')
+	ymax = max(map(abs, ax2.get_ylim()))
+	ax2.set_ylim((-ymax, ymax))
 
-ax3 = ax1.twinx()
-l_acc, = ax3.plot(xs, d2(xs), 'b', lw=1)
-ax3.set_ylabel('Velocity (m/s); Acceleration (m/s²)')
-for tl in ax3.get_yticklabels():
-    tl.set_color('b')
-ymax = max(map(abs, ax3.get_ylim()))
-ax3.set_ylim((-ymax, ymax))
+	ax3 = ax1.twinx()
+	l_acc, = ax3.plot(xs, d2(xs), 'b', lw=1)
+	ax3.set_ylabel('Velocity (m/s); Acceleration (m/s²)')
+	for tl in ax3.get_yticklabels():
+	    tl.set_color('b')
+	ymax = max(map(abs, ax3.get_ylim()))
+	ax3.set_ylim((-ymax, ymax))
 
-plt.legend([l_pts, l_hull, l_spl, l_vel, l_acc], ['Point Cloud', 'Concave Hull Vertices (⍺ = 10m)', 'Altitude (m)', 'Vertical Velocity (m/s)', 'Vertical Acceleration (m/s²)'])
+	plt.legend([l_pts, l_hull, l_spl, l_vel, l_acc], ['Point Cloud', 'Concave Hull Vertices (⍺ = 10m)', 'Altitude (m)', 'Vertical Velocity (m/s)', 'Vertical Acceleration (m/s²)'])
 
-#plt.savefig('../figures/splines_derivs.png', bbox_inches='tight', format='png', dpi=96)
-plt.show()
+	ss = str(smooth).replace('.', '_')
+	ww = str(weight).replace('.', '_')
+	plt.savefig('../figures/splines_derivs_smooth_{s}_weight_{w}.png'.format(s = ss, w = ww), bbox_inches='tight', format='png', dpi=96)
+	#plt.show()
 
+generate(0.8, 0.1)
+generate(0.5, 0.1)
+generate(0.0, 0.1)
+
+generate(0.5, 0.01)
+generate(0.5, 1.0)
+
+generate(0.8, 1.0)
