@@ -109,5 +109,8 @@ target_link_libraries (uav_teensy uav_serial)
 #add_library (uav_encoder SHARED src/sensor/ads1115.cpp)
 #target_link_libraries (uav_encoder uav_i2c)
  
-add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
-target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
+#add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
+#target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
+
+add_executable(pipeline src/pipeline.cpp)
+
