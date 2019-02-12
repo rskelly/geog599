@@ -63,6 +63,7 @@ find_package (DJIOSDK REQUIRED)
 #find_library (GLEW_LIBRARY GLEW)
 #find_library (GLU_LIBRARY GLU)
 #find_library (I2C_LIBRARY i2c)
+find_library (FITPACK fitpack)
 
 project (test)
 
@@ -78,8 +79,7 @@ if(${WITH_GUI})
 		${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
 endif()
  
-link_directories(. ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
-
+link_directories(. build/bin ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
 if(${WITH_GUI})
 	set (CMAKE_AUTOUIC ON)
@@ -90,6 +90,7 @@ endif()
 
 # Build support libraries ################################################################################
 
+ 
 add_library (uav_serial SHARED src/comm/serial.cpp)
 
 add_library (uav_i2c SHARED src/comm/i2c.cpp)
@@ -112,5 +113,8 @@ target_link_libraries (uav_teensy uav_serial)
 #add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
 #target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
 
-add_executable(pipeline src/pipeline.cpp)
+#add_executable(pipeline src/pipeline.cpp)
+
+add_executable (curve src/curve.cpp)
+
 
