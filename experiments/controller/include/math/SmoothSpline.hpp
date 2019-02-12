@@ -12,149 +12,357 @@
 #include <cmath>
 
 
-/*
-c   d is a parameter containing the observation weights.
-c   this may either be an array of length n or a scalar
-c   (interpreted as a constant). the value of d
-c   corresponding to the observation (x(k),y(k)) should
-c   be an approximation to the standard deviation of error.
-c
-c   isw contains a switch indicating whether the parameter
-c   d is to be considered a vector or a scalar,
-c          = 0 if d is an array of length n,
-c          = 1 if d is a scalar.
-c
-c   s contains the value controlling the smoothing. this
-c   must be non-negative. for s equal to zero, the
-c   subroutine does interpolation, larger values lead to
-c   smoother funtions. if parameter d contains standard
-c   deviation estimates, a reasonable value for s is
-c   float[n - 1].
-c
-c   eps contains a tolerance on the relative precision to
-c   which s is to be interpreted. this must be greater than
-c   or equal to zero and less than or equal to one. a
-c   reasonable value for eps is sqrt(2./float[n - 1]).
-c
-c   ys is an array of length at least n.
-c
-c   ysp is an array of length at least n.
-c
-c   sigma contains the tension factor. this value indicates
-c   the degree to which the first derivative part of the
-c   smoothing functional is emphasized. if sigma is nearly
-c   zero (e. g. .001) the resulting curve is approximately a
-c   cubic spline. if sigma is large (e. g. 50.) the
-c   resulting curve is nearly a polygonal line. if sigma
-c   equals zero a cubic spline results. a standard value for
-c   sigma is approximately 1.
-c
-c and
-c
-c   temp is an array of length at least 9*n which is used
-c   for scratch storage.
-c
-c on output--
-c
-c   ys contains the smoothed ordinate values.
-c
-c   ysp contains the values of the second derivative of the
-c   smoothed curve at the given nodes.
-c
- */
-
 extern "C" {
-	void curvs_(const int* n, const float* x, const float* y, const float* d,
-			const int* isw, const float* s, const float* eps,
-			float* ys, float* ysp,
-			const float* sigma, float* temp, int* ierr);
+
+	/*
+	 * Calls in to the fpcurf function of the fitpack (fortran) library.
+	 *
+	 * Comments from source file:
+		c  ..
+		c  ..scalar arguments..
+			  real*8 xb,xe,s,tol,fp
+			  integer iopt,m,k,nest,maxit,k1,k2,n,ier
+		c  ..array arguments..
+			  real*8 x(m),y(m),w(m),t(nest),c(nest),fpint(nest),
+			 * z(nest),a(nest,k1),b(nest,k2),g(nest,k2),q(m,k1)
+			  integer nrdata(nest)
+		c  ..local scalars..
+			  real*8 acc,con1,con4,con9,cos,half,fpart,fpms,fpold,fp0,f1,f2,f3,
+			 * one,p,pinv,piv,p1,p2,p3,rn,sin,store,term,wi,xi,yi
+			  integer i,ich1,ich3,it,iter,i1,i2,i3,j,k3,l,l0,
+			 * mk1,new,nk1,nmax,nmin,nplus,npl1,nrint,n8
+		c  ..local arrays..
+			  real*8 h(7)
+		c  ..function references
+			  real*8 abs,fprati
+			  integer max0,min0
+		c  ..subroutine references..
+		c    fpback,fpbspl,fpgivs,fpdisc,fpknot,fprota
+		c  ..
+
+		To determine the value of iopt:
+
+		cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+		c  part 1: determination of the number of knots and their position     c
+		c  **************************************************************      c
+		c  given a set of knots we compute the least-squares spline sinf(x),   c
+		c  and the corresponding sum of squared residuals fp=f(p=inf).         c
+		c  if iopt=-1 sinf(x) is the requested approximation.                  c
+		c  if iopt=0 or iopt=1 we check whether we can accept the knots:       c
+		c    if fp <=s we will continue with the current set of knots.         c
+		c    if fp > s we will increase the number of knots and compute the    c
+		c       corresponding least-squares spline until finally fp<=s.        c
+		c    the initial choice of knots depends on the value of s and iopt.   c
+		c    if s=0 we have spline interpolation; in that case the number of   c
+		c    knots equals nmax = m+k+1.                                        c
+		c    if s > 0 and                                                      c
+		c      iopt=0 we first compute the least-squares polynomial of         c
+		c      degree k; n = nmin = 2*k+2                                      c
+		c      iopt=1 we start with the set of knots found at the last         c
+		c      call of the routine, except for the case that s > fp0; then     c
+		c      we compute directly the least-squares polynomial of degree k.   c
+		cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
+		cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+		c  part 2: determination of the smoothing spline sp(x).                c
+		c  ***************************************************                 c
+		c  we have determined the number of knots and their position.          c
+		c  we now compute the b-spline coefficients of the smoothing spline    c
+		c  sp(x). the observation matrix a is extended by the rows of matrix   c
+		c  b expressing that the kth derivative discontinuities of sp(x) at    c
+		c  the interior knots t(k+2),...t(n-k-1) must be zero. the corres-     c
+		c  ponding weights of these additional rows are set to 1/p.            c
+		c  iteratively we then have to determine the value of p such that      c
+		c  f(p)=sum((w(i)*(y(i)-sp(x(i))))**2) be = s. we already know that    c
+		c  the least-squares kth degree polynomial corresponds to p=0, and     c
+		c  that the least-squares spline corresponds to p=infinity. the        c
+		c  iteration process which is proposed here, makes use of rational     c
+		c  interpolation. since f(p) is a convex and strictly decreasing       c
+		c  function of p, it can be approximated by a rational function        c
+		c  r(p) = (u*p+v)/(p+w). three values of p(p1,p2,p3) with correspond-  c
+		c  ing values of f(p) (f1=f(p1)-s,f2=f(p2)-s,f3=f(p3)-s) are used      c
+		c  to calculate the new value of p such that r(p)=s. convergence is    c
+		c  guaranteed by taking f1>0 and f3<0.                                 c
+		cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+		@param iopt 		An integer which determines the number of knots. (-1, 0 or 1).
+		@param x			The list of abscissae. (Array (m))
+		@param y			The list of ordinates. (Array (m))
+		@param w			The list of weights. Default 1.0. (Array (m))
+		@param m			The number of coordinates.
+		@param xb			The value of the first element in x. (Overridable? Why?)
+		@param xe			The value of the last element in x.
+		@param k			The degree of the spline (1 >= k >= 5).
+		@param s			The smoothing parameter. Default m. (>= 0).
+		@param nest			Estimated length of output; used for working buffers. (s == 0.0 ? m + k + 1 : MAX(m / 2 , 2 * k1))
+		@param tol			Tolerance. Defualt 0.001. (Epsilon?)
+		@param maxit		The maximum number of iterations. Default 20.
+		@param k1			No idea. k1 = k + 1
+		@param k2			No idea. k2 = k + 2
+		@param n			The number of output knots.
+		@param t			(Array (nest))
+		@param c			(Array (nest))
+		@param fp			The residual. (Compare to s)
+		@param fpint		(Array (nest))
+		@param z			(Array (nest))
+		@param a			(Array (nest))
+		@param b			(Array (nest))
+		@param g			(Array (nest))
+		@param q			(Array (m))
+		@param nrdata		(Array (nest))
+		@param ier			Output error value.
+	*/
+	void fpcurf_(int* iopt, double* x, double* y, double* w, int* m, double* xb, double* xe,
+			int* k, double* s, int* nest, double* tol, int* maxit, int* k1, int* k2, int* n,
+			double* t, double* c, double* fp, double* fpint, double* z, double* a, double* b,
+			double* g, double* q, int* nrdata, int* ier);
+
+	/*
+	subroutine splev(t,n,c,k,x,y,m,e,ier)
+	c  subroutine splev evaluates in a number of points x(i),i=1,2,...,m
+	c  a spline s(x) of degree k, given in its b-spline representation.
+	c
+	c  calling sequence:
+	c     call splev(t,n,c,k,x,y,m,e,ier)
+	c
+	c  input parameters:
+	c    t    : array,length n, which contains the position of the knots.
+	c    n    : integer, giving the total number of knots of s(x).
+	c    c    : array,length n, which contains the b-spline coefficients.
+	c    k    : integer, giving the degree of s(x).
+	c    x    : array,length m, which contains the points where s(x) must
+	c           be evaluated.
+	c    m    : integer, giving the number of points where s(x) must be
+	c           evaluated.
+	c    e    : integer, if 0 the spline is extrapolated from the end
+	c           spans for points not in the support, if 1 the spline
+	c           evaluates to zero for those points, if 2 ier is set to
+	c           1 and the subroutine returns, and if 3 the spline evaluates
+	c           to the value of the nearest boundary point.
+	c
+	c  output parameter:
+	c    y    : array,length m, giving the value of s(x) at the different
+	c           points.
+	c    ier  : error flag
+	c      ier = 0 : normal return
+	c      ier = 1 : argument out of bounds and e == 2
+	c      ier =10 : invalid input data (see restrictions)
+	c
+	c  restrictions:
+	c    m >= 1
+	c--    t(k+1) <= x(i) <= x(i+1) <= t(n-k) , i=1,2,...,m-1.
+	c
+	c  other subroutines required: fpbspl.
+	c
+	c  references :
+	c    de boor c  : on calculating with b-splines, j. approximation theory
+	c                 6 (1972) 50-62.
+	c    cox m.g.   : the numerical evaluation of b-splines, j. inst. maths
+	c                 applics 10 (1972) 134-149.
+	c    dierckx p. : curve and surface fitting with splines, monographs on
+	c                 numerical analysis, oxford university press, 1993.
+	c
+	c  author :
+	c    p.dierckx
+	c    dept. computer science, k.u.leuven
+	c    celestijnenlaan 200a, b-3001 heverlee, belgium.
+	c    e-mail : Paul.Dierckx@cs.kuleuven.ac.be
+	c
+	c  latest update : march 1987
+	c
+	c++ pearu: 11 aug 2003
+	c++   - disabled cliping x values to interval [min(t),max(t)]
+	c++   - removed the restriction of the orderness of x values
+	c++   - fixed initialization of sp to double precision value
+	 *
+	 * @param t 	A list containing the abscissae of the knots.
+	 * @param n 	The number of knots.
+	 * @param c 	The b-spline coefficients.
+	 * @param k 	The degree of the spline.
+	 * @param x 	The x-coordinates for which to evaluate the spline.
+	 * @param y 	The y-coordinates resulting from evaluation (output).
+	 * @param m 	The number of evaluated points.
+	 * @param e 	Extrapolation (1).
+	 * @param ier 	The error result.
+	 */
+	void splev_(double* t, int* n, double* c, int* k, double* x, double* y, int* m, int* e, int *ier);
+
+	/*
+	 *      subroutine splder(t,n,c,k,nu,x,y,m,e,wrk,ier)
+			  implicit none
+		c  subroutine splder evaluates in a number of points x(i),i=1,2,...,m
+		c  the derivative of order nu of a spline s(x) of degree k,given in
+		c  its b-spline representation.
+		c
+		c  calling sequence:
+		c     call splder(t,n,c,k,nu,x,y,m,e,wrk,ier)
+		c
+		c  input parameters:
+		c    t    : array,length n, which contains the position of the knots.
+		c    n    : integer, giving the total number of knots of s(x).
+		c    c    : array,length n, which contains the b-spline coefficients.
+		c    k    : integer, giving the degree of s(x).
+		c    nu   : integer, specifying the order of the derivative. 0<=nu<=k
+		c    x    : array,length m, which contains the points where the deriv-
+		c           ative of s(x) must be evaluated.
+		c    m    : integer, giving the number of points where the derivative
+		c           of s(x) must be evaluated
+		c    e    : integer, if 0 the spline is extrapolated from the end
+		c           spans for points not in the support, if 1 the spline
+		c           evaluates to zero for those points, and if 2 ier is set to
+		c           1 and the subroutine returns.
+		c    wrk  : real array of dimension n. used as working space.
+		c
+		c  output parameters:
+		c    y    : array,length m, giving the value of the derivative of s(x)
+		c           at the different points.
+		c    ier  : error flag
+		c      ier = 0 : normal return
+		c      ier = 1 : argument out of bounds and e == 2
+		c      ier =10 : invalid input data (see restrictions)
+		c
+		c  restrictions:
+		c    0 <= nu <= k
+		c    m >= 1
+		c    t(k+1) <= x(i) <= x(i+1) <= t(n-k) , i=1,2,...,m-1.
+		c
+		c  other subroutines required: fpbspl
+		c
+		c  references :
+		c    de boor c : on calculating with b-splines, j. approximation theory
+		c                6 (1972) 50-62.
+		c    cox m.g.  : the numerical evaluation of b-splines, j. inst. maths
+		c                applics 10 (1972) 134-149.
+		c   dierckx p. : curve and surface fitting with splines, monographs on
+		c                numerical analysis, oxford university press, 1993.
+		c
+		c  author :
+		c    p.dierckx
+		c    dept. computer science, k.u.leuven
+		c    celestijnenlaan 200a, b-3001 heverlee, belgium.
+		c    e-mail : Paul.Dierckx@cs.kuleuven.ac.be
+		c
+		c  latest update : march 1987
+		c
+		c++ pearu: 13 aug 20003
+		c++   - disabled cliping x values to interval [min(t),max(t)]
+		c++   - removed the restriction of the orderness of x values
+		c++   - fixed initialization of sp to double precision value
+	 *
+	 * @param t 	A list containing the abscissae of the knots.
+	 * @param n 	The number of knots.
+	 * @param c 	The b-spline coefficients.
+	 * @param k 	The degree of the spline.
+	 * @param nu	The derivative (0 <= nu <= n).
+	 * @param x 	The x-coordinates for which to evaluate the spline.
+	 * @param y 	The y-coordinates resulting from evaluation (output).
+	 * @param m 	The number of evaluated points.
+	 * @param e 	Extrapolation (1).
+	 * @param wrk	A work array of length n.
+	 * @param ier 	The error result.
+
+	 */
+	void splder_(double* t, int* n, double* c, int* k, int* nu, double* x, double* y, int* m, int* e, double* wrk, int* ier);
 }
 
 
 namespace uav {
 namespace math {
 
-class SplinePiece {
-public:
-	double x0;
-	double y0;
-	double x1;
-	double y1;
-	double d0;
-	double d1;
-	SplinePiece(double x0, double y0, double x1, double y1, double d0, double d1)
-		: x0(x0), y0(y0), x1(x1), y1(y1), d0(d0), d1(d1) {}
-};
-
 template <class P>
 class SmoothSpline {
+private:
+	std::vector<double> m_x; 					// Abscissae
+	std::vector<double> m_y; 					// Ordinates
+	std::vector<double> m_w; 					// Weights
+
+	std::vector<double> m_t;					// Knots
+	std::vector<double> m_c;					// Coefficients
+
+	int m_k; 									// Degree
+
 public:
+
+	SmoothSpline() :
+		m_k(3) {}
 
 	/**
 	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
 	 * @param weight 	A scalar giving the weight for each data point.
 	 * @param s 		The smoothing factor.
-	 * @param sigma 	The tension parameter.
 	 * @param out 		The output of the function; a list of "curve" objects containing the pair
 	 * 					of knots and the second derivative at each.
 	 */
-	void fit(const std::vector<P>& pts, double weight, double s, double sigma,
-			std::vector<SplinePiece>& out) {
+	void fit(const std::vector<P>& pts, double weight, double s) {
 
 		std::vector<double> weights(pts.size());
 		for(size_t i = 0; i < weights.size(); ++i)
 			weights[i] = weight;
 
-		fit(pts, weights, s, sigma, out);
+		fit(pts, weights, s);
 	}
 
 	/**
 	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
-	 * @param weights 	A list of weights at each data point.
+	 * @param w		 	A list of weights at each data point.
 	 * @param s 		The smoothing factor.
-	 * @param sigma 	The tension parameter.
 	 * @param out 		The output of the function; a list of "curve" objects containing the pair
 	 * 					of knots and the second derivative at each.
 	 */
-	void fit(const std::vector<P>& pts, const std::vector<double>& weights, double s, double sigma,
-			std::vector<SplinePiece>& out) {
+	void fit(const std::vector<P>& pts, const std::vector<double>& weights, double s) {
 
 		if(pts.size() < 2 || pts.size() != weights.size())
 			throw std::runtime_error("Weights and points must have the same length and be more than 2.");
 
 		// Inputs
-		int isw = 0;								// Weights are an array (1 would be scalar)
-		int n = (int) pts.size();					// Number of points.
-		std::vector<double> x(n); 					// Abscissae
-		std::vector<double> y(n); 					// Ordinates
-		double eps = std::sqrt(2.0f / (double) n);	// Epsilon
-
-		// Temp
-		std::vector<double> temp0(n);	// Temp storage.
-		std::vector<double> temp1(n);	// Temp storage.
-		std::vector<double> temp2(n);	// Temp storage.
-		std::vector<double> temp3(n);	// Temp storage.
-		std::vector<double> temp4(n);	// Temp storage.
-		std::vector<double> temp5(n);	// Temp storage.
-		std::vector<double> temp6(n);	// Temp storage.
-		std::vector<double> temp7(n);	// Temp storage.
-		std::vector<double> temp8(n);	// Temp storage.
+		int iopt = 0;
+		int m = (int) pts.size();		// Number of points.
+		m_x.resize(m); 					// Abscissae
+		m_y.resize(m); 					// Ordinates
+		m_w.resize(m); 					// Weights
+		double tol = 0.001;				// Epsilon
 
 		// Outputs
 		int ierr = 0;						// Error return.
-		std::vector<double> ys(n);			// Smoothed ordinates.
-		std::vector<double> ysp(n);			// Smoothed derivatives.
+		int n = -1;
 
-		for(int i = 0; i < n; ++i) {
-			x[i] = pts[i].x();
-			y[i] = pts[i].y();
+		int k1 = m_k + 1;
+		int k2 = m_k + 2;;
+		int nest = m + m_k + 1; //s == 0.0 ? m + k + 1 : std::max(m / 2, 2 * k1);
+		double fp;
+		int maxit = 20;
+
+		m_t.resize(nest);					// Knots
+		m_c.resize(nest);					// Coefficients
+		std::vector<double> fpint(nest);
+		std::vector<double> z(nest);
+		std::vector<double> a(nest * k1);
+		std::vector<double> b(nest * k2);
+		std::vector<double> g(nest * k2);
+		std::vector<double> q(m * k1);
+		std::vector<int> nrdata(nest);
+
+		for(int i = 0; i < m; ++i) {
+			m_x[i] = pts[i].x();
+			m_y[i] = pts[i].y();
+			m_w[i] = weights[i];
 		}
 
-		curvss(n, x, y, weights, isw, s, eps, ys, ysp, sigma, ierr);
+		double xb = m_x[0];
+		double xe = m_x[m_x.size() - 1];
 
+		fpcurf_(&iopt, m_x.data(), m_y.data(), m_w.data(), &m, &xb, &xe,
+			&m_k, &s, &nest, &tol, &maxit, &k1, &k2, &n,
+			m_t.data(), m_c.data(), &fp, fpint.data(), z.data(), a.data(), b.data(),
+			g.data(), q.data(), nrdata.data(), &ierr);
+
+		m_t.resize(n);
+		m_c.resize(n);
+		/*
 		switch(ierr) {
 		case 1:
-			throw std::runtime_error("n cannot be less than 2.");
+			throw std::runtime_error("nest is too small.");
 		case 2:
 			throw std::runtime_error("s must be positive.");
 		case 3:
@@ -164,442 +372,27 @@ public:
 		case 5:
 			throw std::runtime_error("d value must be positive.");
 		}
-
-		for(int i = 1; i < n; ++i)
-			out.emplace_back(x[i - 1], ys[i - 1], x[i], ys[i], ysp[i - 1], ysp[i]);
+		*/
 
 	}
 
-
-/*
-c
-c                                 coded by alan kaylor cline
-c                           from fitpack -- january 26, 1987
-c                        a curve and surface fitting package
-c                      a product of pleasant valley software
-c                  8603 altus cove, austin, texas 78759, usa
-c
-c this subroutine determines the parameters necessary to
-c compute a smoothing spline under tension. for a given
-c increasing sequence of abscissae (x[i]), i = 1,..., n and
-c associated ordinates (y[i]), i = 1,..., n, the function
-c determined minimizes the summation from i = 1 to n-1 of
-c the square of the second derivative of f plus sigma
-c squared times the difference of the first derivative of f
-c and (f(x[i + 1])-f(x[i]))/(x[i + 1]-x[i]) squared, over all
-c functions f with two continuous derivatives such that the
-c summation of the square of (f(x[i])-y[i])/d[i] is less
-c than or equal to a given constant s, where (d[i]), i = 1,
-c ..., n are a given set of observation weights. the
-c function determined is a spline under tension with third
-c derivative discontinuities at (x[i]), i = 2,..., n-1. for
-c actual computation of points on the curve it is necessary
-c to call the function curv2.
-c
-c on input--
-c
-c   n is the number of values to be smoothed (n.ge.2).
-c
-c   x is an array of the n increasing abscissae of the
-c   values to be smoothed.
-c
-c   y is an array of the n ordinates of the values to be
-c   smoothed, (i. e. y(k) is the functional value
-c   corresponding to x(k) ).
-c
-c   d is a parameter containing the observation weights.
-c   this may either be an array of length n or a scalar
-c   (interpreted as a constant). the value of d
-c   corresponding to the observation (x(k),y(k)) should
-c   be an approximation to the standard deviation of error.
-c
-c   isw contains a switch indicating whether the parameter
-c   d is to be considered a vector or a scalar,
-c          = 0 if d is an array of length n,
-c          = 1 if d is a scalar.
-c
-c   s contains the value controlling the smoothing. this
-c   must be non-negative. for s equal to zero, the
-c   subroutine does interpolation, larger values lead to
-c   smoother funtions. if parameter d contains standard
-c   deviation estimates, a reasonable value for s is
-c   float[n - 1].
-c
-c   eps contains a tolerance on the relative precision to
-c   which s is to be interpreted. this must be greater than
-c   or equal to zero and less than equal or equal to one. a
-c   reasonable value for eps is sqrt(2./float[n - 1]).
-c
-c   ys is an array of length at least n.
-c
-c   ysp is an array of length at least n.
-c
-c   sigma contains the tension factor. this value indicates
-c   the degree to which the first derivative part of the
-c   smoothing functional is emphasized. if sigma is nearly
-c   zero (e. g. .001) the resulting curve is approximately a
-c   cubic spline. if sigma is large (e. g. 50.) the
-c   resulting curve is nearly a polygonal line. if sigma
-c   equals zero a cubic spline results. a standard value for
-c   sigma is approximately 1.
-c
-c and
-c
-c   td, tsd1, hd, hsd1, hsd2, rd, rsd1, rsd2, and v are
-c   arrays of length at least n which are used for scratch
-c   storage.
-c
-c on output--
-c
-c   ys contains the smoothed ordinate values.
-c
-c   ysp contains the values of the second derivative of the
-c   smoothed curve at the given nodes.
-c
-c   ierr contains an error flag,
-c        = 0 for normal return,
-c        = 1 if n is less than 2,
-c        = 2 if s is negative,
-c        = 3 if eps is negative or greater than one,
-c        = 4 if x-values are not strictly increasing,
-c        = 5 if a d-value is non-positive.
-c
-c and
-c
-c   n, x, y, d, isw, s, eps, and sigma are unaltered.
-c
-c this subroutine references package modules terms and
-c snhcsh.
-c
-c-----------------------------------------------------------
-c
-
- */
-    void curvss (int n,
-    		const std::vector<double>& x,const std::vector<double>& y, const std::vector<double>& d,
-			int isw, double s,double eps, std::vector<double>& ys, std::vector<double>& ysp, double sigma, int& ierr) {
-
-		std::vector<double> td(n);
-		std::vector<double> tsd1(n);
-		std::vector<double> hd(n);
-		std::vector<double> hsd1(n);
-		std::vector<double> hsd2(n);
-		std::vector<double> rd(n);
-		std::vector<double> rsd1(n);
-		std::vector<double> rsd2(n);
-		std::vector<double> v(n);
-
-		double p, rdim1, yspim2, sigmap;
-		int nm1, nm3;
-		double delxi1, delyi1, dim1, di;
-		double delxi, delyi;
-		double sl, su;
-		double betapp, betap, alphap, beta, alpha;
-		double hsd1p, hdim1, hdi;
-		double rsd2i, rsd1i;
-		double sum;
-		double f, g, h, i, wim2, wim1, tui, wi, step;
-
-		if (n < 2)
-			goto _16;
-
-		if (s < 0.)
-			goto _17;
-
-		if (eps < 0. || eps > 1.)
-			goto _18;
-
-		ierr = 0;
-		p = 0.;
-		v[0] = 0.;
-		v[n - 1] = 0.;
-		ysp[0] = 0.;
-		ysp[n - 1] = 0.;
-
-		if (n == 2)
-			goto _14;
-
-		rsd1[0] = 0.;
-		rd[0] = 0.;
-		rsd2[n - 1] = 0.;
-		rdim1 = 0.;
-		yspim2 = 0.;
-
-	// c denormalize tension factor
-
-		sigmap = std::abs(sigma) * (double)(n-1) / (x[n - 1] - x[0]);
-
-	// c form t matrix and second differences of y into ys
-
-		nm1 = n - 1;
-		nm3 = n - 3;
-		delxi1 = 1.;
-		delyi1 = 0.;
-		dim1 = 0.;
-		for(int i = 0; i < nm1; ++i) {
-		  delxi = x[i + 1] - x[i];
-
-		  if (delxi <= 0.)
-			  goto _19;
-
-		  delyi = (y[i + 1] - y[i]) / delxi;
-		  ys[i] = delyi - delyi1;
-
-		  terms (di, tsd1[i + 1], sigmap, delxi);
-
-		  td[i] = di + dim1;
-		  hd[i] = -(1. / delxi + 1. / delxi1);
-		  hsd1[i + 1] = 1. / delxi;
-		  delxi1 = delxi;
-		  delyi1 = delyi;
-		  dim1 = di;
-		}
-
-	// c calculate lower and upper tolerances
-
-		sl = s * (1. - eps);
-		su = s * (1. + eps);
-
-		if (isw == 1)
-			goto _3;
-
-	// c form h matrix - d array
-
-		if (d[0] <= 0. || d[1] <= 0.)
-			goto _20;
-
-		betapp = 0.;
-		betap = 0.;
-		alphap = 0.;
-		for(int i = 1; i < nm1; ++i) {
-		  alpha = hd[i] * d[i] * d[i];
-
-		  if (d[i + 1] <= 0.)
-			  goto _20;
-
-		  beta = hsd1[i + 1] * d[i + 1] * d[i + 1];
-		  hd[i] = std::pow(hsd1[i] * d[i-1], 2) + alpha * hd[i] + beta * hsd1[i + 1];
-		  hsd2[i] = hsd1[i] * betapp;
-		  hsd1[i] = hsd1[i] * (alpha + alphap);
-		  alphap = alpha;
-		  betapp = betap;
-		  betap = beta;
-		}
-
-		goto _5;
-
-	// c form h matrix - d constant
-
-_3:
-		if (d[0] <= 0.)
-			goto _20;
-
-		sl = d[0] * d[0] * sl;
-		su = d[0] * d[0] * su;
-		hsd1p = 0.;
-		hdim1 = 0.;
-		for(int i = 1; i < nm1; ++i) {
-		  hdi = hd[i];
-		  hd[i] = hsd1[i] * hsd1[i] + hdi * hdi + hsd1[i + 1] * hsd1[i + 1];
-		  hsd2[i] = hsd1[i] * hsd1p;
-		  hsd1p = hsd1[i];
-		  hsd1[i] = hsd1p * (hdi + hdim1);
-		  hdim1 = hdi;
-		}
-
-	// c top of iteration
-	// c cholesky factorization of p*t+h into r
-
-_5:
-		for(int i = 1; i < nm1; ++i) {
-		  rsd2i = hsd2[i];
-		  rsd1i = p * tsd1[i] + hsd1[i] - rsd2i * rsd1[i - 1];
-		  rsd2[i] = rsd2i * rdim1;
-		  rdim1 = rd[i - 1];
-		  rsd1[i] = rsd1i * rdim1;
-		  rd[i] = 1. / (p * td[i] + hd[i] - rsd1i * rsd1[i] - rsd2i * rsd2[i]);
-		  ysp[i] = ys[i] - rsd1[i] * ysp[i - 1] - rsd2[i] * yspim2;
-		  yspim2 = ysp[i - 1];
-		}
-
-	// c back solve of r(transpose)* r * ysp = ys
-
-		ysp[nm1 - 1] = rd[nm1 - 1] * ysp[nm1 - 1];
-
-		if (n == 3)
-			goto _8;
-
-		for(int ibak = 0; ibak < nm3; ++ibak) {
-		  i = (nm1 - 1) - ibak;
-		  ysp[i] = rd[i] * ysp[i] - rsd1[i + 1] * ysp[i + 1] - rsd2[i + 2] * ysp[i + 2];
-		}
-
-_8:
-		sum = 0.;
-		delyi1 = 0.;
-
-		if (isw == 1)
-			goto _10;
-
-	// c calculation of residual norm
-	// c  - d array
-
-		for(int i = 0; i < nm1; ++i) {
-		  delyi = (ysp[i + 1] - ysp[i]) / (x[i + 1] - x[i]);
-		  v[i] = (delyi - delyi1) * d[i] * d[i];
-		  sum = sum + v[i] * (delyi - delyi1);
-		  delyi1 = delyi;
-		}
-
-		v[n - 1] = -delyi1 * d[n - 1] * d[n - 1];
-		goto _12;
-
-	// c calculation of residual norm
-	// c  - d constant
-
-_10:
-		for(int i = 0; i < nm1; ++i) {
-		  delyi = (ysp[i + 1] - ysp[i]) / (x[i + 1] - x[i]);
-		  v[i] = delyi - delyi1;
-		  sum = sum + v[i] * (delyi - delyi1);
-		  delyi1 = delyi;
-		}
-		v[n - 1] = -delyi1;
-
-_12:
-		sum = sum - v[n - 1] * delyi1;
-
-	// c test for convergence
-
-		if (sum <= su)
-			goto _14;
-
-	// c calculation of newton correction
-
-		f = 0.;
-		g = 0.;
-		wim2 = 0.;
-		wim1 = 0.;
-
-		for(int i = 1; i < nm1; ++i) {
-		  tui = tsd1[i] * ysp[i - 1] + td[i] * ysp[i] + tsd1[i + 1] * ysp[i + 1];
-		  wi = tui - rsd1[i] * wim1 - rsd2[i] * wim2;
-		  f = f + tui * ysp[i];
-		  g = g + wi * wi * rd[i];
-		  wim2 = wim1;
-		  wim1 = wi;
-		}
-		h = f - p * g;
-
-		if (h <= 0.)
-			goto _14;
-
-	// c update p - newton step
-
-		step = (sum - std::sqrt(sum * sl)) / h;
-
-		if (sl != 0.)
-			step = step * std::sqrt(sum / sl);
-		p = p + step;
-		goto _5;
-
-	// c store smoothed y-values and second derivatives
-
-_14:
-		for(int i = 0; i < n; ++i) {
-		  ys[i] = y[i] - v[i];
-		  ysp[i] = p * ysp[i];
-		}
-		return;
-
-	// c n less than 2
-
-_16:
-		ierr = 1;
-		return;
-
-	// c s negative
-
-_17:
-		ierr = 2;
-		return;
-
-	// c eps negative or greater than 1
-
-_18:
-		ierr = 3;
-		return;
-
-	// c x-values not strictly increasing
-
-_19:
-		ierr = 4;
-		return;
-
-	// c weight non-positive
-
-_20:
-		ierr = 5;
-		return;
+	void evaluate(std::vector<double>& x, std::vector<double>& y, int derivative = 0) {
+		 int m = x.size();
+		 int n = m_t.size();
+		 int e = 1; // No extrapolate
+		 int ier = 0;
+		 if(derivative == 0) {
+			 splev_(m_t.data(), &n, m_c.data(), &m_k, x.data(), y.data(), &m, &e, &ier);
+		 } else if(derivative > 0 && derivative <= 3) {
+			 std::vector<double> wrk(n);
+			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, x.data(), y.data(), &m, &e, wrk.data(), &ier);
+		 }
 	}
-
-	/*
-	c
-		real diag,sdiag,sigma,del
-	c
-	c                                 coded by alan kaylor cline
-	c                           from fitpack -- january 26, 1987
-	c                        a curve and surface fitting package
-	c                      a product of pleasant valley software
-	c                  8603 altus cove, austin, texas 78759, usa
-	c
-	c this subroutine computes the diagonal and superdiagonal
-	c terms of the tridiagonal linear system associated with
-	c spline under tension interpolation.
-	c
-	c on input--
-	c
-	c   sigma contains the tension factor.
-	c
-	c and
-	c
-	c   del contains the step size.
-	c
-	c on output--
-	c
-	c                sigma*del*cosh(sigma*del) - sinh(sigma*del)
-	c   diag = del*--------------------------------------------.
-	c                     (sigma*del)**2 * sinh(sigma*del)
-	c
-	c                   sinh(sigma*del) - sigma*del
-	c   sdiag = del*----------------------------------.
-	c                (sigma*del)**2 * sinh(sigma*del)
-	c
-	c and
-	c
-	c   sigma and del are unaltered.
-	c
-	c this subroutine references package module snhcsh.
-	c
-	c-----------------------------------------------------------
-	c
-	 */
-    void terms (double& diag, double& sdiag, double sigma, double del) {
-    	if (sigma == 0.) {
-    		double sigdel = sigma * del;
-    		diag = del * (sigma * del * std::cosh(sigma * del) - std::sinh(sigma * del)) / (std::pow(sigma * del, 2.0) * std::sinh(sigma * del));
-    		sdiag = del * (std::sinh(sigma * del) - sigma * del) / (std::pow(sigma * del, 2.0) * std::sinh(sigma * del));
-		} else {
-			diag = del / 3.;
-			sdiag = del / 6.;
-		}
-    }
 
 };
 
 } // math
 } // uav
-
 
 
 #endif /* INCLUDE_MATH_SMOOTHSPLINE_HPP_ */

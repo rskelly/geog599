@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.1)
 
+execute_process (COMMAND gfortran -g -shared -fPIC ../src/fitpack/fpcurf.f ../src/fitpack/fpback.f 
+	../src/fitpack/fpbspl.f ../src/fitpack/fpgivs.f ../src/fitpack/fpdisc.f ../src/fitpack/fprati.f 
+	../src/fitpack/fpknot.f ../src/fitpack/fprota.f ../src/fitpack/splev.f ../src/fitpack/splder.f 
+	-o bin/libfitpack_mod.so) 
+
 set (WITH_GUI true CACHE BOOL "If true, will build the Qt GUI.")
 
 if(${WITH_GUI})
@@ -116,5 +121,6 @@ target_link_libraries (uav_teensy uav_serial)
 #add_executable(pipeline src/pipeline.cpp)
 
 add_executable (curve src/curve.cpp)
+target_link_libraries (curve fitpack_mod)
 
 
