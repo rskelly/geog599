@@ -26,7 +26,7 @@ protected:
 	/**
 	 * Filter implementation.
 	 */
-	virtual void doFilter(std::list<P>& pts) = 0;
+	virtual void doFilter(std::list<P*>& pts) = 0;
 
 public:
 
@@ -44,7 +44,7 @@ public:
 	 *
 	 * @param pts A list of points.
 	 */
-	void filter(std::list<P>& pts) {
+	void filter(std::list<P*>& pts) {
 		doFilter(pts);
 		if(m_nextFilter)
 			m_nextFilter->filter(pts);

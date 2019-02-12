@@ -63,7 +63,7 @@ private:
 
 protected:
 
-	void doFilter(std::list<P>& pts) {
+	void doFilter(std::list<P*>& pts) {
 
 		using namespace hullutils;
 
@@ -90,9 +90,9 @@ protected:
 		}
 
 		// Move the kept vertices into a new list.
-		std::list<P> newHull;
+		std::list<P*> newHull;
 		for(size_t i = 0; i < hull.size(); ++i)
-			newHull.push_back(std::move(item(pts, hull[i])));
+			newHull.push_back(item(pts, hull[i]));
 
 		// Write the new items into the old list.
 		pts.swap(newHull);
