@@ -76,6 +76,14 @@ def load(filename):
 	hx = [x[0] for x in hul]
 	hy = [y[1] for y in hul]
 
+	with open('hull.csv', 'w') as o:
+		for x, y in hul:
+			o.write('{x},{y}\n'.format(x = x, y = y))
+
+	with open('pts.csv', 'w') as o:
+		for x, y in pts:
+			o.write('{x},{y}\n'.format(x = x, y = y))
+
 	return (xx, yy, hx, hy)
 
 
@@ -87,8 +95,8 @@ def generate(smooth, weight):
 	fig = plt.figure(figsize=(8, 3.5))
 	ax1 = fig.add_subplot(111)
 
-	spl = UnivariateSpline(hx, hy, k=3, s = 10, w = w)
-	spl.set_smoothing_factor(smooth)
+	spl = UnivariateSpline(hx, hy, k=3, s = smooth, w = w)
+	#spl.set_smoothing_factor(smooth)
 	d1 = spl.derivative(n=1)
 	d2 = spl.derivative(n=2)
 	kx = spl.get_knots()
