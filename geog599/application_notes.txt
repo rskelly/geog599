@@ -1,0 +1,6 @@
+Application notes:
+
+- The lidar is pre-processed into a y-z planar point cloud, with y as the distance from a selected origin. The x is collapsed.
+- As the "vehicle" travels in y at a given speed (say, 5m/s), it is represented as a triangular block (with the laser angled down, 
+forming the hypothenuse) that consumes the points in the block. The point frequency is dictated by the vehicle speed and the point
+density.
