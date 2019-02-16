@@ -20,7 +20,7 @@ namespace uav {
 namespace sim {
 
 /**
- * Reads a stream of points (2d; y-z) from a text file and provides the PointSource
+ * Reads a stream of points from a LAS file and provides the PointSource
  * interface.
  */
 template <class P>
@@ -30,6 +30,8 @@ private:
 	std::ifstream m_stream;
 	uav::ds::Octree<P> m_tree;
 	std::list<P*> m_filtered;
+	std::string m_filename;
+	bool m_loaded;
 
 public:
 
@@ -38,21 +40,26 @@ public:
 	 *
 	 * @param filename A LAS file.
 	 */
-	LASPointSource(const std::string& filename) {
+	LASPointSource(const std::string& filename) :
+		LASPointSource() {
 		load(filename);
 	}
 
 	/**
 	 * Construct and empty LASPointSource.
 	 */
-	LASPointSource();
+	LASPointSource() :
+		m_loaded(false) {}
 
 	/**
 	 * Load a point source file.
 	 *
-	 * @param filename A comma-delimited file containing the y,z coordinates of each point. No header.
+	 * @param filename A LAS file.
 	 */
 	void load(const std::string& filename) {
+		m_loaded = false;
+		m_filename = filename;
+		m_tree.reset();
 		m_stream.open(filename);
 		m_reader.Reader(m_stream);
 		const liblas::Header& hdr = m_reader.GetHeader();
@@ -62,6 +69,18 @@ public:
 			const liblas::Point& lpt = m_reader.GetPoint();
 			m_tree.add(new Pt(lpt.GetX(), lpt.GetY(), lpt.GetZ(), lpt.GetTime()));
 		}
+		m_loaded = true;
+	}
+
+	void reset() {
+		if(m_loaded)
+			load(m_filename);
+	}
+
+	void computeBounds(double* bounds) {
+		if(!m_loaded)
+			throw std::runtime_error("Point source is not loaded. Call load first.");
+		m_tree.getBounds(bounds);
 	}
 
 	const uav::ds::Octree<P>& octree() const {

@@ -99,3 +99,4 @@ client/planner/node_modules
 *.bcf
 *.run.xml
 figures/splines_*.png
+geog599/scripts/figures

@@ -30,6 +30,13 @@ public:
 		isSplit(false),
 		bounds({minx, maxx, miny, maxy, minz, maxz}) {}
 
+	void reset() {
+		for(int i = 0; i < 8; ++i) {
+			if(nodes[i])
+				delete nodes[i];
+		}
+	}
+
 	double midx() const {
 		return (bounds[1] - bounds[0]) / 2.0;
 	}
@@ -133,6 +140,11 @@ public:
 		bounds = {minx, maxx, miny, maxy, minz, maxz};
 	}
 
+	void getBounds(double* bounds) {
+		for(int i = 0; i < 6; ++i)
+			bounds[i] = this->bounds[i];
+	}
+	
 	~Node() {
 		if(isSplit) {
 			for(int i = 0; i < 6; ++i)

@@ -29,11 +29,19 @@ public:
 	 */
 	virtual bool next(P& pt) = 0;
 
+	/**
+	 * Reset the point reader to the beginning. Not all PointSources 
+	 * will be able to do this.
+	 */
+	virtual void reset() {
+		throw std::runtime_error("Reset not implemented.");
+	}
+
 	void setFilter(uav::PointFilter<P>* filter) {
 		m_filter = filter;
 	}
 
-	void computeBounds(double* bounds) {
+	virtual void computeBounds(double* bounds) {
 		P pt;
 		while(next(pt)) {
 			if(pt.x() < bounds[0]) bounds[0] = pt.x();
@@ -43,10 +51,12 @@ public:
 			if(pt.z() < bounds[4]) bounds[4] = pt.z();
 			if(pt.z() > bounds[5]) bounds[5] = pt.z();
 		}
+		reset();
 	}
 
 	virtual ~PointSource() {
-		delete m_filter;
+		if(m_filter)
+			delete m_filter;
 	}
 };
 

@@ -21,14 +21,23 @@ namespace uav {
 
 class Pt;
 
+/**
+ * Utilities for the TrajectoryPlanner to use.
+ */
 namespace trajectoryutils {
 
+	/**
+	 * Return the current time in microseconds.
+	 */
 	uint64_t microtime() {
 		struct timeval time;
 		gettimeofday(&time, NULL);
 		return (time.tv_sec * 1000) + (time.tv_usec / 1000);
 	}
 
+	/**
+	 *
+	 */
 	template <class P>
 	void processPoints(uav::PointSource<P>* ptSource, uav::PointSorter<P>* ptSorter, uav::PointFilter<P>* ptFilter,
 			std::list<P>* pts, const P* start, bool* running) {
@@ -59,6 +68,10 @@ namespace trajectoryutils {
 } // trajectoryutils
 
 
+/**
+ * Represents a single Cartesian point in 3D space. Can be converted to a point
+ * in 2D (y-z) space.
+ */
 class Pt {
 private:
 	double _x;
@@ -68,14 +81,26 @@ private:
 
 public:
 
+	/**
+	 * Create a default point with the current time.
+	 */
 	Pt() : Pt(0, 0, 0) {}
 
+	/**
+	 * Create a point at the given 3D coordinate and the current time.
+	 */
 	Pt(double x, double y, double z) : Pt(x, y, z, 0) {}
 
+	/**
+	 * Create a point at the given 3D coordinate and time.
+	 */
 	Pt(double x, double y, double z, uint64_t time) :
 		_x(x), _y(y), _z(z),
 		_time(time > 0 ? time : uav::trajectoryutils::microtime()) {}
 
+	/**
+	 * Copy constructor.
+	 */
 	Pt(const Pt& pt) :
 		Pt(pt.x(), pt.y(), pt.z(), pt.time()) {}
 
@@ -111,12 +136,15 @@ public:
 		_time = time;
 	}
 
+	/**
+	 * Set the time to the current time.
+	 */
 	void resetTime() {
 		_time = uav::trajectoryutils::microtime();
 	}
 
 	/**
-	 * Return point converted to a 2d representation as measured from the given origin.
+	 * Return a point converted to a 2d representation as measured from the given origin.
 	 * Time and z are copied over.
 	 */
 	Pt as2D(const Pt& start) const {
@@ -124,6 +152,9 @@ public:
 		return Pt(0, yx, z(), time());
 	}
 
+	/**
+	 * Update the current point as a 2D point from the given start coordinate.
+	 */
 	void to2D(const Pt& start) {
 		double yx = std::sqrt(std::pow(start.x() - x(), 2.0) + std::pow(start.y() - y(), 2.0));
 		x(0);
@@ -132,6 +163,10 @@ public:
 };
 
 
+/**
+ * The trajectory planner reads a stream of Cartesian points from a real or simlated
+ * LiDAR device and develops a surface-following trajectory using cubic splines.
+ */
 template <class P>
 class TrajectoryPlanner {
 private:
@@ -169,7 +204,7 @@ public:
 		if(!m_running) {
 			m_running = true;
 
-			double bounds[6] = {std::numeric_limits<double>::max(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), std::numeric_limits<double>::lowest()};
+			double bounds[6];
 			m_ptSource->computeBounds(bounds);
 
 			m_pthread = std::thread(processPoints, m_ptSource, &m_ptSorter, m_ptFilter, &m_points, &m_running);
