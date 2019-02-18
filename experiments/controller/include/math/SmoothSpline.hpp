@@ -284,8 +284,13 @@ private:
 
 public:
 
-	SmoothSpline() :
-		m_k(3) {}
+	/**
+	 * Create a smoothing spline of the given order (default, 3).
+	 *
+	 * @param order The order of the spline's polynomial. Defaults to 3.
+	 */
+	SmoothSpline(int order = 3) :
+		m_k(order) {}
 
 	/**
 	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
@@ -316,7 +321,7 @@ public:
 			throw std::runtime_error("Weights and points must have the same length and be more than 2.");
 
 		// Inputs
-		int iopt = 0;
+		int iopt = 0;					// Determines how s is calculated.
 		int m = (int) pts.size();		// Number of points.
 		m_x.resize(m); 					// Abscissae
 		m_y.resize(m); 					// Ordinates
@@ -324,18 +329,18 @@ public:
 		double tol = 0.001;				// Epsilon
 
 		// Outputs
-		int ierr = 0;						// Error return.
-		int n = -1;
+		int ierr = 0;					// Error return.
+		int n = -1;						// Number of knots.
 
-		int k1 = m_k + 1;
-		int k2 = m_k + 2;;
-		int nest = m + m_k + 1; //s == 0.0 ? m + k + 1 : std::max(m / 2, 2 * k1);
-		double fp;
-		int maxit = 20;
+		int k1 = m_k + 1;				// ?
+		int k2 = m_k + 2;;				// ?
+		int nest = m + m_k + 1; 		// Estimate for n. s == 0.0 ? m + k + 1 : std::max(m / 2, 2 * k1);
+		double fp;						// ?
+		int maxit = 20;					// Maximum number of iterations.
 
 		m_t.resize(nest);					// Knots
 		m_c.resize(nest);					// Coefficients
-		std::vector<double> fpint(nest);
+		std::vector<double> fpint(nest);	// Temporary storage...
 		std::vector<double> z(nest);
 		std::vector<double> a(nest * k1);
 		std::vector<double> b(nest * k2);
@@ -343,12 +348,14 @@ public:
 		std::vector<double> q(m * k1);
 		std::vector<int> nrdata(nest);
 
+		// Copy the values.
 		for(int i = 0; i < m; ++i) {
 			m_x[i] = pts[i].x();
 			m_y[i] = pts[i].y();
 			m_w[i] = weights[i];
 		}
 
+		// First and last ordinates.
 		double xb = m_x[0];
 		double xe = m_x[m_x.size() - 1];
 
@@ -357,8 +364,12 @@ public:
 			m_t.data(), m_c.data(), &fp, fpint.data(), z.data(), a.data(), b.data(),
 			g.data(), q.data(), nrdata.data(), &ierr);
 
-		m_t.resize(n);
-		m_c.resize(n);
+		// Trim the result arrays.
+		if(n > m_t.size()) {
+			m_t.resize(n);
+			m_c.resize(n);
+		}
+
 		/*
 		switch(ierr) {
 		case 1:
@@ -376,16 +387,41 @@ public:
 
 	}
 
-	void evaluate(std::vector<double>& x, std::vector<double>& y, int derivative = 0) {
+	/**
+	 * Evaluate the spline at the given positions in x for the given derivative (default 0).
+	 * @param x The x-coordinates.
+	 * @param y The y-coordinates (output).
+	 * @param derivative The derivative to evaluate. Defaults to zero, the original function.
+	 */
+	void evaluate(const std::vector<double>& x, std::vector<double>& y, int derivative = 0) {
 		 int m = x.size();
 		 int n = m_t.size();
 		 int e = 1; // No extrapolate
 		 int ier = 0;
 		 if(derivative == 0) {
-			 splev_(m_t.data(), &n, m_c.data(), &m_k, x.data(), y.data(), &m, &e, &ier);
+			 splev_(m_t.data(), &n, m_c.data(), &m_k, (double*) x.data(), y.data(), &m, &e, &ier);
 		 } else if(derivative > 0 && derivative <= 3) {
 			 std::vector<double> wrk(n);
-			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, x.data(), y.data(), &m, &e, wrk.data(), &ier);
+			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, (double*) x.data(), y.data(), &m, &e, wrk.data(), &ier);
+		 }
+	}
+
+	/**
+	 * Evaluate the spline at the given position in x for the given derivative (default 0).
+	 * @param x The x-coordinate.
+	 * @param y The y-coordinate (output).
+	 * @param derivative The derivative to evaluate. Defaults to zero, the original function.
+	 */
+	void evaluate(double x, double& y, int derivative = 0) {
+		 int m = 1;
+		 int n = m_t.size();
+		 int e = 1; // No extrapolate
+		 int ier = 0;
+		 if(derivative == 0) {
+			 splev_(m_t.data(), &n, m_c.data(), &m_k, &x, &y, &m, &e, &ier);
+		 } else if(derivative > 0 && derivative <= 3) {
+			 std::vector<double> wrk(n);
+			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, &x, &y, &m, &e, wrk.data(), &ier);
 		 }
 	}
 
