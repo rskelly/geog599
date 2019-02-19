@@ -31,8 +31,8 @@ namespace hullutils {
 	 * Determine what side of the line joining p0 and p1, p is on.
 	 */
 	template <class P>
-	int cross(const P& p0, const P& p1, const P& p) {
-	  return (p0.y - p.y) * (p1.z - p.z) - (p0.z - p.z) * (p1.y - p.y);
+	int cross(const P* p0, const P* p1, const P* p) {
+	  return (p0->y() - p->y()) * (p1->z() - p->z()) - (p0->z() - p->z()) * (p1->y() - p->y());
 	}
 
 	/**
@@ -40,7 +40,7 @@ namespace hullutils {
 	 */
 	template <class P>
 	double length(const P& p0, const P& p1) {
-		return std::pow(p0.y - p1.y, 2.0) + std::pow(p0.z - p1.z, 2.0);
+		return std::pow(p0->y() - p1->y(), 2.0) + std::pow(p0->z() - p1->z(), 2.0);
 	}
 
 }
@@ -64,6 +64,9 @@ private:
 protected:
 
 	void doFilter(std::list<P*>& pts) {
+
+		if(pts.size() < 3)
+			return;
 
 		using namespace hullutils;
 

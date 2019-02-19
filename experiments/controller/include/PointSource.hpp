@@ -14,8 +14,8 @@ namespace uav {
 
 template <class P>
 class PointSource {
-private:
-	uav::PointFilter* m_filter;
+protected:
+	uav::PointFilter<P>* m_filter;
 
 public:
 

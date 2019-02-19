@@ -30,6 +30,9 @@ protected:
 
 public:
 
+	PointFilter() :
+		m_nextFilter(nullptr) {}
+
 	/**
 	 * Add a filter that will be called on the point set after this filter's operations are complete.
 	 *

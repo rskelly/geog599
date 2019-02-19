@@ -35,36 +35,6 @@ namespace trajectoryutils {
 		return (time.tv_sec * 1000) + (time.tv_usec / 1000);
 	}
 
-	/**
-	 *
-	 */
-	template <class P>
-	void processPoints(uav::PointSource<P>* ptSource, uav::PointSorter<P>* ptSorter, uav::PointFilter<P>* ptFilter,
-			std::list<P>* pts, const P* start, bool* running) {
-
-		P pt;
-
-		while(*running) {
-
-			// Get the available points and sort them into the points list.
-			size_t c = 0;
-			while(ptSource->next(pt) && ++c < 100)
-				ptSorter->insert(pt, *pts);
-
-			// Filter the points.
-			ptFilter->filter(*pts);
-		}
-
-	}
-
-	template <class P>
-	void generateTrajectory(std::list<P>* pts, bool* running) {
-
-		while(*running) {
-
-		}
-	}
-
 } // trajectoryutils
 
 
@@ -173,9 +143,10 @@ private:
 	uav::PointSource<P>* m_ptSource;
 	uav::PointFilter<P>* m_ptFilter;
 	uav::PointSorter<P> m_ptSorter;
-	std::list<P> m_points;
+	std::list<P*> m_points;
 
 	bool m_running;
+	P m_start;
 	std::thread m_pthread;
 	std::thread m_gthread;
 
@@ -194,6 +165,39 @@ public:
 		m_ptFilter = pfilt;
 	}
 
+	void setStartPoint(P& pt) {
+		m_start = pt;
+	}
+
+	/**
+	 *
+	 */
+	void processPoints(const P& startPt) {
+
+		P pt;
+
+		while(m_running) {
+
+			// Get the available points and sort them into the points list.
+			if(m_ptSource->next(pt)) {
+				pt.to2D(startPt);
+				m_ptSorter.insert(new P(pt), m_points);
+				// Filter the points.
+				m_ptFilter->filter(m_points);
+			}
+
+			std::this_thread::sleep_for(std::chrono::duration<size_t, std::micro>(1000));
+		}
+
+	}
+
+	void generateTrajectory(std::list<Pt>* pts, bool* running) {
+
+		while(*running) {
+
+		}
+	}
+
 	/**
 	 * Run the trajectory planner. It uses two threads. One for the point retrieval and
 	 * filtering, one for planning the trajectory. Each time a trajectory is completed,
@@ -206,9 +210,8 @@ public:
 
 			double bounds[6];
 			m_ptSource->computeBounds(bounds);
-
-			m_pthread = std::thread(processPoints, m_ptSource, &m_ptSorter, m_ptFilter, &m_points, &m_running);
-			m_gthread = std::thread(generateTrajectory, &m_points, &m_running);
+			m_pthread = std::thread([this]{ this->processPoints(m_start); });
+			//m_gthread = std::thread(generateTrajectory, &m_points, &m_running);
 		}
 	}
 

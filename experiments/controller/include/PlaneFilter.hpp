@@ -18,9 +18,9 @@ namespace uav {
 template <class P>
 class PlaneFilter : public uav::PointFilter<P> {
 private:
-	Eigen::Hyperplane* m_plane;
-	Eigen::ParametrizedLine* m_line;
-	uav::ds::Octree<P>* m_tree;
+	const Eigen::Hyperplane<double, 3>* m_plane;
+	const Eigen::ParametrizedLine<double, 3>* m_line;
+	const uav::ds::Octree<P>* m_tree;
 	double m_planeWidth;
 	double m_maxDist;
 
@@ -29,9 +29,11 @@ protected:
 	void doFilter(std::list<P*>& pts) {
 		std::list<P*> lst;
 		m_tree->planeSearch(*m_plane, m_maxDist, lst);
+		if(lst.size())
+			std::cerr << "Plane: " << lst.size() << "\n";
 		for(P* p : lst) {
 			Eigen::Vector3d pv(p->x(), p->y(), p->z());
-			if(m_line->distance(pv) <= m_planeWidth)
+			if(m_line->distance(pv) <= m_planeWidth / 2)
 				pts.push_back(p);
 		}
 	}
@@ -44,11 +46,11 @@ public:
 		m_planeWidth(planeWidth),
 		m_maxDist(maxDist) {}
 
-	void setPlane(const Eigen::Hyperplane* plane) {
+	void setPlane(const Eigen::Hyperplane<double, 3>* plane) {
 		m_plane = plane;
 	}
 
-	void setLine(const Eigen::ParametrizedLine* line) {
+	void setLine(const Eigen::ParametrizedLine<double, 3>* line) {
 		m_line = line;
 	}
 

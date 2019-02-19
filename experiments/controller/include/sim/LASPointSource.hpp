@@ -26,7 +26,7 @@ namespace sim {
 template <class P>
 class LASPointSource : public uav::PointSource<P> {
 private:
-	liblas::Reader m_reader;
+	liblas::Reader* m_reader;
 	std::ifstream m_stream;
 	uav::ds::Octree<P> m_tree;
 	std::list<P*> m_filtered;
@@ -49,6 +49,7 @@ public:
 	 * Construct and empty LASPointSource.
 	 */
 	LASPointSource() :
+		m_reader(nullptr),
 		m_loaded(false) {}
 
 	/**
@@ -61,12 +62,14 @@ public:
 		m_filename = filename;
 		m_tree.reset();
 		m_stream.open(filename);
-		m_reader.Reader(m_stream);
-		const liblas::Header& hdr = m_reader.GetHeader();
+		if(m_reader)
+			delete m_reader;
+		m_reader = new liblas::Reader(m_stream);
+		const liblas::Header& hdr = m_reader->GetHeader();
 		const liblas::Bounds<double> bounds = hdr.GetExtent();
 		m_tree.setBounds(bounds.minx(), bounds.maxx(), bounds.miny(), bounds.maxy(), bounds.minz(), bounds.maxz());
-		if(m_reader.ReadNextPoint()) {
-			const liblas::Point& lpt = m_reader.GetPoint();
+		while(m_reader->ReadNextPoint()) {
+			const liblas::Point& lpt = m_reader->GetPoint();
 			m_tree.add(new Pt(lpt.GetX(), lpt.GetY(), lpt.GetZ(), lpt.GetTime()));
 		}
 		m_loaded = true;
@@ -89,9 +92,11 @@ public:
 
 	bool next(P& pt) {
 		if(m_filtered.empty()) {
-			if(!m_filter)
+			if(!this->m_filter)
 				return false;
-			m_filter->filter(m_filtered);
+			this->m_filter->filter(m_filtered);
+			if(m_filtered.size())
+				std::cerr << "Filtered: " << m_filtered.size() << "\n";
 		}
 		if(!m_filtered.empty()) {
 			Pt* p = m_filtered.front();
@@ -106,6 +111,8 @@ public:
 	}
 
 	~LASPointSource() {
+		if(m_reader)
+			delete m_reader;
 	}
 
 };
