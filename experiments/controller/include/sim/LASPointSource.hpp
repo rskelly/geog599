@@ -29,7 +29,7 @@ private:
 	liblas::Reader* m_reader;
 	std::ifstream m_stream;
 	uav::ds::Octree<P> m_tree;
-	std::list<P*> m_filtered;
+	std::list<P> m_filtered;
 	std::string m_filename;
 	bool m_loaded;
 
@@ -70,7 +70,7 @@ public:
 		m_tree.setBounds(bounds.minx(), bounds.maxx(), bounds.miny(), bounds.maxy(), bounds.minz(), bounds.maxz());
 		while(m_reader->ReadNextPoint()) {
 			const liblas::Point& lpt = m_reader->GetPoint();
-			m_tree.add(new Pt(lpt.GetX(), lpt.GetY(), lpt.GetZ(), lpt.GetTime()));
+			m_tree.add(Pt(lpt.GetX(), lpt.GetY(), lpt.GetZ(), lpt.GetTime()));
 		}
 		m_loaded = true;
 	}
@@ -99,11 +99,7 @@ public:
 				std::cerr << "Filtered: " << m_filtered.size() << "\n";
 		}
 		if(!m_filtered.empty()) {
-			Pt* p = m_filtered.front();
-			pt.x(p->x());
-			pt.y(p->y());
-			pt.z(p->z());
-			pt.time(p->time());
+			pt = m_filtered.front();
 			m_filtered.pop_front();
 			return true;
 		}

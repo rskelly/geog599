@@ -11,11 +11,13 @@
 #include <sys/time.h>
 #include <thread>
 #include <cmath>
+#include <mutex>
 
 #include "PointSorter.hpp"
 #include "PointSource.hpp"
 #include "PointFilter.hpp"
 #include "Octree.hpp"
+#include "math/SmoothSpline.hpp"
 
 namespace uav {
 
@@ -140,17 +142,27 @@ public:
 template <class P>
 class TrajectoryPlanner {
 private:
+	uav::math::SmoothSpline<P> m_spline;
 	uav::PointSource<P>* m_ptSource;
 	uav::PointFilter<P>* m_ptFilter;
 	uav::PointSorter<P> m_ptSorter;
-	std::list<P*> m_points;
+	std::list<P> m_points;
+	double m_weight;
+	double m_smooth;
 
 	bool m_running;
 	P m_start;
 	std::thread m_pthread;
 	std::thread m_gthread;
+	std::mutex m_mtx;
 
 public:
+
+	TrajectoryPlanner() :
+		m_ptSource(nullptr), m_ptFilter(nullptr),
+		m_weight(0.5), m_smooth(0.5),
+		m_running(false) {
+	}
 
 	/**
 	 * Set the source of points.
@@ -173,28 +185,36 @@ public:
 	 *
 	 */
 	void processPoints(const P& startPt) {
-
 		P pt;
-
 		while(m_running) {
-
 			// Get the available points and sort them into the points list.
 			if(m_ptSource->next(pt)) {
 				pt.to2D(startPt);
-				m_ptSorter.insert(new P(pt), m_points);
+				std::lock_guard<std::mutex> lk(m_mtx);
+				m_ptSorter.insert(pt, m_points);
 				// Filter the points.
 				m_ptFilter->filter(m_points);
+				std::cout << "Hull: " << m_points.size() << "\n";
 			}
-
-			std::this_thread::sleep_for(std::chrono::duration<size_t, std::micro>(1000));
+			std::this_thread::yield();
 		}
-
 	}
 
-	void generateTrajectory(std::list<Pt>* pts, bool* running) {
+	void generateTrajectory() {
 
-		while(*running) {
+		std::vector<P> pts;
 
+		while(m_running) {
+			if(!m_points.empty()){
+				std::lock_guard<std::mutex> lk(m_mtx);
+				pts.assign(m_points.begin(), m_points.end());
+				try {
+					m_spline.fit(pts, m_weight, m_smooth);
+				} catch(const std::exception& ex) {
+					std::cerr << ex.what() << "\n";
+				}
+			}
+			std::this_thread::yield();
 		}
 	}
 
@@ -204,6 +224,9 @@ public:
 	 * the listener is notified.
 	 */
 	void start() {
+
+		m_spline.setOrder(3);
+
 		using namespace uav::trajectoryutils;
 		if(!m_running) {
 			m_running = true;
@@ -211,7 +234,7 @@ public:
 			double bounds[6];
 			m_ptSource->computeBounds(bounds);
 			m_pthread = std::thread([this]{ this->processPoints(m_start); });
-			//m_gthread = std::thread(generateTrajectory, &m_points, &m_running);
+			m_gthread = std::thread([this]{ this->generateTrajectory(); });
 		}
 	}
 

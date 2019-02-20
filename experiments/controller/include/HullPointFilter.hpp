@@ -18,21 +18,11 @@ namespace uav {
 namespace hullutils {
 
 	/**
-	 * Return a reference to the list item, by index.
-	 */
-	template <class P>
-	const P& item(const std::list<P>& pts, size_t idx) {
-		auto iter = pts.begin();
-		std::advance(iter, idx);
-		return *iter;
-	}
-
-	/**
 	 * Determine what side of the line joining p0 and p1, p is on.
 	 */
 	template <class P>
-	int cross(const P* p0, const P* p1, const P* p) {
-	  return (p0->y() - p->y()) * (p1->z() - p->z()) - (p0->z() - p->z()) * (p1->y() - p->y());
+	int cross(const P& p0, const P& p1, const P& p) {
+	  return (p0.y() - p.y()) * (p1.z() - p.z()) - (p0.z() - p.z()) * (p1.y() - p.y());
 	}
 
 	/**
@@ -40,7 +30,7 @@ namespace hullutils {
 	 */
 	template <class P>
 	double length(const P& p0, const P& p1) {
-		return std::pow(p0->y() - p1->y(), 2.0) + std::pow(p0->z() - p1->z(), 2.0);
+		return std::pow(p0.y() - p1.y(), 2.0) + std::pow(p0.z() - p1.z(), 2.0);
 	}
 
 }
@@ -63,39 +53,41 @@ private:
 
 protected:
 
-	void doFilter(std::list<P*>& pts) {
+	void doFilter(std::list<P>& pts) {
 
 		if(pts.size() < 3)
 			return;
 
 		using namespace hullutils;
 
+		std::vector<P> _pts(pts.begin(), pts.end());
 		std::vector<size_t> hull;
 		hull.push_back(0);
 		hull.push_back(1);
 
 		if(m_alpha <= 0) {
 			// If there's no alpha, do a straight hull.
-			for(size_t i = 2; i < pts.size(); ++i) {
-				while(hull.size() >= 2
-						&& cross(item(pts, hull[hull.size() - 2]), item(pts, hull[hull.size() - 1]), item(pts, i)))
+			for(size_t i = 2; i < _pts.size(); ++i) {
+				while(hull.size() >= 2 && cross(_pts[hull[hull.size() - 2]], _pts[hull[hull.size() - 1]], _pts[i]))
 					hull.pop_back();
+				hull.push_back(i);
 			}
 		} else {
 			// If there's an alpha do a degenerate hull. It could have been one loop but we save a bit of
 			// time and visual complexity this way.
-			for(size_t i = 2; i < pts.size(); ++i) {
+			for(size_t i = 2; i < _pts.size(); ++i) {
 				while(hull.size() >= 2
-						&& cross(item(pts, hull[hull.size() - 2]), item(pts, hull[hull.size() - 1]), item(pts, i))
-						&& length(item(pts, hull[hull.size() - 2]), item(pts, i)) <= (m_alpha * m_alpha))
+						&& cross(_pts[hull[hull.size() - 2]], _pts[hull[hull.size() - 1]], _pts[i])
+						&& length(_pts[hull[hull.size() - 2]], _pts[i]) <= (m_alpha * m_alpha))
 					hull.pop_back();
+				hull.push_back(i);
 			}
 		}
 
 		// Move the kept vertices into a new list.
-		std::list<P*> newHull;
+		std::list<P> newHull;
 		for(size_t i = 0; i < hull.size(); ++i)
-			newHull.push_back(item(pts, hull[i]));
+			newHull.push_back(_pts[hull[i]]);
 
 		// Write the new items into the old list.
 		pts.swap(newHull);

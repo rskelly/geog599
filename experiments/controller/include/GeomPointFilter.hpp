@@ -19,10 +19,10 @@ private:
 
 protected:
 
-	void doFilter(std::list<P*>& pts) {
-		std::list<P*> lst;
-		for(P* pt : pts) {
-			if(pt->y() >= m_minY)
+	void doFilter(std::list<P>& pts) {
+		std::list<P> lst;
+		for(const P& pt : pts) {
+			if(pt.y() >= m_minY)
 				lst.push_back(pt);
 		}
 		pts.swap(lst);

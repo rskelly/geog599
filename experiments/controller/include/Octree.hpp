@@ -23,10 +23,51 @@ template <class P>
 class Node {
 protected:
 	Node<P>* nodes[8] = {0};
-	std::list<P*> items;
+	std::list<P> items;
 	bool isSplit;
 	bool isLeaf;
 	double bounds[6];
+
+	Node* getNode(const P& item) {
+		int idx = 0;
+		if(item.x() > midx())
+			idx |= 1;
+		if(item.y() > midy())
+			idx |= 2;
+		if(item.z() > midz())
+			idx |= 4;
+		if(!nodes[idx]) {
+			switch(idx) {
+			case 0:
+				nodes[0] = new Node(bounds[0], midx(), bounds[2], midy(), bounds[4], midz());
+				break;
+			case 1:
+				nodes[1] = new Node(midx(), bounds[1], bounds[2], midy(), bounds[4], midz());
+				break;
+			case 2:
+				nodes[2] = new Node(bounds[0], midx(), midy(), bounds[3], bounds[4], midz());
+				break;
+			case 3:
+				nodes[3] = new Node(midx(), bounds[1], midy(), bounds[3], bounds[4], midz());
+				break;
+			case 4:
+				nodes[4] = new Node(bounds[0], midx(), bounds[2], midy(), midz(), bounds[5]);
+				break;
+			case 5:
+				nodes[5] = new Node(midx(), bounds[1], bounds[2], midy(), midz(), bounds[5]);
+				break;
+			case 6:
+				nodes[6] = new Node(bounds[0], midx(), midy(), bounds[3], midz(), bounds[5]);
+				break;
+			case 7:
+				nodes[7] = new Node(midx(), bounds[1], midy(), bounds[3], midz(), bounds[5]);
+				break;
+			default:
+				throw std::runtime_error("Invalid index: " + idx);
+			}
+		}
+		return nodes[idx];
+	}
 
 public:
 	Node(double minx, double maxx, double miny, double maxy, double minz, double maxz) :
@@ -65,7 +106,7 @@ public:
 		return bounds[5] - bounds[4];
 	}
 
-	void add(P* item) {
+	void add(const P& item) {
 		if(isLeaf || (!isLeaf && items.size() < SIZE_LIMIT)) {
 			items.push_back(item);
 		} else if(isSplit) {
@@ -76,56 +117,15 @@ public:
 		}
 	}
 
-	void remove(P* item) {
+	void remove(const P& item) {
 		if(isSplit) {
 			getNode(item)->remove(item);
 		} else {
-			for(P* i : items) {
+			for(const P& i : items) {
 				if(i == item)
 					items.erase(i);
 			}
 		}
-	}
-
-	Node* getNode(P* item) {
-		int idx = 0;
-		if(item->x() > midx())
-			idx |= 1;
-		if(item->y() > midy())
-			idx |= 2;
-		if(item->z() > midz())
-			idx |= 4;
-		if(!nodes[idx]) {
-			switch(idx) {
-			case 0:
-				nodes[0] = new Node(bounds[0], midx(), bounds[2], midy(), bounds[4], midz());
-				break;
-			case 1:
-				nodes[1] = new Node(midx(), bounds[1], bounds[2], midy(), bounds[4], midz());
-				break;
-			case 2:
-				nodes[2] = new Node(bounds[0], midx(), midy(), bounds[3], bounds[4], midz());
-				break;
-			case 3:
-				nodes[3] = new Node(midx(), bounds[1], midy(), bounds[3], bounds[4], midz());
-				break;
-			case 4:
-				nodes[4] = new Node(bounds[0], midx(), bounds[2], midy(), midz(), bounds[5]);
-				break;
-			case 5:
-				nodes[5] = new Node(midx(), bounds[1], bounds[2], midy(), midz(), bounds[5]);
-				break;
-			case 6:
-				nodes[6] = new Node(bounds[0], midx(), midy(), bounds[3], midz(), bounds[5]);
-				break;
-			case 7:
-				nodes[7] = new Node(midx(), bounds[1], midy(), bounds[3], midz(), bounds[5]);
-				break;
-			default:
-				throw std::runtime_error("Invalid index: " + idx);
-			}
-		}
-		return nodes[idx];
 	}
 
 	void split() {
@@ -134,7 +134,7 @@ public:
 				isLeaf = true;
 			} else {
 				isSplit = true;
-				for(P* i : items)
+				for(const P& i : items)
 					getNode(i)->add(i);
 				items.clear();
 			}
@@ -155,7 +155,7 @@ public:
 		return  r2 <= r1;
 	}
 
-	size_t planeSearch(const Eigen::Hyperplane<double, 3>& plane, double maxDist, std::list<P*>& result) const {
+	size_t planeSearch(const Eigen::Hyperplane<double, 3>& plane, double maxDist, std::list<P>& result) const {
 
 		//printBounds();
 
@@ -173,8 +173,8 @@ public:
 
 		} else {
 
-			for(P* i : items) {
-				Eigen::Vector3d v(i->x(), i->y(), i->z());
+			for(const P& i : items) {
+				Eigen::Vector3d v(i.x(), i.y(), i.z());
 				double d = plane.absDistance(v);
 				std::cerr << "Dist: " << d << ", " << maxDist << "\n";
 				if(d <= maxDist) {

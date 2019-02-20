@@ -119,7 +119,7 @@ target_link_libraries (uav_teensy uav_serial)
 #target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
 
 add_executable(pipeline src/pipeline.cpp)
-target_link_libraries (pipeline las)
+target_link_libraries (pipeline las fitpack_mod)
 
 add_executable (curve src/curve.cpp)
 target_link_libraries (curve fitpack_mod)

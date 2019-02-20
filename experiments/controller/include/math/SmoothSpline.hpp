@@ -293,6 +293,24 @@ public:
 		m_k(order) {}
 
 	/**
+	 * Set the order, which will be from 1 (linear) to 5 (quintic).
+	 *
+	 * @param order The order of each polynomial function.
+	 */
+	void setOrder(int order) {
+		m_k = order;
+	}
+
+	/**
+	 * Get the order, which will be from 1 (linear) to 5 (quintic).
+	 *
+	 * @return The order of each polynomial function.
+	 */
+	int order() const {
+		return m_k;
+	}
+
+	/**
 	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
 	 * @param weight 	A scalar giving the weight for each data point.
 	 * @param s 		The smoothing factor.

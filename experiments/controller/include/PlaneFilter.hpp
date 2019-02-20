@@ -26,13 +26,13 @@ private:
 
 protected:
 
-	void doFilter(std::list<P*>& pts) {
-		std::list<P*> lst;
+	void doFilter(std::list<P>& pts) {
+		std::list<P> lst;
 		m_tree->planeSearch(*m_plane, m_maxDist, lst);
 		if(lst.size())
 			std::cerr << "Plane: " << lst.size() << "\n";
-		for(P* p : lst) {
-			Eigen::Vector3d pv(p->x(), p->y(), p->z());
+		for(P& p : lst) {
+			Eigen::Vector3d pv(p.x(), p.y(), p.z());
 			if(m_line->distance(pv) <= m_planeWidth / 2)
 				pts.push_back(p);
 		}
