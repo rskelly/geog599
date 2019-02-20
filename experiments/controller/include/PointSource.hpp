@@ -19,6 +19,9 @@ protected:
 
 public:
 
+	PointSource() :
+		m_filter(nullptr) {}
+
 	/**
 	 * Return the next available point. If none is available, false is returned
 	 * and the point is unchanged. Otherwise the point is updated and the method
@@ -55,8 +58,6 @@ public:
 	}
 
 	virtual ~PointSource() {
-		if(m_filter)
-			delete m_filter;
 	}
 };
 

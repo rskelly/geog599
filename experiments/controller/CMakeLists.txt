@@ -22,15 +22,13 @@ set (CMAKE_CXX_FLAGS "-fPIC -lpthread -fopenmp -Wno-unknown-pragmas -Wall -D_GLI
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set (CMAKE_INSTALL_RPATH "/opt/lib;/usr/local/lib")
+set (CMAKE_INSTALL_RPATH "/usr/local/lib")
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set (CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
 if(${WITH_GUI})
 	set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu/cmake/Qt5")
 endif()
-
-set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};/opt/dji")
 
 set (Boost_DEBUG OFF)
 set (Boost_USE_STATIC_LIBS OFF)
@@ -74,7 +72,7 @@ project (test)
 
 # Configure directories###################################################################################
 
-include_directories(BEFORE SYSTEM ./include ./src /opt/dji/include
+include_directories(BEFORE SYSTEM ./include ./src 
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR} ${EIGEN3_INCLUDE_DIR})
 	
@@ -84,7 +82,7 @@ if(${WITH_GUI})
 		${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
 endif()
  
-link_directories(. build/bin ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
+link_directories(. ./build/bin ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
 if(${WITH_GUI})
 	set (CMAKE_AUTOUIC ON)

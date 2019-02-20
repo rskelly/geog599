@@ -142,26 +142,31 @@ public:
 template <class P>
 class TrajectoryPlanner {
 private:
-	uav::math::SmoothSpline<P> m_spline;
-	uav::PointSource<P>* m_ptSource;
-	uav::PointFilter<P>* m_ptFilter;
-	uav::PointSorter<P> m_ptSorter;
-	std::list<P> m_points;
-	double m_weight;
-	double m_smooth;
+	uav::math::SmoothSpline<P> m_spline;	///!< Computes and stores the spline coefficients.
+	uav::PointSource<P>* m_ptSource;		///!< A source for 3D points, either fake or real.
+	uav::PointFilter<P>* m_ptFilter;		///!< A filter for the point stream.
+	uav::PointSorter<P> m_ptSorter;			///!< A 2D sorter for the point stream.
+	std::list<P> m_points;					///!< The list of current points. May contain non-surface points during retrieval.
+	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
+	double m_weight;						///!< The weight param for smoothing.
+	double m_smooth;						///!< The smooth param for smoothing.
 
-	bool m_running;
-	P m_start;
-	std::thread m_pthread;
-	std::thread m_gthread;
-	std::mutex m_mtx;
+	bool m_running;							///!< True if the planner is currently running.
+	bool m_procComplete;					///!< True when processing is complete.
+	bool m_genComplete;						///!< True when generation is complete.
+	P m_start;								///!< The start-point for the trajectory.
+	std::thread m_pthread;					///!< Worker thread.
+	std::thread m_gthread;					///!< Worker thread.
+	std::mutex m_pmtx;						///!< Mutex to protect points list.
+	std::mutex m_smtx;						///!< Mutex to protect surface points list.
 
 public:
 
 	TrajectoryPlanner() :
 		m_ptSource(nullptr), m_ptFilter(nullptr),
 		m_weight(0.5), m_smooth(0.5),
-		m_running(false) {
+		m_running(false),
+		m_procComplete(false), m_genComplete(false) {
 	}
 
 	/**
@@ -181,8 +186,20 @@ public:
 		m_start = pt;
 	}
 
+	bool genComplete() const {
+		return m_genComplete;
+	}
+
+	bool procComplete() const {
+		return m_procComplete;
+	}
+
+	bool running() const {
+		return m_running;
+	}
+
 	/**
-	 *
+	 * Retrieves points from the source, formats to 2D sorts and filters using the convex hull.
 	 */
 	void processPoints(const P& startPt) {
 		P pt;
@@ -190,31 +207,53 @@ public:
 			// Get the available points and sort them into the points list.
 			if(m_ptSource->next(pt)) {
 				pt.to2D(startPt);
-				std::lock_guard<std::mutex> lk(m_mtx);
+				std::lock_guard<std::mutex> lkp(m_pmtx);
 				m_ptSorter.insert(pt, m_points);
 				// Filter the points.
 				m_ptFilter->filter(m_points);
+				std::lock_guard<std::mutex> lks(m_smtx);
+				m_surface.assign(m_points.begin(), m_points.end());
 				std::cout << "Hull: " << m_points.size() << "\n";
 			}
 			std::this_thread::yield();
 		}
+		m_procComplete = true;
 	}
 
 	void generateTrajectory() {
 
-		std::vector<P> pts;
-
 		while(m_running) {
 			if(!m_points.empty()){
-				std::lock_guard<std::mutex> lk(m_mtx);
-				pts.assign(m_points.begin(), m_points.end());
+				std::lock_guard<std::mutex> lk(m_smtx);
 				try {
-					m_spline.fit(pts, m_weight, m_smooth);
+					m_spline.fit(m_surface, m_weight, m_smooth);
 				} catch(const std::exception& ex) {
 					std::cerr << ex.what() << "\n";
 				}
 			}
 			std::this_thread::yield();
+			if(m_procComplete)
+				break;
+		}
+		m_genComplete = true;
+	}
+
+	void write(std::ostream& str) {
+		std::vector<double> y;
+		std::vector<double> z;
+		std::vector<double> z0;
+		std::vector<double> z1;
+		std::vector<double> z2;
+		for(size_t i = 0; i < m_surface.size(); ++i) {
+			const P& pt = m_surface[i];
+			y.push_back(pt.y());
+			z.push_back(pt.z());
+		}
+		m_spline.evaluate(y, z0, 0);
+		m_spline.evaluate(y, z1, 1);
+		m_spline.evaluate(y, z2, 2);
+		for(size_t i = 0; i < y.size(); ++i) {
+			str << y[i] << "," << z[i] << ","<< z0[i] << "," << z1[i] << "," << z2[i] << "\n";
 		}
 	}
 

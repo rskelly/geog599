@@ -21,14 +21,13 @@
 
 using namespace uav;
 using namespace uav::sim;
+using namespace Eigen;
 
 double _rad(double deg) {
 	return deg * M_PI / 180.0;
 }
 
 int main(int argc, char** argv) {
-
-	using namespace Eigen;
 
 	std::string ptsFile = "/home/rob/Documents/msc/data/lidar/nrcan_4.las";
 	double startx = 620154.92241;
@@ -82,6 +81,7 @@ int main(int argc, char** argv) {
 	double stepy = (endy - starty) / (speed * delay);
 
 	Vector3d start(startx, starty, altitude);
+	Vector3d end(endx, endy, altitude);
 	Vector3d step(stepx, stepy, 0);
 
 	tp.start();
@@ -99,8 +99,16 @@ int main(int argc, char** argv) {
 		ppf.setPlane(&plane);
 		ppf.setLine(&line);
 
+		if(std::abs((end - orig).norm()) < 1)
+			break;
+
 		usleep(delay);
+
 	}
 
 	tp.stop();
+
+	std::ofstream str("output.csv");
+	tp.write(str);
+
 }

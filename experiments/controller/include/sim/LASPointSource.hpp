@@ -95,8 +95,6 @@ public:
 			if(!this->m_filter)
 				return false;
 			this->m_filter->filter(m_filtered);
-			if(m_filtered.size())
-				std::cerr << "Filtered: " << m_filtered.size() << "\n";
 		}
 		if(!m_filtered.empty()) {
 			pt = m_filtered.front();

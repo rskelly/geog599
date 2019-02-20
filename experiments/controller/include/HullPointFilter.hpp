@@ -100,7 +100,11 @@ public:
 	 * @param alpha Controls the maximum segment length of the hull. Zero is no limit.
 	 */
 	HullPointFilter(double alpha = 0) :
+		uav::PointFilter<P>(),
 		m_alpha(alpha) {}
+
+	~HullPointFilter() {
+	}
 
 };
 

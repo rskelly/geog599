@@ -176,7 +176,7 @@ public:
 			for(const P& i : items) {
 				Eigen::Vector3d v(i.x(), i.y(), i.z());
 				double d = plane.absDistance(v);
-				std::cerr << "Dist: " << d << ", " << maxDist << "\n";
+				//std::cerr << "Dist: " << d << ", " << maxDist << "\n";
 				if(d <= maxDist) {
 					result.push_back(i);
 					++c;

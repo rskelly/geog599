@@ -30,6 +30,10 @@ protected:
 
 public:
 
+	GeomPointFilter() :
+		uav::PointFilter<P>(),
+		m_minY(0) {}
+
 	/**
 	 * Set the minimum y coordinate. All points with y lower than this are removed.
 	 *
@@ -37,6 +41,9 @@ public:
 	 */
 	void setMinY(double miny) {
 		m_minY = miny;
+	}
+
+	~GeomPointFilter() {
 	}
 
 };

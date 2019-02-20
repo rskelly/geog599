@@ -43,6 +43,7 @@ public:
 	 */
 	ScanPointFilter(double startx, double starty, double endx, double endy,
 			double laserAngle, double scanAngle, double altitude) :
+			uav::PointFilter(),
 			m_startX(startx), m_startY(starty),
 			m_endX(endx), m_endY(endy),
 			m_laserAngle(laserAngle), m_scanAngle(scanAngle),

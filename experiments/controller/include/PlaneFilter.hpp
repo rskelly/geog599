@@ -29,8 +29,6 @@ protected:
 	void doFilter(std::list<P>& pts) {
 		std::list<P> lst;
 		m_tree->planeSearch(*m_plane, m_maxDist, lst);
-		if(lst.size())
-			std::cerr << "Plane: " << lst.size() << "\n";
 		for(P& p : lst) {
 			Eigen::Vector3d pv(p.x(), p.y(), p.z());
 			if(m_line->distance(pv) <= m_planeWidth / 2)
@@ -40,6 +38,7 @@ protected:
 
 public:
 	PlaneFilter(double planeWidth, double maxDist) :
+		uav::PointFilter<P>(),
 		m_plane(nullptr),
 		m_line(nullptr),
 		m_tree(nullptr),
@@ -56,6 +55,9 @@ public:
 
 	void setOctree(const uav::ds::Octree<P>* tree) {
 		m_tree = tree;
+	}
+
+	~PlaneFilter() {
 	}
 };
 

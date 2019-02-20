@@ -53,7 +53,8 @@ public:
 			m_nextFilter->filter(pts);
 	}
 
-	virtual ~PointFilter() {}
+	virtual ~PointFilter() {
+	}
 };
 
 } // uav
