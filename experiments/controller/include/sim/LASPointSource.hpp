@@ -10,6 +10,7 @@
 
 #include <string>
 #include <fstream>
+#include <unordered_set>
 
 #include <liblas/liblas.hpp>
 
@@ -90,16 +91,21 @@ public:
 		return m_tree;
 	}
 
+	std::unordered_set<size_t> _seen; // TODO: Hack to prevent duplicates.
+
 	bool next(P& pt) {
 		if(m_filtered.empty()) {
 			if(!this->m_filter)
 				return false;
 			this->m_filter->filter(m_filtered);
 		}
-		if(!m_filtered.empty()) {
+		while(!m_filtered.empty()) {
 			pt = m_filtered.front();
 			m_filtered.pop_front();
-			return true;
+			if(_seen.find(pt.time()) == _seen.end()) {
+				_seen.insert(pt.time());
+				return true;
+			}
 		}
 		return false;
 	}

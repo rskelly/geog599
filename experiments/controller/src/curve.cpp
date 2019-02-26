@@ -22,6 +22,16 @@ public:
 	double y() const {
 		return _y;
 	}
+	double z() const {
+		return 0;
+	}
+	double operator[](int idx) const {
+		switch(idx % 3) {
+		case 0: return _x;
+		case 1: return _y;
+		default: return 0;
+		}
+	}
 };
 
 void loadPoints(std::vector<Pt>& pts) {

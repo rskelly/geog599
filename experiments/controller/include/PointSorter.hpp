@@ -10,7 +10,6 @@
 
 #include <list>
 
-
 namespace uav {
 
 /**
@@ -35,38 +34,8 @@ public:
 	 * @param pts A list of points.
 	 */
 	void insert(const P& pt, std::list<P>& pts) {
-		if(pts.size()) {
-			auto end = pts.end();
-			auto begin = pts.begin();
-			auto iter = pts.begin();
-			std::advance(iter, m_curIdx);
-			double iy, py;
-			while(iter != end && (py = pt.y()) > (iy = (*iter).y())) {
-				++m_curIdx;
-				++iter;
-			}
-			if(iter != end) {
-				while((py = pt.y()) < (iy = (*iter).y()) && iter != begin) {
-					--m_curIdx;
-					--iter;
-				}
-				if(iter != end && pt.y() == (*iter).y()) {
-					while(iter != end && pt.y() == (*iter).y() && pt.z() > (*iter).z()) {
-						++m_curIdx;
-						++iter;
-					}
-					if(iter != end) {
-						while(pt.y() == (*iter).y() && pt.z() < (*iter).z() && iter != begin) {
-							--m_curIdx;
-							--iter;
-						}
-					}
-				}
-			}
-			pts.insert(iter, pt);
-		} else {
-			pts.push_back(pt);
-		}
+		pts.push_back(pt);
+		pts.sort();
 	}
 
 };

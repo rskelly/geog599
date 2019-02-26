@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
 
-set (WITH_GUI true CACHE BOOL "If true, will build the Qt GUI.")
-
-if(${WITH_GUI})
-	add_definitions(-DWITH_GUI)
-endif()
-
 enable_language(C)
 enable_language(CXX)
 set (CMAKE_CXX_STANDARD 11)
@@ -17,13 +11,11 @@ set (CMAKE_CXX_FLAGS "-fPIC -lpthread -fopenmp -Wno-unknown-pragmas -Wall -D_GLI
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set (CMAKE_INSTALL_RPATH "/opt/lib;/usr/local/lib")
+set (CMAKE_INSTALL_RPATH "/usr/local/lib")
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set (CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
-if(${WITH_GUI})
-	set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu/cmake/Qt5")
-endif()
+set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu/cmake/Qt5")
 
 set (Boost_DEBUG OFF)
 set (Boost_USE_STATIC_LIBS OFF)
@@ -45,9 +37,7 @@ find_package (CGAL REQUIRED COMPONENTS Core)
 #find_package (PCL 1.8 REQUIRED)
 #find_package (OpenCV REQUIRED)
 
-if(${WITH_GUI})
-	find_package(Qt5 REQUIRED Core Widgets Gui)
-endif()
+find_package(Qt5 REQUIRED Core Widgets Gui)
 
 #find_library (LIBLAS_LIBRARY las)
 #find_library (JSONCPP_LIBRARY jsoncpp)
@@ -60,7 +50,7 @@ find_library (GL_LIBRARY GL)
 #find_library (GLEW_LIBRARY GLEW)
 find_library (GLU_LIBRARY GLU)
 
-set (UAV_LIBS encoder uav_i2c uav_serial uav_teensy)
+set (UAV_LIBS uav_i2c uav_serial uav_teensy)
 
 project (test)
 
@@ -70,31 +60,31 @@ include_directories(BEFORE SYSTEM ./include ./src ../controller/include ../contr
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR})
 	
-if(${WITH_GUI})
-	include_directories(./build/sim1_autogen/include ${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} 
-		${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
-endif()
+include_directories(./build/sim1_autogen/include ${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} 
+	${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
  
 link_directories(. ../controller/build/lib
 	${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
 
-if(${WITH_GUI})
-	set (CMAKE_AUTOUIC ON)
-	set (CMAKE_AUTOMOC ON)
-	set (CMAKE_INCLUDE_CURRENT_DIR ON)
-	set (CMAKE_AUTOMOC_OPTIONS "-Isrc/viewer")
-endif()
+set (CMAKE_AUTOUIC ON)
+set (CMAKE_AUTOMOC ON)
+set (CMAKE_INCLUDE_CURRENT_DIR ON)
+set (CMAKE_AUTOMOC_OPTIONS "-Isrc/viewer")
 
 # Build support libraries ################################################################################
 
-if(${WITH_GUI})
-	add_executable (sim1 src/sim1.cpp 
-		src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp 
-		src/sim/gimbal.cpp src/viewer/sim1viewer.cpp src/viewer/renderwidget.cpp 
-		src/surface.cpp src/sim/controller.cpp src/impl/gimbalminimu9v5.cpp src/impl/rangefindersf30c.cpp src/impl/serialbridge.cpp)
-	target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} 
-		${GL_LIBRARY} ${GLU_LIBRARY} ${Boost_LIBRARIES} Qt5::Gui Qt5::Core Qt5::Widgets ${UAV_LIBS}) 
-else()
+add_executable (sim1 src/sim1.cpp 
+	src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp 
+	src/sim/gimbal.cpp src/viewer/sim1viewer.cpp src/viewer/renderwidget.cpp 
+	src/surface.cpp src/sim/controller.cpp src/impl/gimbalminimu9v5.cpp src/impl/rangefindersf30c.cpp src/impl/serialbridge.cpp)
+target_link_libraries (sim1 ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} 
+	${GL_LIBRARY} ${GLU_LIBRARY} ${Boost_LIBRARIES} Qt5::Gui Qt5::Core Qt5::Widgets ${UAV_LIBS}) 
 
-endif()
+add_executable (sim_spline src/sim_spline.cpp 
+	src/sim/platform.cpp src/sim/rangefinder.cpp src/util.cpp src/sim/terrain.cpp 
+	src/sim/gimbal.cpp src/viewer/sim1viewer.cpp src/viewer/renderwidget.cpp 
+	src/surface.cpp src/sim/controller.cpp src/impl/gimbalminimu9v5.cpp src/impl/rangefindersf30c.cpp src/impl/serialbridge.cpp)
+target_link_libraries (sim_spline ${GMP_LIBRARY} ${GDAL_LIBRARY} ${CGAL_LIBRARY} 
+	${GL_LIBRARY} ${GLU_LIBRARY} ${Boost_LIBRARIES} Qt5::Gui Qt5::Core Qt5::Widgets ${UAV_LIBS}) 
+

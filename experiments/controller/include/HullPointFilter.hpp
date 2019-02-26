@@ -22,7 +22,8 @@ namespace hullutils {
 	 */
 	template <class P>
 	int cross(const P& p0, const P& p1, const P& p) {
-	  return (p0.y() - p.y()) * (p1.z() - p.z()) - (p0.z() - p.z()) * (p1.y() - p.y());
+		int cross = (p0.y() - p.y()) * (p1.z() - p.z()) - (p0.z() - p.z()) * (p1.y() - p.y());
+		return cross;
 	}
 
 	/**
@@ -30,7 +31,8 @@ namespace hullutils {
 	 */
 	template <class P>
 	double length(const P& p0, const P& p1) {
-		return std::pow(p0.y() - p1.y(), 2.0) + std::pow(p0.z() - p1.z(), 2.0);
+		double length = std::pow(p0.y() - p1.y(), 2.0) + std::pow(p0.z() - p1.z(), 2.0);
+		return length;
 	}
 
 }
@@ -77,7 +79,7 @@ protected:
 			// time and visual complexity this way.
 			for(size_t i = 2; i < _pts.size(); ++i) {
 				while(hull.size() >= 2
-						&& cross(_pts[hull[hull.size() - 2]], _pts[hull[hull.size() - 1]], _pts[i])
+						&& cross(_pts[hull[hull.size() - 2]], _pts[hull[hull.size() - 1]], _pts[i]) >= 0
 						&& length(_pts[hull[hull.size() - 2]], _pts[i]) <= (m_alpha * m_alpha))
 					hull.pop_back();
 				hull.push_back(i);

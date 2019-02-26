@@ -280,7 +280,12 @@ private:
 	std::vector<double> m_t;					// Knots
 	std::vector<double> m_c;					// Coefficients
 
+	size_t m_xidx;								// Indices for getting coordinates from the P object.
+	size_t m_yidx;
+
 	int m_k; 									// Degree
+
+	bool m_validFit;							// True if a fit has completed successfully.
 
 public:
 
@@ -289,8 +294,27 @@ public:
 	 *
 	 * @param order The order of the spline's polynomial. Defaults to 3.
 	 */
-	SmoothSpline(int order = 3) :
-		m_k(order) {}
+	SmoothSpline(int order = 3, size_t xidx = 0, size_t yidx = 1) :
+		m_xidx(xidx),
+		m_yidx(yidx),
+		m_k(order),
+		m_validFit(false) {}
+
+	void setXIndex(size_t xidx) {
+		m_xidx = xidx;
+	}
+
+	size_t xIndex() const {
+		return m_xidx;
+	}
+
+	void setYIndex(size_t yidx) {
+		m_yidx = yidx;
+	}
+
+	size_t yIndex() const {
+		return m_yidx;
+	}
 
 	/**
 	 * Set the order, which will be from 1 (linear) to 5 (quintic).
@@ -311,19 +335,26 @@ public:
 	}
 
 	/**
+	 * Returns true if the most recent call to fit was successful.
+	 */
+	bool valid() const {
+		return m_validFit;
+	}
+
+	/**
 	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
 	 * @param weight 	A scalar giving the weight for each data point.
 	 * @param s 		The smoothing factor.
 	 * @param out 		The output of the function; a list of "curve" objects containing the pair
 	 * 					of knots and the second derivative at each.
 	 */
-	void fit(const std::vector<P>& pts, double weight, double s) {
+	bool fit(const std::vector<P>& pts, double weight, double s) {
 
 		std::vector<double> weights(pts.size());
 		for(size_t i = 0; i < weights.size(); ++i)
 			weights[i] = weight;
 
-		fit(pts, weights, s);
+		return fit(pts, weights, s);
 	}
 
 	/**
@@ -333,10 +364,14 @@ public:
 	 * @param out 		The output of the function; a list of "curve" objects containing the pair
 	 * 					of knots and the second derivative at each.
 	 */
-	void fit(const std::vector<P>& pts, const std::vector<double>& weights, double s) {
+	bool fit(const std::vector<P>& pts, const std::vector<double>& weights, double s) {
 
-		if(pts.size() < 2 || pts.size() != weights.size())
-			throw std::runtime_error("Weights and points must have the same length and be more than 2.");
+		int minn = 2 * m_k + 2; // The minimum number of points.
+
+		if(pts.size() < minn || pts.size() != weights.size()) {
+			std::cerr << "Weights and points must have the same length and be more than " << minn << "\n";
+			return false;
+		}
 
 		// Inputs
 		int iopt = 0;					// Determines how s is calculated.
@@ -344,7 +379,7 @@ public:
 		m_x.resize(m); 					// Abscissae
 		m_y.resize(m); 					// Ordinates
 		m_w.resize(m); 					// Weights
-		double tol = 0.001;				// Epsilon
+		double tol = 0.1;				// Epsilon
 
 		// Outputs
 		int ierr = 0;					// Error return.
@@ -354,7 +389,7 @@ public:
 		int k2 = m_k + 2;;				// ?
 		int nest = m + m_k + 1; 		// Estimate for n. s == 0.0 ? m + k + 1 : std::max(m / 2, 2 * k1);
 		double fp;						// ?
-		int maxit = 20;					// Maximum number of iterations.
+		int maxit = 10;					// Maximum number of iterations.
 
 		m_t.resize(nest);					// Knots
 		m_c.resize(nest);					// Coefficients
@@ -368,8 +403,8 @@ public:
 
 		// Copy the values.
 		for(int i = 0; i < m; ++i) {
-			m_x[i] = pts[i].x();
-			m_y[i] = pts[i].y();
+			m_x[i] = pts[i][m_xidx];
+			m_y[i] = pts[i][m_yidx];
 			m_w[i] = weights[i];
 		}
 
@@ -383,26 +418,27 @@ public:
 			g.data(), q.data(), nrdata.data(), &ierr);
 
 		// Trim the result arrays.
-		if(n > m_t.size()) {
+		if(n != m_t.size()) {
 			m_t.resize(n);
 			m_c.resize(n);
 		}
 
-		/*
+		m_validFit = ierr == 0;
+
 		switch(ierr) {
 		case 1:
 			throw std::runtime_error("nest is too small.");
 		case 2:
 			throw std::runtime_error("s must be positive.");
 		case 3:
-			throw std::runtime_error("eps must be positive and <= 1.");
+			throw std::runtime_error("Maximum number of iterations exceeded."); //eps must be positive and <= 1.");
 		case 4:
 			throw std::runtime_error("x values are not strictly increasing.");
 		case 5:
 			throw std::runtime_error("d value must be positive.");
 		}
-		*/
 
+		return true;
 	}
 
 	/**
@@ -411,17 +447,21 @@ public:
 	 * @param y The y-coordinates (output).
 	 * @param derivative The derivative to evaluate. Defaults to zero, the original function.
 	 */
-	void evaluate(const std::vector<double>& x, std::vector<double>& y, int derivative = 0) {
+	bool evaluate(const std::vector<double>& x, std::vector<double>& y, int derivative = 0) {
+		if(!m_validFit)
+			return false;
 		 int m = x.size();
 		 int n = m_t.size();
 		 int e = 1; // No extrapolate
 		 int ier = 0;
+		 y.resize(x.size());
 		 if(derivative == 0) {
 			 splev_(m_t.data(), &n, m_c.data(), &m_k, (double*) x.data(), y.data(), &m, &e, &ier);
 		 } else if(derivative > 0 && derivative <= 3) {
 			 std::vector<double> wrk(n);
 			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, (double*) x.data(), y.data(), &m, &e, wrk.data(), &ier);
 		 }
+		 return ier == 0;
 	}
 
 	/**
@@ -430,17 +470,16 @@ public:
 	 * @param y The y-coordinate (output).
 	 * @param derivative The derivative to evaluate. Defaults to zero, the original function.
 	 */
-	void evaluate(double x, double& y, int derivative = 0) {
-		 int m = 1;
-		 int n = m_t.size();
-		 int e = 1; // No extrapolate
-		 int ier = 0;
-		 if(derivative == 0) {
-			 splev_(m_t.data(), &n, m_c.data(), &m_k, &x, &y, &m, &e, &ier);
-		 } else if(derivative > 0 && derivative <= 3) {
-			 std::vector<double> wrk(n);
-			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, &x, &y, &m, &e, wrk.data(), &ier);
-		 }
+	bool evaluate(double x, double& y, int derivative = 0) {
+		if(!m_validFit || x < m_t[0] || x > m_t[m_t.size() - 1])
+			return false;
+		std::vector<double> xx(1), yy(1);
+		xx[0] = x;
+		if(evaluate(xx, yy, derivative)) {
+			y = yy[0];
+			return true;
+		}
+		return false;
 	}
 
 };

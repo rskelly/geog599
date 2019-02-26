@@ -108,6 +108,22 @@ public:
 		_time = time;
 	}
 
+	double operator[](int idx) const {
+		switch(idx % 3) {
+		case 0: return _x;
+		case 1: return _y;
+		default: return _z;
+		}
+	}
+
+	bool operator<(const Pt& p) {
+		//if(y() == p.y()) {
+		//	return z() < p.z();
+		//} else {
+			return y() < p.y();
+		//}
+	}
+
 	/**
 	 * Set the time to the current time.
 	 */
@@ -164,9 +180,33 @@ public:
 
 	TrajectoryPlanner() :
 		m_ptSource(nullptr), m_ptFilter(nullptr),
-		m_weight(0.5), m_smooth(0.5),
+		m_weight(1), m_smooth(0.5),
 		m_running(false),
 		m_procComplete(false), m_genComplete(false) {
+	}
+
+	void setWeight(double w) {
+		m_weight = w;
+	}
+
+	void setSmooth(double s) {
+		m_smooth = s;
+	}
+
+	double weight() const {
+		return m_weight;
+	}
+
+	double smooth() const {
+		return m_smooth;
+	}
+
+	const std::vector<P>& surface() const {
+		return m_surface;
+	}
+
+	const std::list<P>& point() const {
+		return m_points;
 	}
 
 	/**
@@ -221,7 +261,8 @@ public:
 	}
 
 	void generateTrajectory() {
-
+		m_spline.setXIndex(1);	// Set coordinates to y/z
+		m_spline.setYIndex(2);
 		while(m_running) {
 			if(!m_points.empty()){
 				std::lock_guard<std::mutex> lk(m_smtx);
@@ -238,6 +279,40 @@ public:
 		m_genComplete = true;
 	}
 
+	void processPoints2(const P& startPt) {
+		P pt;
+		// Get the available points and sort them into the points list.
+		while(m_ptSource->next(pt)) {
+			pt.to2D(startPt);
+			m_ptSorter.insert(pt, m_points);
+			// Filter the points.
+			m_ptFilter->filter(m_points);
+			m_surface.assign(m_points.begin(), m_points.end());
+			//std::cout << "Hull: " << m_points.size() << "\n";
+		}
+	}
+
+	void generateTrajectory2() {
+		if(!m_points.empty()){
+			try {
+				m_spline.fit(m_surface, m_weight, m_smooth);
+			} catch(const std::exception& ex) {
+				std::cerr << ex.what() << "\n";
+			}
+		}
+	}
+
+	void compute() {
+		m_spline.setXIndex(1);	// Set coordinates to y/z
+		m_spline.setYIndex(2);
+		processPoints2(m_start);
+		generateTrajectory2();
+	}
+
+	bool getTrajectoryAltitude(double y, double& z) {
+		return m_spline.evaluate(y, z, 0);
+	}
+
 	void write(std::ostream& str) {
 		std::vector<double> y;
 		std::vector<double> z;
@@ -249,9 +324,12 @@ public:
 			y.push_back(pt.y());
 			z.push_back(pt.z());
 		}
-		m_spline.evaluate(y, z0, 0);
-		m_spline.evaluate(y, z1, 1);
-		m_spline.evaluate(y, z2, 2);
+		if(!m_spline.evaluate(y, z0, 0))
+			z0.resize(z.size());
+		if(!m_spline.evaluate(y, z1, 1))
+			z1.resize(z.size());
+		if(!m_spline.evaluate(y, z2, 2))
+			z2.resize(z.size());
 		for(size_t i = 0; i < y.size(); ++i) {
 			str << y[i] << "," << z[i] << ","<< z0[i] << "," << z1[i] << "," << z2[i] << "\n";
 		}

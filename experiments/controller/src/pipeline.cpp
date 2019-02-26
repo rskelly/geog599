@@ -37,22 +37,29 @@ int main(int argc, char** argv) {
 	double laserAngle = _rad(15);
 	double scanAngle = _rad(30);
 	double altitude = 310;
+	double offset = 10; // vertical
+
+	altitude += offset;
 
 	double maxDist = 0.01;
 
 	// Hypotenuse (angled range).
 	double h = altitude / std::sin(laserAngle);
+
 	Matrix3d rot;
-	rot = AngleAxisd(laserAngle, Vector3d::UnitX())
+	rot = AngleAxisd(-laserAngle, Vector3d::UnitX())
 			* AngleAxisd(0, Vector3d::UnitY())
 			* AngleAxisd(0, Vector3d::UnitZ());
+
 	Matrix3d right;
 	right = AngleAxisd(M_PI / 2.0, Vector3d::UnitX())
 			* AngleAxisd(0, Vector3d::UnitY())
 			* AngleAxisd(0, Vector3d::UnitZ());
+
 	Vector3d norm = rot * Vector3d(0, 0, 1);
 	Vector3d dir = right * norm;
-	Vector3d orig = Vector3d(startx, starty, altitude);
+	Vector3d orig(startx, starty, altitude);
+
 	double planeWidth = scanAngle * h;
 	Eigen::Hyperplane<double, 3> plane(norm, orig);
 	Eigen::ParametrizedLine<double, 3> line(orig, dir);
@@ -64,12 +71,14 @@ int main(int argc, char** argv) {
 	ppf.setLine(&line);
 	tps.setFilter(&ppf);
 
-	HullPointFilter<Pt> hpf(10.0);
+	HullPointFilter<Pt> hpf(2.0);
 	GeomPointFilter<Pt> gpf;
 	gpf.setNextFilter(&hpf);
 
 	uav::Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp;
+	tp.setSmooth(0.8);
+	tp.setWeight(0.1);
 	tp.setPointFilter(&gpf);
 	tp.setPointSource(&tps);
 	tp.setStartPoint(startPt);
@@ -84,31 +93,65 @@ int main(int argc, char** argv) {
 	Vector3d end(endx, endy, altitude);
 	Vector3d step(stepx, stepy, 0);
 
-	tp.start();
+	//tp.start();
+
+	std::ofstream ostr;
+	{
+		std::stringstream ss;
+		ss << "output_" << tp.smooth() << "_" << tp.weight() << ".csv";
+		ostr.open(ss.str());
+	}
+
+	std::ofstream tstr;
+	{
+		std::stringstream ss;
+		ss << "traj_" << tp.smooth() << "_" << tp.weight() << ".csv";
+		tstr.open(ss.str());
+	}
 
 	while(true) {
-
-		orig += step; // need to move along a vector
 
 		plane = Eigen::Hyperplane<double, 3>(norm, orig);
 		line = Eigen::ParametrizedLine<double, 3>(orig, dir);
 
+		// To clip off the points in the past.
 		double dy = (orig - start).norm();
-		gpf.setMinY(dy);
+		gpf.setMinY(dy - 10.0);
 
 		ppf.setPlane(&plane);
 		ppf.setLine(&line);
 
+		tp.compute();
+
+		for(const Pt& p : tp.surface())
+			ostr << p.y() << ",";
+		ostr << "\n";
+
+		for(const Pt& p : tp.surface())
+			ostr << p.z() << ",";
+		ostr << "\n";
+
+		if(!tp.getTrajectoryAltitude(dy, altitude)) {
+			//std::cerr << "Couldn't get new altitude.";
+		} else {
+			//std::cout << "Altitude: " << altitude << "\n";
+			altitude += offset;
+			orig[2] = altitude;
+			start[2] = altitude;
+			end[2] = altitude;
+			tstr << dy << "," << altitude << "," << (altitude + offset) << "\n";
+		}
+
 		if(std::abs((end - orig).norm()) < 1)
 			break;
+
+		orig += step; // need to move along a vector
 
 		usleep(delay);
 
 	}
 
-	tp.stop();
+	//tp.stop();
 
-	std::ofstream str("output.csv");
-	tp.write(str);
-
+	std::cerr << "Done\n";
 }
