@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 	std::ofstream ostr;
 	{
 		std::stringstream ss;
-		ss << "output_" << tp.smooth() << "_" << tp.weight() << ".csv";
+		ss << "pos_" << tp.smooth() << "_" << tp.weight() << ".csv";
 		ostr.open(ss.str());
 	}
 
@@ -117,29 +117,47 @@ int main(int argc, char** argv) {
 		// To clip off the points in the past.
 		double dy = (orig - start).norm();
 		gpf.setMinY(dy - 10.0);
+		//std::cout << dy << "\n";
 
 		ppf.setPlane(&plane);
 		ppf.setLine(&line);
 
 		tp.compute();
 
-		for(const Pt& p : tp.surface())
-			ostr << p.y() << ",";
-		ostr << "\n";
-
-		for(const Pt& p : tp.surface())
-			ostr << p.z() << ",";
-		ostr << "\n";
-
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
 			//std::cerr << "Couldn't get new altitude.";
 		} else {
 			//std::cout << "Altitude: " << altitude << "\n";
+
+			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
+
+			std::list<Pt> alt;
+			std::list<Pt> vel;
+			std::list<Pt> accel;
+			if(tp.splineAltitude(alt)) {
+				if(tp.splineVelocity(vel)) {
+					if(tp.splineAcceleration(accel)) {
+						tstr << "y,";
+						for(const Pt& p : alt)
+							tstr << p.y() << ",";
+						tstr << "\nalt,";
+						for(const Pt& p : alt)
+							tstr << p.z() << ",";
+						tstr << "\nacc,";
+						for(const Pt& p : accel)
+							tstr << p.z() << ",";
+						tstr << "\nvel,";
+						for(const Pt& p : vel)
+							tstr << p.z() << ",";
+						tstr << "\n";
+					}
+				}
+			}
+
 			altitude += offset;
 			orig[2] = altitude;
 			start[2] = altitude;
 			end[2] = altitude;
-			tstr << dy << "," << altitude << "," << (altitude + offset) << "\n";
 		}
 
 		if(std::abs((end - orig).norm()) < 1)

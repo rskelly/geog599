@@ -86,6 +86,7 @@ protected:
 			}
 		}
 
+
 		// Move the kept vertices into a new list.
 		std::list<P> newHull;
 		for(size_t i = 0; i < hull.size(); ++i)

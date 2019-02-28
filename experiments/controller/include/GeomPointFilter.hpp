@@ -25,6 +25,7 @@ protected:
 			if(pt.y() >= m_minY)
 				lst.push_back(pt);
 		}
+		std::cout << "dif " << lst.size() << ", " << pts.size() << "\n";
 		pts.swap(lst);
 	}
 

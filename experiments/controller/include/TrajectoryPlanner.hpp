@@ -205,8 +205,80 @@ public:
 		return m_surface;
 	}
 
-	const std::list<P>& point() const {
+	const std::list<P>& points() const {
 		return m_points;
+	}
+
+	/**
+	 * Compute and return the 1st derivative (velocity) of the current trajectory,
+	 * and return it as a list of P, where y occurs every step from the start to end
+	 * points and z is the velocity.
+	 *
+	 * @param step The step distance in map units.
+	 */
+	bool splineVelocity(std::list<P>& velocity, double step = 1) {
+		std::vector<double> z1;
+		std::vector<double> y;
+		double y0 = m_surface[0].y();
+		double y1 = m_surface[m_surface.size() - 1].y();
+		while(y0 <= y1) {
+			y.push_back(y0);
+			y0 += step;
+		}
+		if(m_spline.evaluate(y, z1, 1)) {
+			for(size_t i = 0; i < y.size(); ++i)
+				velocity.emplace_back(0, y[i], z1[i], 0);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Compute and return the 0th derivative (altitude) of the current trajectory,
+	 * and return it as a list of P, where y occurs every step from the start to end
+	 * points and z is the velocity.
+	 *
+	 * @param step The step distance in map units.
+	 */
+	bool splineAltitude(std::list<P>& altitude, double step = 1) {
+		std::vector<double> z0;
+		std::vector<double> y;
+		double y0 = m_surface[0].y();
+		double y1 = m_surface[m_surface.size() - 1].y();
+		while(y0 <= y1) {
+			y.push_back(y0);
+			y0 += step;
+		}
+		if(m_spline.evaluate(y, z0, 0)) {
+			for(size_t i = 0; i < y.size(); ++i)
+				altitude.emplace_back(0, y[i], z0[i], 0);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Compute and return the 2nd derivative (acceleration) of the current trajectory,
+	 * and return it as a list of P, where y occurs every step from the start to end
+	 * points and z is the velocity.
+	 *
+	 * @param step The step distance in map units.
+	 */
+	bool splineAcceleration(std::list<P>& acceleration, double step = 1) {
+		std::vector<double> z2;
+		std::vector<double> y;
+		double y0 = m_surface[0].y();
+		double y1 = m_surface[m_surface.size() - 1].y();
+		while(y0 <= y1) {
+			y.push_back(y0);
+			y0 += step;
+		}
+		if(m_spline.evaluate(y, z2, 2)) {
+			for(size_t i = 0; i < y.size(); ++i)
+				acceleration.emplace_back(0, y[i], z2[i], 0);
+			return true;
+		}
+		return false;
 	}
 
 	/**
