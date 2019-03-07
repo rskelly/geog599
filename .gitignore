@@ -100,3 +100,5 @@ client/planner/node_modules
 *.run.xml
 figures/splines_*.png
 geog599/scripts/figures
+geog599/scripts/output
+experiments/controller/scripts/files
