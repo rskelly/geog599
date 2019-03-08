@@ -1,10 +1,30 @@
+#include <unordered_set>
 
 #include <QtWidgets/QDialog>
-#include <QtCore/QSettings>
 
 #include "ui_profile.h"
 
-class Profile : public QDialog, public Ui:profile {
+#include "ui/drawconfig.hpp"
 
+class ProfileDialog : public QDialog, public Ui::ProfileDialog {
 
-}
+	Q_OBJECT
+
+protected:
+	std::unordered_set<DrawConfig*> drawConfigs;
+
+public:
+
+	void setupUi(QDialog *dialog);
+
+	void closeClicked();
+
+	void addDrawConfig(DrawConfig* config);
+
+	void removeDrawConfig(DrawConfig* config);
+
+	void draw();
+
+	static ProfileDialog* instance();
+
+};

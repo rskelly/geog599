@@ -12,12 +12,17 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <QtWidgets/QApplication>
+
 #include "TrajectoryPlanner.hpp"
 #include "HullPointFilter.hpp"
 #include "GeomPointFilter.hpp"
 #include "PlaneFilter.hpp"
 #include "PointSorter.hpp"
 #include "sim/LASPointSource.hpp"
+
+#include "ui/profile.hpp"
+#include "ui/drawconfig.hpp"
 
 using namespace uav;
 using namespace uav::sim;
@@ -37,7 +42,7 @@ Matrix3d rotationMatrix(double rotX, double rotY, double rotZ) {
 	return rotz * roty * rotx;
 }
 
-int main(int argc, char** argv) {
+void run() {
 
 	/*
 	Vector3d pt(0, 1, 0);
@@ -126,6 +131,7 @@ int main(int argc, char** argv) {
 
 	//tp.start();
 
+	/*
 	std::ofstream ostr;
 	{
 		std::stringstream ss;
@@ -139,6 +145,11 @@ int main(int argc, char** argv) {
 		ss << "traj_" << tp.smooth() << "_" << tp.weight() << ".csv";
 		tstr.open(ss.str());
 	}
+	*/
+
+	DrawConfig alt;
+	ProfileDialog* pd = ProfileDialog::instance();
+	pd->addDrawConfig(&alt);
 
 	while(true) {
 
@@ -160,6 +171,10 @@ int main(int argc, char** argv) {
 		} else {
 			//std::cout << "Altitude: " << altitude << "\n";
 
+			alt.data.emplace_back(dy, altitude);
+			pd->draw();
+
+			/*
 			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
 
 			std::list<Pt> alt;
@@ -184,6 +199,7 @@ int main(int argc, char** argv) {
 					}
 				}
 			}
+			*/
 
 			altitude += offset;
 			orig[2] = altitude;
@@ -203,4 +219,17 @@ int main(int argc, char** argv) {
 	//tp.stop();
 
 	std::cerr << "Done\n";
+}
+
+int main(int argc, char** argv) {
+
+	QApplication app(argc, argv);
+	QDialog w;
+	ProfileDialog p;
+	p.setupUi(&w);
+	w.show();
+	std::thread th(run);
+	app.exec();
+
+
 }
