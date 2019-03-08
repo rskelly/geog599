@@ -20,6 +20,9 @@
 #include <list>
 #include <thread>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
 #include "sensor/teensy.hpp"
 
 //constexpr double PI = 3.141592653589793;

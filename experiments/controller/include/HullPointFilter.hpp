@@ -86,6 +86,7 @@ protected:
 			}
 		}
 
+		std::cerr << hull.size() << " , " << pts.size() << "\n";
 
 		// Move the kept vertices into a new list.
 		std::list<P> newHull;
