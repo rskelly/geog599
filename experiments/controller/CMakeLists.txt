@@ -20,6 +20,8 @@ set (CMAKE_INSTALL_RPATH "/usr/local/lib")
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set (CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
+set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu/cmake/Qt5")
+
 set (Boost_DEBUG OFF)
 set (Boost_USE_STATIC_LIBS OFF)
 set (Boost_USE_STATIC_RUNTIME OFF)
@@ -41,6 +43,7 @@ find_package (Eigen3 REQUIRED)
 #find_package (PCL 1.8 REQUIRED)
 #find_package (OpenCV REQUIRED)
 find_package (DJIOSDK REQUIRED)
+find_package(Qt5 REQUIRED Core Widgets Gui)
 
 #find_library (LIBLAS_LIBRARY las)
 #find_library (JSONCPP_LIBRARY jsoncpp)
@@ -53,7 +56,7 @@ find_package (DJIOSDK REQUIRED)
 #find_library (GLEW_LIBRARY GLEW)
 #find_library (GLU_LIBRARY GLU)
 #find_library (I2C_LIBRARY i2c)
-find_library (FITPACK fitpack)
+find_library (FITPACK fitpack) # Fortran lib; see top of this file.
 
 project (test)
 
@@ -63,20 +66,16 @@ include_directories(BEFORE SYSTEM /opt/dji/include ./include ./src
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR} ${EIGEN3_INCLUDE_DIR})
 	
-if(${WITH_GUI})
-	include_directories(./build/sim1_autogen/include /opt/dji/lib 
-		${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} 
-		${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
-endif()
+include_directories(./build/pipeline_autogen/include 
+	/opt/dji/lib 
+	${Qt5_DIR}/include ${Qt5Core_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS})
  
-link_directories(. ./build/bin ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
+link_directories(./build/bin ${Boost_LIBRARY_DIRS} ${GDAL_LIBRARYDIR} ${PCL_LIBRARY_DIRS})
 
-if(${WITH_GUI})
-	set (CMAKE_AUTOUIC ON)
-	set (CMAKE_AUTOMOC ON)
-	set (CMAKE_INCLUDE_CURRENT_DIR ON)
-	set (CMAKE_AUTOMOC_OPTIONS "-Isrc/viewer")
-endif()
+set (CMAKE_AUTOUIC ON)
+set (CMAKE_AUTOMOC ON)
+set (CMAKE_INCLUDE_CURRENT_DIR ON)
+set (CMAKE_AUTOMOC_OPTIONS "-Isrc/ui")
 
 # Build support libraries ################################################################################
 

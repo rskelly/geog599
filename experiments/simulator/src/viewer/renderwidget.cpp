@@ -67,7 +67,7 @@ void RenderWidget::paintGL() {
 
 	Eigen::Matrix3d rotz = uav::util::rotateZ(m_eyeRot[0] * PI * 2 - PI);
 	Eigen::Matrix3d roty = uav::util::rotateY(m_eyeRot[1] * PI / 3);
-	Eigen::Matrix3d rotz2 = uav::util::rotateY(m_eyeRot[2] * PI * 2 - PI);
+	Eigen::Matrix3d rotz2 = uav::util::rotateY(m_eyeRot[2] * PI * 2 - PI); // TODO: Should this be rotateZ?
 	// The eye position needs to be reversed from looking out from origin to looking back to origin.
 	Eigen::Vector3d eyePos = (rotz * roty * rotz2) * Eigen::Vector3d(m_eyeDist, 0, 0) * -1;
 

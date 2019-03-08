@@ -27,7 +27,37 @@ double _rad(double deg) {
 	return deg * M_PI / 180.0;
 }
 
+Matrix3d rotationMatrix(double rotX, double rotY, double rotZ) {
+	double sx = std::sin(rotX), cx = std::cos(rotX);
+	double sy = std::sin(rotY), cy = std::cos(rotY);
+	double sz = std::sin(rotZ), cz = std::cos(rotZ);
+	Matrix3d rotx; rotx << 1, 0, 0, 0, cx, -sx, 0, sx, cx;
+	Matrix3d roty; roty << cy, 0, sy, 0, 1, 0, -sy, 0, cy;
+	Matrix3d rotz; rotz << cz, -sz, 0, sz, cz, 0, 0, 0, 1;
+	return rotz * roty * rotx;
+}
+
 int main(int argc, char** argv) {
+
+	/*
+	Vector3d pt(0, 1, 0);
+
+	Vector3d trans(1, 0, 0);
+
+	double rotX = M_PI / 4;
+	double rotY = M_PI / 4;
+	double rotZ = 0;
+
+	Matrix3d rot = rotationMatrix(rotX, rotY, rotZ);
+
+	pt += trans;
+
+	Vector3d out = rot * pt;
+
+	std::cerr << rot << "\n\n";
+	std::cerr << pt << "\n\n";
+	std::cerr << out << "\n";
+	*/
 
 	std::string ptsFile = "/home/rob/Documents/msc/data/lidar/nrcan_4.las";
 	double startx = 620154.92241;
@@ -46,23 +76,26 @@ int main(int argc, char** argv) {
 	// Hypotenuse (angled range).
 	double h = altitude / std::sin(laserAngle);
 
-	Matrix3d rot;
-	rot = AngleAxisd(-laserAngle, Vector3d::UnitX())
-			* AngleAxisd(0, Vector3d::UnitY())
-			* AngleAxisd(0, Vector3d::UnitZ());
-
-	Matrix3d right;
-	right = AngleAxisd(M_PI / 2.0, Vector3d::UnitX())
-			* AngleAxisd(0, Vector3d::UnitY())
-			* AngleAxisd(0, Vector3d::UnitZ());
-
-	Vector3d norm = rot * Vector3d(0, 0, 1);
-	Vector3d dir = right * norm;
 	Vector3d orig(startx, starty, altitude);
+	Vector3d start(startx, starty, altitude);
+	Vector3d end(endx, endy, altitude);
+
+	Vector3d direction = (end - start).normalized();
+	Vector3d xaxis(direction[1], -direction[0], direction[2]);
+
+	Matrix3d laserRot = AngleAxisd(-laserAngle, xaxis).matrix();
+	Matrix3d planeRot = AngleAxisd(-laserAngle + M_PI / 2.0, xaxis).matrix();
+
+	Vector3d laserDir = laserRot * direction;
+	Vector3d planeNorm = planeRot * laserDir;
+
+	std::cout << "Direction: " << direction[0] << ", " << direction[1] << ", " << direction[2] << "\n";
+	std::cout << "Laser vector: " << laserDir[0] << ", " << laserDir[1] << ", " << laserDir[2] << "\n";
+	std::cout << "Plane normal: " << planeNorm[0] << ", " << planeNorm[1] << ", " << planeNorm[2] << "\n";
 
 	double planeWidth = scanAngle * h;
-	Eigen::Hyperplane<double, 3> plane(norm, orig);
-	Eigen::ParametrizedLine<double, 3> line(orig, dir);
+	Eigen::Hyperplane<double, 3> plane(planeNorm, orig);
+	Eigen::ParametrizedLine<double, 3> line(orig, laserDir);
 
 	LASPointSource<Pt> tps(ptsFile);
 	PlaneFilter<Pt> ppf(planeWidth, maxDist);
@@ -89,8 +122,6 @@ int main(int argc, char** argv) {
 	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
 	double stepy = (endy - starty) / (speed * delay);
 
-	Vector3d start(startx, starty, altitude);
-	Vector3d end(endx, endy, altitude);
 	Vector3d step(stepx, stepy, 0);
 
 	//tp.start();
@@ -111,8 +142,8 @@ int main(int argc, char** argv) {
 
 	while(true) {
 
-		plane = Eigen::Hyperplane<double, 3>(norm, orig);
-		line = Eigen::ParametrizedLine<double, 3>(orig, dir);
+		plane = Eigen::Hyperplane<double, 3>(planeNorm, orig);
+		line = Eigen::ParametrizedLine<double, 3>(orig, laserDir);
 
 		// To clip off the points in the past.
 		double dy = (orig - start).norm();
