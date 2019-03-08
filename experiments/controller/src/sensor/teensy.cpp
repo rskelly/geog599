@@ -134,6 +134,10 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 					break;
 				need_more:
 					std::cerr << "need more\n";
+					--bufIdx;
+					mode = 0;
+					need = 3;
+					return true; // TODO: Is this right?
 				default: 
 					--bufIdx;
 					mode = 0;

@@ -5,12 +5,6 @@ execute_process (COMMAND gfortran -g -shared -fPIC ../src/fitpack/fpcurf.f ../sr
 	../src/fitpack/fpknot.f ../src/fitpack/fprota.f ../src/fitpack/splev.f ../src/fitpack/splder.f 
 	-o bin/libfitpack_mod.so) 
 
-set (WITH_GUI true CACHE BOOL "If true, will build the Qt GUI.")
-
-if(${WITH_GUI})
-	add_definitions(-DWITH_GUI)
-endif()
-
 enable_language(C)
 enable_language(CXX)
 set (CMAKE_CXX_STANDARD 11)
@@ -25,10 +19,6 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_INSTALL_RPATH "/usr/local/lib")
 set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set (CMAKE_CXX_COMPILER_LAUNCHER ccache)
-
-if(${WITH_GUI})
-	set (CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}:/usr/lib/x86_64-linux-gnu/cmake/Qt5")
-endif()
 
 set (Boost_DEBUG OFF)
 set (Boost_USE_STATIC_LIBS OFF)
@@ -51,9 +41,6 @@ find_package (Eigen3 REQUIRED)
 #find_package (PCL 1.8 REQUIRED)
 #find_package (OpenCV REQUIRED)
 find_package (DJIOSDK REQUIRED)
-#if(${WITH_GUI})
-#	find_package(Qt5 REQUIRED Core Widgets Gui)
-#endif()
 
 #find_library (LIBLAS_LIBRARY las)
 #find_library (JSONCPP_LIBRARY jsoncpp)
@@ -72,7 +59,7 @@ project (test)
 
 # Configure directories###################################################################################
 
-include_directories(BEFORE SYSTEM ./include ./src 
+include_directories(BEFORE SYSTEM /opt/dji/include ./include ./src 
 	${GEOS_INCLUDEDIR} ${OSGEO_INCLUDEDIR} ${GDAL_INCLUDE_DIR} ${PCL_INCLUDE_DIRS} 
 	${Boost_INCLUDE_DIRS} ${CRYPTO_INCLUDEDIR} ${EIGEN_INCLUDEDIR} ${JSON_INCLUDEDIR} ${EIGEN3_INCLUDE_DIR})
 	
@@ -113,13 +100,13 @@ target_link_libraries (uav_teensy uav_serial)
 #add_library (uav_encoder SHARED src/sensor/ads1115.cpp)
 #target_link_libraries (uav_encoder uav_i2c)
  
-#add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
-#target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
+add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
+target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
 
-add_executable(pipeline src/pipeline.cpp)
-target_link_libraries (pipeline las fitpack_mod)
+#add_executable(pipeline src/pipeline.cpp)
+#target_link_libraries (pipeline las fitpack_mod)
 
-add_executable (curve src/curve.cpp)
-target_link_libraries (curve fitpack_mod)
+#add_executable (curve src/curve.cpp)
+#target_link_libraries (curve fitpack_mod)
 
 

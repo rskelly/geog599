@@ -93,10 +93,10 @@ int main(int argc, char** argv) {
 			if(!cont.step(t, ranges, orientation)) {
 				break;
 			} else {
-				//for(sensor::Range& r : ranges) {
-					//std::cerr << "Range: " << r.range() << ", " << r.timestamp() << "\n";
-				//}
-				//ranges.clear();
+				for(sensor::Range& r : ranges) {
+					std::cerr << "Range: " << r.range() << ", " << r.timestamp() << "\n";
+				}
+				ranges.clear();
 				Eigen::Vector3d accelBody = orientation.accel();
 
 				if(ot0 == 0) {
@@ -106,13 +106,13 @@ int main(int argc, char** argv) {
 					Eigen::AngleAxisd yaw(accelBody[2], Eigen::Vector3d::UnitZ());
 					Eigen::Quaternion<double> q = roll * yaw * pitch;
 					orientI = q.matrix();
-					std::cerr << "Initial orientation: " << orientI << "\n";
+					//std::cerr << "Initial orientation: " << orientI << "\n";
 				} else {
 					ot1 = orientation.timestamp();
 				}
 				//Eigen::Vector3d accelBody = orientation.accel();
 				Eigen::Vector3d gyroBody = orientation.gyro();
-				std::cerr << "Accel: " << accelBody.norm() << ", " << accelBody[0] << ", " << accelBody[1] << ", " << accelBody[2] << ", " << ot1 << "\n";
+				//std::cerr << "Accel: " << accelBody.norm() << ", " << accelBody[0] << ", " << accelBody[1] << ", " << accelBody[2] << ", " << ot1 << "\n";
 				//std::cerr << "Gyro: " << gyroBody.norm() << ", " << gyroBody[0] << ", " << gyroBody[1] << ", " << gyroBody[2] << ", " << ot1 << "\n";
 				Eigen::Vector3d accelInert = accelBody - orientI * g;
 				//std::cerr << "Accel: " << accelInert.norm() << ", " << accelInert[0] << ", " << accelInert[1] << ", " << accelInert[2] << "\n";
