@@ -368,8 +368,13 @@ public:
 
 		int minn = 2 * m_k + 2; // The minimum number of points.
 
+		if(pts.size() != weights.size()) {
+			std::cerr << "Weights and points must have the same length\n";
+			return false;
+		}
+
 		if(pts.size() < minn || pts.size() != weights.size()) {
-			std::cerr << "Weights and points must have the same length and be more than " << minn << "\n";
+			std::cerr << "Too few points (" << pts.size() << " of " << minn << ")\n";
 			return false;
 		}
 
@@ -424,6 +429,9 @@ public:
 		}
 
 		m_validFit = ierr == 0;
+
+		if(ierr != 0)
+			std::cerr << "Error: " << ierr << "\n";
 
 		switch(ierr) {
 		case 1:

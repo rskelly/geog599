@@ -5,7 +5,7 @@
  *      Author: rob
  */
 
-#include <unordered_set>
+#include <vector>
 
 #include <QtWidgets/QOpenGLWidget>
 #include <QtGui/QPainter>
@@ -16,6 +16,7 @@ class ProfileGLWidget : public QOpenGLWidget {
 private:
 	QPainter p;
 	float minx, miny, maxx, maxy;
+	bool boundsSet;
 
 	void calcBounds() {
 		miny = minx = std::numeric_limits<float>::max();
@@ -31,37 +32,57 @@ private:
 	}
 
 public:
-	std::unordered_set<DrawConfig*> configs;
+	std::vector<DrawConfig*> configs;
 
 	ProfileGLWidget(QWidget* parent) :
 		QOpenGLWidget(parent),
-		minx(0), miny(0), maxx(0), maxy(0) {}
+		minx(0), miny(0), maxx(0), maxy(0), boundsSet(false) {}
+
+	void setBounds(double minx, double miny, double maxx, double maxy) {
+		this->minx = minx;
+		this->maxx = maxx;
+		this->miny = miny;
+		this->maxy = maxy;
+		boundsSet = true;
+	}
 
 	void paintGL() {
 
-		calcBounds();
-
-		QPen pen;
+		if(!boundsSet)
+			calcBounds();
 
 		int buf = 5;
-
 		float dw = maxx - minx;
 		float dh = maxy - miny;
 		if(dw > 0 && dh > 0) {
 
+			QPen pen;
+
 			QSize size = this->size();
 			int w = size.width() - buf * 2;
-			int h = size.height() - buf * 2;
+			int hh = size.height();
+			int h = hh - buf * 2;
 
 			p.begin(this);
 			for(const DrawConfig* config : configs) {
 				std::vector<QPointF> pts;
 				for(const auto& it : config->data)
-					pts.emplace_back(buf + ((it.first - minx) / dw) * w, buf + ((it.second - miny) / dh) * h);
-				pen.setColor(config->lineColor);
-				pen.setStyle(config->lineStyle);
-				p.setPen(pen);
-				p.drawPolyline(pts.data(), pts.size());
+					pts.emplace_back(buf + ((it.first - minx) / dw) * w, hh - buf - ((it.second - miny) / dh) * h);
+				switch(config->drawType) {
+				case DrawType::Line:
+					pen.setColor(config->lineColor);
+					pen.setStyle(config->lineStyle);
+					p.setPen(pen);
+					p.drawPolyline(pts.data(), pts.size());
+					break;
+				case DrawType::Points:
+					pen.setColor(config->lineColor);
+					pen.setStyle(config->lineStyle);
+					pen.setWidth(3);
+					p.setPen(pen);
+					p.drawPoints(pts.data(), pts.size());
+					break;
+				}
 				pts.clear();
 			}
 			p.end();

@@ -19,15 +19,19 @@ void ProfileDialog::setupUi(QDialog* dialog) {
 }
 
 void ProfileDialog::addDrawConfig(DrawConfig* config) {
-	canvas->configs.insert(config);
+	canvas->configs.push_back(config);
 }
 
 void ProfileDialog::removeDrawConfig(DrawConfig* config) {
-	canvas->configs.erase(config);
+	//canvas->configs.erase(config);
 }
 
 void ProfileDialog::draw() {
 	canvas->update();
+}
+
+void ProfileDialog::setBounds(double minx, double miny, double maxx, double maxy) {
+	canvas->setBounds(minx, miny, maxx, maxy);
 }
 
 void ProfileDialog::closeClicked() {

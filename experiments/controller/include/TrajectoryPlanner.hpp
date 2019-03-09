@@ -117,11 +117,35 @@ public:
 	}
 
 	bool operator<(const Pt& p) {
-		//if(y() == p.y()) {
-		//	return z() < p.z();
-		//} else {
+		if(y() == p.y()) {
+			return z() < p.z();
+		} else {
 			return y() < p.y();
-		//}
+		}
+	}
+
+	bool operator>(const Pt& p) {
+		if(y() == p.y()) {
+			return z() > p.z();
+		} else {
+			return y() > p.y();
+		}
+	}
+
+	bool operator<=(const Pt& p) {
+		if(y() == p.y()) {
+			return z() <= p.z();
+		} else {
+			return y() <= p.y();
+		}
+	}
+
+	bool operator>=(const Pt& p) {
+		if(y() == p.y()) {
+			return z() >= p.z();
+		} else {
+			return y() >= p.y();
+		}
 	}
 
 	/**
@@ -162,6 +186,7 @@ private:
 	uav::PointSource<P>* m_ptSource;		///!< A source for 3D points, either fake or real.
 	uav::PointFilter<P>* m_ptFilter;		///!< A filter for the point stream.
 	uav::PointSorter<P> m_ptSorter;			///!< A 2D sorter for the point stream.
+	std::list<P> m_allPoints;				///!< A list of all points.
 	std::list<P> m_points;					///!< The list of current points. May contain non-surface points during retrieval.
 	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
 	double m_weight;						///!< The weight param for smoothing.
@@ -207,6 +232,10 @@ public:
 
 	const std::list<P>& points() const {
 		return m_points;
+	}
+
+	const std::list<P>& allPoints() const {
+		return m_allPoints;
 	}
 
 	/**
@@ -356,6 +385,7 @@ public:
 		// Get the available points and sort them into the points list.
 		while(m_ptSource->next(pt)) {
 			pt.to2D(startPt);
+			m_allPoints.push_back(pt);
 			m_ptSorter.insert(pt, m_points);
 			// Filter the points.
 			m_ptFilter->filter(m_points);

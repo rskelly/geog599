@@ -12,12 +12,18 @@
 
 #include <QtWidgets/QDialog>
 
+enum DrawType {
+	Line,
+	Points
+};
+
 class DrawConfig {
 public:
 	Qt::PenStyle lineStyle;
 	QColor lineColor;
 	Qt::BrushStyle fillStyle;
 	QColor fillColor;
+	DrawType drawType;
 	std::vector<std::pair<double, double>> data;
 
 	DrawConfig() {
@@ -25,6 +31,11 @@ public:
 		lineColor = QColor::fromRgb(255, 0, 0, 255);
 		fillStyle = Qt::BrushStyle::SolidPattern;
 		fillColor = QColor::fromRgb(0, 255, 0, 255);
+		drawType = DrawType::Line;
+	}
+
+	void setType(DrawType type) {
+		drawType = type;
 	}
 
 	void setFillColor(int r, int g, int b) {

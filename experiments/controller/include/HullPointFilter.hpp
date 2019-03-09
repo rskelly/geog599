@@ -35,6 +35,12 @@ namespace hullutils {
 		return length;
 	}
 
+	template <class P>
+	double lengthY(const P& p0, const P& p1) {
+		double length = std::pow(p0.y() - p1.y(), 2.0);
+		return length;
+	}
+
 }
 
 
@@ -62,39 +68,28 @@ protected:
 
 		using namespace hullutils;
 
-		std::vector<P> _pts(pts.begin(), pts.end());
-		std::vector<size_t> hull;
-		hull.push_back(0);
-		hull.push_back(1);
+		auto iter = pts.begin();
+		std::vector<P> hull;
+		hull.push_back(*iter);
+		++iter;
+		hull.push_back(*iter);
+		++iter;
 
-		if(m_alpha <= 0) {
-			// If there's no alpha, do a straight hull.
-			for(size_t i = 2; i < _pts.size(); ++i) {
-				while(hull.size() >= 2 && cross(_pts[hull[hull.size() - 2]], _pts[hull[hull.size() - 1]], _pts[i]))
-					hull.pop_back();
-				hull.push_back(i);
+		// If there's an alpha do a degenerate hull. It could have been one loop but we save a bit of
+		// time and visual complexity this way.
+		do {
+			while(hull.size() >= 2
+					&& cross(hull[hull.size() - 2], hull[hull.size() - 1], *iter) >= 0
+					&& lengthY(hull[hull.size() - 2], *iter) <= (m_alpha * m_alpha)) {
+				hull.pop_back();
 			}
-		} else {
-			// If there's an alpha do a degenerate hull. It could have been one loop but we save a bit of
-			// time and visual complexity this way.
-			for(size_t i = 2; i < _pts.size(); ++i) {
-				while(hull.size() >= 2
-						&& cross(_pts[hull[hull.size() - 2]], _pts[hull[hull.size() - 1]], _pts[i]) >= 0
-						&& length(_pts[hull[hull.size() - 2]], _pts[i]) <= (m_alpha * m_alpha))
-					hull.pop_back();
-				hull.push_back(i);
-			}
-		}
+			hull.push_back(*iter);
+		} while(++iter != pts.end());
 
 		std::cerr << hull.size() << " , " << pts.size() << "\n";
 
-		// Move the kept vertices into a new list.
-		std::list<P> newHull;
-		for(size_t i = 0; i < hull.size(); ++i)
-			newHull.push_back(_pts[hull[i]]);
-
 		// Write the new items into the old list.
-		pts.swap(newHull);
+		pts.assign(hull.begin(), hull.end());
 	}
 
 public:

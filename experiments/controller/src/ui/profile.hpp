@@ -23,6 +23,8 @@ public:
 
 	void removeDrawConfig(DrawConfig* config);
 
+	void setBounds(double minx, double miny, double maxx, double maxy);
+
 	void draw();
 
 	static ProfileDialog* instance();

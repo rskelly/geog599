@@ -70,7 +70,7 @@ void run() {
 	double endx = 620195.30108;
 	double endy = 5613635.35912;
 	double laserAngle = _rad(15);
-	double scanAngle = _rad(30);
+	double scanAngle = _rad(15);
 	double altitude = 310;
 	double offset = 10; // vertical
 
@@ -109,7 +109,7 @@ void run() {
 	ppf.setLine(&line);
 	tps.setFilter(&ppf);
 
-	HullPointFilter<Pt> hpf(2.0);
+	HullPointFilter<Pt> hpf(5.0);
 	GeomPointFilter<Pt> gpf;
 	gpf.setNextFilter(&hpf);
 
@@ -147,9 +147,35 @@ void run() {
 	}
 	*/
 
+	DrawConfig uav;
+	uav.setType(DrawType::Points);
+	uav.setLineColor(255, 0, 0);
+
 	DrawConfig alt;
+	alt.setType(DrawType::Line);
+	alt.setLineColor(0, 100, 0);
+
+	DrawConfig allPts;
+	allPts.setType(DrawType::Points);
+	allPts.setLineColor(63, 63, 63);
+
+	DrawConfig surf;
+	surf.setType(DrawType::Line);
+	surf.setLineColor(0, 255, 255);
+
+	DrawConfig spline;
+	spline.setType(DrawType::Line);
+	spline.setLineColor(255, 255, 255);
+
 	ProfileDialog* pd = ProfileDialog::instance();
+	pd->setBounds(0, 250, (end - start).norm(), 350);
+	pd->addDrawConfig(&allPts);
+	pd->addDrawConfig(&surf);
+	pd->addDrawConfig(&spline);
 	pd->addDrawConfig(&alt);
+	pd->addDrawConfig(&uav);
+
+	uav.data.emplace_back(0, altitude + offset);
 
 	while(true) {
 
@@ -158,7 +184,7 @@ void run() {
 
 		// To clip off the points in the past.
 		double dy = (orig - start).norm();
-		gpf.setMinY(dy - 10.0);
+		gpf.setMinY(dy - 100.0);
 		//std::cout << dy << "\n";
 
 		ppf.setPlane(&plane);
@@ -166,13 +192,28 @@ void run() {
 
 		tp.compute();
 
+		std::list<Pt> salt;
+		tp.splineAltitude(salt, 1);
+
+		uav.data[0].first = dy;
+		uav.data[0].second = altitude;
+
+		spline.data.clear();
+		for(const Pt& pt : salt)
+			spline.data.emplace_back(pt.y(), pt.z());
+		allPts.data.clear();
+		for(const Pt& pt : tp.allPoints())
+			allPts.data.emplace_back(pt.y(), pt.z());
+		surf.data.clear();
+		for(const Pt& pt : tp.surface())
+			surf.data.emplace_back(pt.y(), pt.z());
+
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
 			//std::cerr << "Couldn't get new altitude.";
 		} else {
 			//std::cout << "Altitude: " << altitude << "\n";
 
-			alt.data.emplace_back(dy, altitude);
-			pd->draw();
+			alt.data.emplace_back(dy, altitude + offset);
 
 			/*
 			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
@@ -206,6 +247,8 @@ void run() {
 			start[2] = altitude;
 			end[2] = altitude;
 		}
+
+		pd->draw();
 
 		if(std::abs((end - orig).norm()) < 1)
 			break;

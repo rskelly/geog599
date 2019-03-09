@@ -30,7 +30,7 @@ public:
 	 * The y dimension is first, z second. The position of the insertion is preserved between calls.
 	 * The point object is copied into the list.
 	 *
-	 * @param pt A point object. Must have a public y and z property.
+	 * @param pt A point object. Must have a < operator on y and z.
 	 * @param pts A list of points.
 	 */
 	void insert(const P& pt, std::list<P>& pts) {
