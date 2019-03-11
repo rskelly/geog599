@@ -14,7 +14,8 @@
 
 enum DrawType {
 	Line,
-	Points
+	Points,
+	Cross
 };
 
 class DrawConfig {

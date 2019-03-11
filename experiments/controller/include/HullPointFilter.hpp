@@ -86,8 +86,6 @@ protected:
 			hull.push_back(*iter);
 		} while(++iter != pts.end());
 
-		std::cerr << hull.size() << " , " << pts.size() << "\n";
-
 		// Write the new items into the old list.
 		pts.assign(hull.begin(), hull.end());
 	}

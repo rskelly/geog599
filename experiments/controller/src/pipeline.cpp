@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <string>
+#include <unordered_map>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -23,6 +24,11 @@
 
 #include "ui/profile.hpp"
 #include "ui/drawconfig.hpp"
+
+#define MAX_RANGE 1000 // The maximum laser range
+#define MAX_DIST 1 // The maximum distance between a point and the search plane.
+#define TIME_DELAY 1000
+#define SPEED 10
 
 using namespace uav;
 using namespace uav::sim;
@@ -42,55 +48,86 @@ Matrix3d rotationMatrix(double rotX, double rotY, double rotZ) {
 	return rotz * roty * rotx;
 }
 
+class PipelineConfig {
+public:
+	std::string filename;
+	double startAltitude;
+	double offset;
+	double smooth;
+	double weight;
+	double alpha;
+	double laserAngle;
+	double scanAngle;
+
+	PipelineConfig() :
+		PipelineConfig("", 0, 0, 0, 0, 0, 0, 0) {}
+
+	PipelineConfig(const std::string& filename, double startAltitude, double offset,
+			double smooth, double weight, double alpha, double laserAngle, double scanAngle) :
+		filename(filename), startAltitude(startAltitude), offset(offset), smooth(smooth),
+		weight(weight), alpha(alpha), laserAngle(laserAngle), scanAngle(scanAngle) {}
+
+};
+
 void run() {
 
-	/*
-	Vector3d pt(0, 1, 0);
+	// Some pre-prepared configurations.
+	std::unordered_map<std::string, PipelineConfig> configs;
+	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 5, 1, 15, 5.7, 5));
+	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, 5.7, 5));
 
-	Vector3d trans(1, 0, 0);
+	const PipelineConfig& config = configs["mt_doug_1"];
 
-	double rotX = M_PI / 4;
-	double rotY = M_PI / 4;
-	double rotZ = 0;
+	std::string ptsFile = config.filename;
 
-	Matrix3d rot = rotationMatrix(rotX, rotY, rotZ);
+	LASPointSource<Pt> tps(ptsFile);
+	const ds::Octree<Pt>& tree = tps.octree();
+	double startx, starty, endx, endy;
 
-	pt += trans;
+	if(tree.width() > tree.length()) {
+		startx = tree.minx() - 100.0; // Start 100m back to give the laser space to work.
+		endx = tree.maxx();
+		starty = tree.midy();
+		endy = tree.midy();
+	} else {
+		startx = tree.midx();
+		endx = tree.midx();
+		starty = tree.miny() - 100.0; // Start 100m back to give the laser space to work.
+		endy = tree.maxy();
+	}
 
-	Vector3d out = rot * pt;
+	// Offset from trajectory, and vehicle altitude (start altitude + offset)
+	double offset = config.offset;
+	double altitude = config.startAltitude;
 
-	std::cerr << rot << "\n\n";
-	std::cerr << pt << "\n\n";
-	std::cerr << out << "\n";
-	*/
+	// Angle down from horizontal (rad) and scan angle (rad)
+	double laserAngle = _rad(config.laserAngle); // 10m altitude @ 100m range = 5.7 deg
+	double scanAngle = _rad(config.scanAngle);
 
-	std::string ptsFile = "/home/rob/Documents/msc/data/lidar/nrcan_4.las";
-	double startx = 620154.92241;
-	double starty = 5613102.36059;
-	double endx = 620195.30108;
-	double endy = 5613635.35912;
-	double laserAngle = _rad(15);
-	double scanAngle = _rad(15);
-	double altitude = 310;
-	double offset = 10; // vertical
+	// Maximum distance of a point from the scan plane.
+	double maxDist = MAX_DIST;
 
-	altitude += offset;
+	// Hypotenuse - this is just the maximum range; assumes that the laser
+	// angle is set so that the laser intersects flat ground at max range,
+	// given the platform elevation.
+	double h = MAX_RANGE;
 
-	double maxDist = 0.01;
-
-	// Hypotenuse (angled range).
-	double h = altitude / std::sin(laserAngle);
-
+	// The start/origin and end points. These are determined by the point cloud.
 	Vector3d orig(startx, starty, altitude);
 	Vector3d start(startx, starty, altitude);
 	Vector3d end(endx, endy, altitude);
 
+	// The vehicle direction in the horizontal plane.
 	Vector3d direction = (end - start).normalized();
+	// The pitch axis for the vehicle and the scanning rangefinder.
 	Vector3d xaxis(direction[1], -direction[0], direction[2]);
 
+	// The rotation matrix for the rangefinder.
 	Matrix3d laserRot = AngleAxisd(-laserAngle, xaxis).matrix();
+	// The rotation matrix for the detection plane, perpendicular to the laser.
 	Matrix3d planeRot = AngleAxisd(-laserAngle + M_PI / 2.0, xaxis).matrix();
 
+	// The laser's and plane's normal.
 	Vector3d laserDir = laserRot * direction;
 	Vector3d planeNorm = planeRot * laserDir;
 
@@ -98,35 +135,42 @@ void run() {
 	std::cout << "Laser vector: " << laserDir[0] << ", " << laserDir[1] << ", " << laserDir[2] << "\n";
 	std::cout << "Plane normal: " << planeNorm[0] << ", " << planeNorm[1] << ", " << planeNorm[2] << "\n";
 
+	// The width of the detection plane.
 	double planeWidth = scanAngle * h;
+
+	// The plane and centreline used to detect points in the octree.
 	Eigen::Hyperplane<double, 3> plane(planeNorm, orig);
 	Eigen::ParametrizedLine<double, 3> line(orig, laserDir);
 
-	LASPointSource<Pt> tps(ptsFile);
+	// Object for fintering points using the plane and centreline.
 	PlaneFilter<Pt> ppf(planeWidth, maxDist);
 	ppf.setOctree(&(tps.octree()));
 	ppf.setPlane(&plane);
 	ppf.setLine(&line);
 	tps.setFilter(&ppf);
 
-	HullPointFilter<Pt> hpf(5.0);
+	// The concave hull point filter.
+	HullPointFilter<Pt> hpf(config.alpha);
 	GeomPointFilter<Pt> gpf;
 	gpf.setNextFilter(&hpf);
 
+	// The trajectory planner manages the point cloud source and filters to
+	// compute the trajectory.
 	uav::Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp;
-	tp.setSmooth(0.8);
-	tp.setWeight(0.1);
+	tp.setSmooth(config.smooth);
+	tp.setWeight(config.weight);
 	tp.setPointFilter(&gpf);
 	tp.setPointSource(&tps);
 	tp.setStartPoint(startPt);
 
-	double speed = 10.0; // m/s
-	int delay = 1000;	// 1 ms
+	double speed = SPEED;
+	int delay = TIME_DELAY;
 
 	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
 	double stepy = (endy - starty) / (speed * delay);
 
+	// The per-loop step, corresponding to the velocity of the platform.
 	Vector3d step(stepx, stepy, 0);
 
 	//tp.start();
@@ -165,13 +209,18 @@ void run() {
 
 	DrawConfig spline;
 	spline.setType(DrawType::Line);
-	spline.setLineColor(255, 255, 255);
+	spline.setLineColor(255, 128, 255);
+
+	DrawConfig knots;
+	knots.setType(DrawType::Cross);
+	knots.setLineColor(255, 0, 255);
 
 	ProfileDialog* pd = ProfileDialog::instance();
-	pd->setBounds(0, 250, (end - start).norm(), 350);
+	pd->setBounds(0, tree.minz(), (end - start).norm(), tree.maxz());
 	pd->addDrawConfig(&allPts);
 	pd->addDrawConfig(&surf);
 	pd->addDrawConfig(&spline);
+	pd->addDrawConfig(&knots);
 	pd->addDrawConfig(&alt);
 	pd->addDrawConfig(&uav);
 
@@ -184,8 +233,8 @@ void run() {
 
 		// To clip off the points in the past.
 		double dy = (orig - start).norm();
-		gpf.setMinY(dy - 100.0);
-		//std::cout << dy << "\n";
+		gpf.setMinY(dy - 50.0);
+		std::cout << dy << "\n";
 
 		ppf.setPlane(&plane);
 		ppf.setLine(&line);
@@ -207,6 +256,9 @@ void run() {
 		surf.data.clear();
 		for(const Pt& pt : tp.surface())
 			surf.data.emplace_back(pt.y(), pt.z());
+		knots.data.clear();
+		for(const Pt& pt : tp.knots())
+			knots.data.emplace_back(pt.y(), pt.z());
 
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
 			//std::cerr << "Couldn't get new altitude.";

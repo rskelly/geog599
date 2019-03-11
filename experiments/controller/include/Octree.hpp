@@ -86,12 +86,36 @@ public:
 		return bounds[0] + (bounds[1] - bounds[0]) / 2.0;
 	}
 
+	double minx() const {
+		return bounds[0];
+	}
+
+	double maxx() const {
+		return bounds[1];
+	}
+
 	double midy() const {
 		return bounds[2] + (bounds[3] - bounds[2]) / 2.0;
 	}
 
+	double miny() const {
+		return bounds[2];
+	}
+
+	double maxy() const {
+		return bounds[3];
+	}
+
 	double midz() const {
 		return bounds[4] + (bounds[5] - bounds[4]) / 2.0;
+	}
+
+	double minz() const {
+		return bounds[4];
+	}
+
+	double maxz() const {
+		return bounds[5];
 	}
 
 	double width() const {
@@ -138,6 +162,41 @@ public:
 					getNode(i)->add(i);
 				items.clear();
 			}
+		}
+	}
+
+	bool contains(double x, double y) const {
+		return x >= minx() && x <= maxx() && y >= miny() && y <= maxy();
+	}
+
+	const P* nearest(double x, double y) const {
+		if(isSplit) {
+			double d, mind = std::numeric_limits<double>::max();
+			const P* cur = nullptr;
+			const P* pt = nullptr;
+			for(int i = 0; i < 8; ++i) {
+				if(nodes[i]) {
+					pt = nodes[i]->nearest(x, y);
+					if(pt) {
+						if(!cur || (d = std::pow(pt->x() - x, 2.0) + std::pow(pt->y() - y, 2.0)) < mind) {
+							cur = pt;
+							mind = d;
+						}
+					}
+				}
+			}
+			return cur;
+		} else {
+			double mind = std::numeric_limits<double>::max();
+			const P* cur = nullptr;
+			for(const P& i : items) {
+				double d = std::pow(i.x() - x, 2.0) + std::pow(i.y() - y, 2.0);
+				if(d < mind) {
+					mind = d;
+					cur = &i;
+				}
+			}
+			return cur;
 		}
 	}
 

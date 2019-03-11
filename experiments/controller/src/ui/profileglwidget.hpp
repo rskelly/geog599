@@ -63,11 +63,13 @@ public:
 			int hh = size.height();
 			int h = hh - buf * 2;
 
+			float scale = std::min(h / dh, w / dw);
+
 			p.begin(this);
 			for(const DrawConfig* config : configs) {
 				std::vector<QPointF> pts;
 				for(const auto& it : config->data)
-					pts.emplace_back(buf + ((it.first - minx) / dw) * w, hh - buf - ((it.second - miny) / dh) * h);
+					pts.emplace_back(buf + (it.first - minx) * scale, hh - buf - (it.second - miny) * scale);
 				switch(config->drawType) {
 				case DrawType::Line:
 					pen.setColor(config->lineColor);
@@ -81,6 +83,16 @@ public:
 					pen.setWidth(3);
 					p.setPen(pen);
 					p.drawPoints(pts.data(), pts.size());
+					break;
+				case DrawType::Cross:
+					pen.setColor(config->lineColor);
+					pen.setStyle(config->lineStyle);
+					pen.setWidth(3);
+					p.setPen(pen);
+					for(const QPointF& pt : pts) {
+						p.drawLine(pt.x() - 3, pt.y(), pt.x() + 3, pt.y());
+						p.drawLine(pt.x(), pt.y() - 3, pt.x(), pt.y() + 3);
+					}
 					break;
 				}
 				pts.clear();

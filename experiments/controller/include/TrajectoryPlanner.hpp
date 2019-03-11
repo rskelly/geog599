@@ -238,6 +238,18 @@ public:
 		return m_allPoints;
 	}
 
+	std::list<P> knots() {
+		std::list<P> lst;
+		if(m_spline.valid()) {
+			const std::vector<double>& t = m_spline.knots();
+			std::vector<double> z(t.size());
+			m_spline.evaluate(t, z, 0);
+			for(size_t i = 0; i < t.size(); ++i)
+				lst.emplace_back(0, t[i], z[i]);
+		}
+		return lst;
+	}
+
 	/**
 	 * Compute and return the 1st derivative (velocity) of the current trajectory,
 	 * and return it as a list of P, where y occurs every step from the start to end
@@ -246,6 +258,8 @@ public:
 	 * @param step The step distance in map units.
 	 */
 	bool splineVelocity(std::list<P>& velocity, double step = 1) {
+		if(m_surface.empty())
+			return false;
 		std::vector<double> z1;
 		std::vector<double> y;
 		double y0 = m_surface[0].y();
@@ -270,6 +284,8 @@ public:
 	 * @param step The step distance in map units.
 	 */
 	bool splineAltitude(std::list<P>& altitude, double step = 1) {
+		if(m_surface.empty())
+			return false;
 		std::vector<double> z0;
 		std::vector<double> y;
 		double y0 = m_surface[0].y();
@@ -294,6 +310,8 @@ public:
 	 * @param step The step distance in map units.
 	 */
 	bool splineAcceleration(std::list<P>& acceleration, double step = 1) {
+		if(m_surface.empty())
+			return false;
 		std::vector<double> z2;
 		std::vector<double> y;
 		double y0 = m_surface[0].y();
@@ -339,48 +357,7 @@ public:
 		return m_running;
 	}
 
-	/**
-	 * Retrieves points from the source, formats to 2D sorts and filters using the convex hull.
-	 */
 	void processPoints(const P& startPt) {
-		P pt;
-		while(m_running) {
-			// Get the available points and sort them into the points list.
-			if(m_ptSource->next(pt)) {
-				pt.to2D(startPt);
-				std::lock_guard<std::mutex> lkp(m_pmtx);
-				m_ptSorter.insert(pt, m_points);
-				// Filter the points.
-				m_ptFilter->filter(m_points);
-				std::lock_guard<std::mutex> lks(m_smtx);
-				m_surface.assign(m_points.begin(), m_points.end());
-				std::cout << "Hull: " << m_points.size() << "\n";
-			}
-			std::this_thread::yield();
-		}
-		m_procComplete = true;
-	}
-
-	void generateTrajectory() {
-		m_spline.setXIndex(1);	// Set coordinates to y/z
-		m_spline.setYIndex(2);
-		while(m_running) {
-			if(!m_points.empty()){
-				std::lock_guard<std::mutex> lk(m_smtx);
-				try {
-					m_spline.fit(m_surface, m_weight, m_smooth);
-				} catch(const std::exception& ex) {
-					std::cerr << ex.what() << "\n";
-				}
-			}
-			std::this_thread::yield();
-			if(m_procComplete)
-				break;
-		}
-		m_genComplete = true;
-	}
-
-	void processPoints2(const P& startPt) {
 		P pt;
 		// Get the available points and sort them into the points list.
 		while(m_ptSource->next(pt)) {
@@ -394,7 +371,7 @@ public:
 		}
 	}
 
-	void generateTrajectory2() {
+	void generateTrajectory() {
 		if(!m_points.empty()){
 			try {
 				m_spline.fit(m_surface, m_weight, m_smooth);
@@ -407,8 +384,8 @@ public:
 	void compute() {
 		m_spline.setXIndex(1);	// Set coordinates to y/z
 		m_spline.setYIndex(2);
-		processPoints2(m_start);
-		generateTrajectory2();
+		processPoints(m_start);
+		generateTrajectory();
 	}
 
 	bool getTrajectoryAltitude(double y, double& z) {
