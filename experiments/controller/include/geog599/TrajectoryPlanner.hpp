@@ -235,6 +235,8 @@ private:
 	bool m_genComplete;						///!< True when generation is complete.
 	P m_start;								///!< The start-point for the trajectory.
 
+	double m_lastY;							///!< The y-coordinate from the most recent 2D point.
+
 public:
 
 	/**
@@ -244,7 +246,8 @@ public:
 		m_ptFilter(nullptr), m_ptSource(nullptr),
 		m_weight(1), m_smooth(0.5),
 		m_running(false),
-		m_procComplete(false), m_genComplete(false) {
+		m_procComplete(false), m_genComplete(false),
+		m_lastY(0) {
 	}
 
 	/**
@@ -438,6 +441,14 @@ public:
 	}
 
 	/**
+	 * Return the most recent y-coordinate from the received
+	 * 2D points.
+	 */
+	double lastY() const {
+		return m_lastY;
+	}
+
+	/**
 	 * Process points from the PointSource. Apply filters,
 	 * collapse to 2D.
 	 */
@@ -446,6 +457,7 @@ public:
 		// Get the available points and sort them into the points list.
 		while(m_ptSource->next(pt)) {
 			pt.to2D(startPt);
+			m_lastY = pt.y();
 			m_allPoints.push_back(pt);
 			m_ptSorter.insert(pt, m_points);
 			// Filter the points.
