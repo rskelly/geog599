@@ -9,19 +9,18 @@
 #define INCLUDE_TRAJECTORYPLANNER_HPP_
 
 #include <sys/time.h>
-#include <thread>
 #include <cmath>
-#include <mutex>
+#include <list>
+#include <iostream>
 
-#include "PointSorter.hpp"
-#include "PointSource.hpp"
-#include "PointFilter.hpp"
-#include "Octree.hpp"
+#include "geog599/PointSorter.hpp"
+#include "geog599/PointSource.hpp"
+#include "geog599/PointFilter.hpp"
+#include "ds/Octree.hpp"
 #include "math/SmoothSpline.hpp"
 
 namespace uav {
-
-class Pt;
+namespace geog599 {
 
 /**
  * Utilities for the TrajectoryPlanner to use.
@@ -68,7 +67,7 @@ public:
 	 */
 	Pt(double x, double y, double z, uint64_t time) :
 		_x(x), _y(y), _z(z),
-		_time(time > 0 ? time : uav::trajectoryutils::microtime()) {}
+		_time(time > 0 ? time : trajectoryutils::microtime()) {}
 
 	/**
 	 * Copy constructor.
@@ -108,6 +107,15 @@ public:
 		_time = time;
 	}
 
+	/**
+	 * Returns the coordinate associated with the given index.
+	 * idx % 3 == 0 --> x
+	 * idx % 3 == 1 --> y
+	 * idx % 3 == 2 --> z
+	 *
+	 * @param idx The index.
+	 * @return The coordinate value.
+	 */
 	double operator[](int idx) const {
 		switch(idx % 3) {
 		case 0: return _x;
@@ -116,6 +124,13 @@ public:
 		}
 	}
 
+	/**
+	 * Returns true if this point is less than the given point, according to y-z ordering.
+	 * x is not considered.
+	 *
+	 * @param p A Pt.
+	 * @return True if this point is less than the given point, according to y-z ordering.
+	 */
 	bool operator<(const Pt& p) {
 		if(y() == p.y()) {
 			return z() < p.z();
@@ -124,6 +139,13 @@ public:
 		}
 	}
 
+	/**
+	 * Returns true if this point is greater than the given point, according to y-z ordering.
+	 * x is not considered.
+	 *
+	 * @param p A Pt.
+	 * @return True if this point is greater than the given point, according to y-z ordering.
+	 */
 	bool operator>(const Pt& p) {
 		if(y() == p.y()) {
 			return z() > p.z();
@@ -132,6 +154,13 @@ public:
 		}
 	}
 
+	/**
+	 * Returns true if this point is less than or equal to the given point, according to y-z ordering.
+	 * x is not considered.
+	 *
+	 * @param p A Pt.
+	 * @return True if this point is less than or equal to the given point, according to y-z ordering.
+	 */
 	bool operator<=(const Pt& p) {
 		if(y() == p.y()) {
 			return z() <= p.z();
@@ -140,6 +169,13 @@ public:
 		}
 	}
 
+	/**
+	 * Returns true if this point is greater than or equal to the given point, according to y-z ordering.
+	 * x is not considered.
+	 *
+	 * @param p A Pt.
+	 * @return True if this point is greater than or equal to the given point, according to y-z ordering.
+	 */
 	bool operator>=(const Pt& p) {
 		if(y() == p.y()) {
 			return z() >= p.z();
@@ -152,7 +188,7 @@ public:
 	 * Set the time to the current time.
 	 */
 	void resetTime() {
-		_time = uav::trajectoryutils::microtime();
+		_time = trajectoryutils::microtime();
 	}
 
 	/**
@@ -182,10 +218,12 @@ public:
 template <class P>
 class TrajectoryPlanner {
 private:
+	uav::geog599::filter::PointFilter<P>* m_ptFilter;	///!< A filter for the point stream.
+	uav::geog599::PointSource<P>* m_ptSource;			///!< A source for 3D points, either fake or real.
+	uav::geog599::PointSorter<P> m_ptSorter;			///!< A 2D sorter for the point stream.
+
 	uav::math::SmoothSpline<P> m_spline;	///!< Computes and stores the spline coefficients.
-	uav::PointSource<P>* m_ptSource;		///!< A source for 3D points, either fake or real.
-	uav::PointFilter<P>* m_ptFilter;		///!< A filter for the point stream.
-	uav::PointSorter<P> m_ptSorter;			///!< A 2D sorter for the point stream.
+
 	std::list<P> m_allPoints;				///!< A list of all points.
 	std::list<P> m_points;					///!< The list of current points. May contain non-surface points during retrieval.
 	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
@@ -196,48 +234,91 @@ private:
 	bool m_procComplete;					///!< True when processing is complete.
 	bool m_genComplete;						///!< True when generation is complete.
 	P m_start;								///!< The start-point for the trajectory.
-	std::thread m_pthread;					///!< Worker thread.
-	std::thread m_gthread;					///!< Worker thread.
-	std::mutex m_pmtx;						///!< Mutex to protect points list.
-	std::mutex m_smtx;						///!< Mutex to protect surface points list.
 
 public:
 
+	/**
+	 * Default constructor.
+	 */
 	TrajectoryPlanner() :
-		m_ptSource(nullptr), m_ptFilter(nullptr),
+		m_ptFilter(nullptr), m_ptSource(nullptr),
 		m_weight(1), m_smooth(0.5),
 		m_running(false),
 		m_procComplete(false), m_genComplete(false) {
 	}
 
+	/**
+	 * Set the weight to be used in the smoothing spline.
+	 *
+	 * @param w The weight.
+	 */
 	void setWeight(double w) {
 		m_weight = w;
 	}
 
+	/**
+	 * Set the smoothing factor to be used in the smoothing spline.
+	 * If s==0, the spline is an interpolator.
+	 *
+	 * @param s The smoothing factor.
+	 */
 	void setSmooth(double s) {
 		m_smooth = s;
 	}
 
+	/**
+	 * Return the weight.
+	 *
+	 * @return The weight.
+	 */
 	double weight() const {
 		return m_weight;
 	}
 
+	/**
+	 * Return the smoothing factor.
+	 *
+	 * @return The smoothing factor.
+	 */
 	double smooth() const {
 		return m_smooth;
 	}
 
+	/**
+	 * Return a reference to the vector containing the points which constitute the hull-filtered surface.
+	 *
+	 * @return A reference to the vector containing the points which constitute the hull-filtered surface.
+	 */
 	const std::vector<P>& surface() const {
 		return m_surface;
 	}
 
+	/**
+	 * Return a reference to the current point-set -- a vector containing the points which constitute the
+	 * hull-filtered surface, plus those that have been added but not yet re-filtered.
+	 *
+	 * @return A reference to the current point-set.
+	 */
 	const std::list<P>& points() const {
 		return m_points;
 	}
+
+	/**
+	 * Return a reference to the vector containing all collected points, unfiltered.
+	 *
+	 * @return A reference to the vector containing all collected points, unfiltered.
+	 */
 
 	const std::list<P>& allPoints() const {
 		return m_allPoints;
 	}
 
+	/**
+	 * Return a list of the knots found by the spline algorithm, or an empty list
+	 * if they are not available.
+	 *
+	 * @return A list of the knots found by the spline algorithm.
+	 */
 	std::list<P> knots() {
 		std::list<P> lst;
 		if(m_spline.valid()) {
@@ -333,30 +414,33 @@ public:
 	 *
 	 * @param psrc The PointSource.
 	 */
-	void setPointSource(uav::PointSource<P>* psrc) {
+	void setPointSource(uav::geog599::PointSource<P>* psrc) {
 		m_ptSource = psrc;
 	}
 
-	void setPointFilter(uav::PointFilter<P>* pfilt) {
+	/**
+	 * Set the point filter.
+	 *
+	 * @param pfilt The point filter.
+	 */
+	void setPointFilter(uav::geog599::filter::PointFilter<P>* pfilt) {
 		m_ptFilter = pfilt;
 	}
 
+	/**
+	 * Set the start point. This is used to collapse the incoming points into a 2D (y-z)
+	 * representation by distance from this origin.
+	 *
+	 * @param pt The start point.
+	 */
 	void setStartPoint(P& pt) {
 		m_start = pt;
 	}
 
-	bool genComplete() const {
-		return m_genComplete;
-	}
-
-	bool procComplete() const {
-		return m_procComplete;
-	}
-
-	bool running() const {
-		return m_running;
-	}
-
+	/**
+	 * Process points from the PointSource. Apply filters,
+	 * collapse to 2D.
+	 */
 	void processPoints(const P& startPt) {
 		P pt;
 		// Get the available points and sort them into the points list.
@@ -371,6 +455,9 @@ public:
 		}
 	}
 
+	/**
+	 * Generate the trajectory from the filtered point-set.
+	 */
 	void generateTrajectory() {
 		if(!m_points.empty()){
 			try {
@@ -381,6 +468,9 @@ public:
 		}
 	}
 
+	/**
+	 * Compute the spline on the current filtered point-set.
+	 */
 	void compute() {
 		m_spline.setXIndex(1);	// Set coordinates to y/z
 		m_spline.setYIndex(2);
@@ -388,10 +478,20 @@ public:
 		generateTrajectory();
 	}
 
+	/**
+	 * Get the altitude of the trajectory at the given y-coordinate.
+	 *
+	 * @return The altitude of the trajectory at the given y-coordinate.
+	 */
 	bool getTrajectoryAltitude(double y, double& z) {
 		return m_spline.evaluate(y, z, 0);
 	}
 
+	/**
+	 * Write some internal state to the output stream.
+	 *
+	 * @param str The output stream.
+	 */
 	void write(std::ostream& str) {
 		std::vector<double> y;
 		std::vector<double> z;
@@ -415,41 +515,14 @@ public:
 	}
 
 	/**
-	 * Run the trajectory planner. It uses two threads. One for the point retrieval and
-	 * filtering, one for planning the trajectory. Each time a trajectory is completed,
-	 * the listener is notified.
+	 * Destroy the TrajectoryPlanner.
 	 */
-	void start() {
-
-		m_spline.setOrder(3);
-
-		using namespace uav::trajectoryutils;
-		if(!m_running) {
-			m_running = true;
-
-			double bounds[6];
-			m_ptSource->computeBounds(bounds);
-			m_pthread = std::thread([this]{ this->processPoints(m_start); });
-			m_gthread = std::thread([this]{ this->generateTrajectory(); });
-		}
-	}
-
-	void stop() {
-		if(m_running) {
-			m_running = false;
-			if(m_pthread.joinable())
-				m_pthread.join();
-			if(m_gthread.joinable())
-				m_gthread.join();
-		}
-	}
-
 	~TrajectoryPlanner() {
-		stop();
 	}
 
 };
 
+} // geog599
 } // uav
 
 

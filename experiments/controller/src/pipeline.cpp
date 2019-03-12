@@ -9,18 +9,19 @@
 
 #include <string>
 #include <unordered_map>
+#include <thread>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include <QtWidgets/QApplication>
 
-#include "TrajectoryPlanner.hpp"
-#include "HullPointFilter.hpp"
-#include "GeomPointFilter.hpp"
-#include "PlaneFilter.hpp"
-#include "PointSorter.hpp"
-#include "sim/LASPointSource.hpp"
+#include "geog599/TrajectoryPlanner.hpp"
+#include "geog599/HullPointFilter.hpp"
+#include "geog599/GeomPointFilter.hpp"
+#include "geog599/PlaneFilter.hpp"
+#include "geog599/PointSorter.hpp"
+#include "geog599/LASPointSource.hpp"
 
 #include "ui/profile.hpp"
 #include "ui/drawconfig.hpp"
@@ -30,8 +31,9 @@
 #define TIME_DELAY 1000
 #define SPEED 10
 
-using namespace uav;
-using namespace uav::sim;
+using namespace uav::ds;
+using namespace uav::geog599;
+using namespace uav::geog599::filter;
 using namespace Eigen;
 
 double _rad(double deg) {
@@ -81,7 +83,7 @@ void run() {
 	std::string ptsFile = config.filename;
 
 	LASPointSource<Pt> tps(ptsFile);
-	const ds::Octree<Pt>& tree = tps.octree();
+	const Octree<Pt>& tree = tps.octree();
 	double startx, starty, endx, endy;
 
 	if(tree.width() > tree.length()) {
@@ -156,7 +158,7 @@ void run() {
 
 	// The trajectory planner manages the point cloud source and filters to
 	// compute the trajectory.
-	uav::Pt startPt(startx, starty, altitude);
+	Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp;
 	tp.setSmooth(config.smooth);
 	tp.setWeight(config.weight);
