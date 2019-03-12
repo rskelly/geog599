@@ -28,7 +28,7 @@
 
 #define MAX_RANGE 1000 // The maximum laser range
 #define MAX_DIST 1 // The maximum distance between a point and the search plane.
-#define TIME_DELAY 1000
+#define TIME_DELAY 100
 #define SPEED 10
 
 using namespace uav::ds;
@@ -78,7 +78,7 @@ void run() {
 	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 5, 1, 15, 5.7, 5));
 	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, 5.7, 5));
 
-	const PipelineConfig& config = configs["mt_doug_1"];
+	const PipelineConfig& config = configs["nrcan_1"];
 
 	std::string ptsFile = config.filename;
 
@@ -236,7 +236,7 @@ void run() {
 		// To clip off the points in the past.
 		double dy = (orig - start).norm();
 		gpf.setMinY(dy - 50.0);
-		std::cout << dy << "\n";
+		//std::cout << dy << "\n";
 
 		ppf.setPlane(&plane);
 		ppf.setLine(&line);
@@ -247,7 +247,8 @@ void run() {
 		tp.splineAltitude(salt, 1);
 
 		uav.data[0].first = dy;
-		uav.data[0].second = altitude;
+		uav.data[0].second = altitude + offset;
+		alt.data.emplace_back(dy, altitude + offset);
 
 		spline.data.clear();
 		for(const Pt& pt : salt)
@@ -262,12 +263,13 @@ void run() {
 		for(const Pt& pt : tp.knots())
 			knots.data.emplace_back(pt.y(), pt.z());
 
+		std::cout << tp.lastY() - dy << "\n";
+
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
 			//std::cerr << "Couldn't get new altitude.";
 		} else {
 			//std::cout << "Altitude: " << altitude << "\n";
 
-			alt.data.emplace_back(dy, altitude + offset);
 
 			/*
 			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
