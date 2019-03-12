@@ -57,6 +57,7 @@ public:
 		if(dw > 0 && dh > 0) {
 
 			QPen pen;
+			pen.setWidth(1);
 
 			QSize size = this->size();
 			int w = size.width() - buf * 2;
@@ -80,14 +81,12 @@ public:
 				case DrawType::Points:
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
-					pen.setWidth(3);
 					p.setPen(pen);
 					p.drawPoints(pts.data(), pts.size());
 					break;
 				case DrawType::Cross:
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
-					pen.setWidth(3);
 					p.setPen(pen);
 					for(const QPointF& pt : pts) {
 						p.drawLine(pt.x() - 3, pt.y(), pt.x() + 3, pt.y());
