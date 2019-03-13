@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
 
-execute_process (COMMAND gfortran -g -shared -fPIC ../src/fitpack/fpcurf.f ../src/fitpack/fpback.f 
-	../src/fitpack/fpbspl.f ../src/fitpack/fpgivs.f ../src/fitpack/fpdisc.f ../src/fitpack/fprati.f 
-	../src/fitpack/fpknot.f ../src/fitpack/fprota.f ../src/fitpack/splev.f ../src/fitpack/splder.f 
-	-o bin/libfitpack_mod.so) 
-
 enable_language(C)
 enable_language(CXX)
 set (CMAKE_CXX_STANDARD 11)
@@ -79,6 +74,11 @@ set (CMAKE_AUTOMOC_OPTIONS "-Isrc/ui")
 
 # Build support libraries ################################################################################
 
+enable_language (Fortran)
+
+add_library (fitpack_mod SHARED src/fitpack/fpcurf.f src/fitpack/fpback.f src/fitpack/fpbspl.f 
+	src/fitpack/fpgivs.f src/fitpack/fpdisc.f src/fitpack/fprati.f src/fitpack/fpknot.f 
+	src/fitpack/fprota.f src/fitpack/splev.f src/fitpack/splder.f) 
  
 add_library (uav_serial SHARED src/comm/serial.cpp)
 
