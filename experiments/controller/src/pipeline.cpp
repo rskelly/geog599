@@ -115,14 +115,14 @@ void run() {
 
 	uav::Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp;
-	tp.setSmooth(0.8);
-	tp.setWeight(0.1);
+	tp.setSmooth(5);
+	tp.setWeight(1);
 	tp.setPointFilter(&gpf);
 	tp.setPointSource(&tps);
 	tp.setStartPoint(startPt);
 
 	double speed = 10.0; // m/s
-	int delay = 1000;	// 1 ms
+	int delay = 100;	// 1 ms
 
 	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
 	double stepy = (endy - starty) / (speed * delay);
@@ -165,7 +165,11 @@ void run() {
 
 	DrawConfig spline;
 	spline.setType(DrawType::Line);
-	spline.setLineColor(255, 255, 255);
+	spline.setLineColor(255, 0, 255);
+
+	DrawConfig knots;
+	knots.setType(DrawType::Cross);
+	knots.setLineColor(255, 128, 255);
 
 	ProfileDialog* pd = ProfileDialog::instance();
 	pd->setBounds(0, 250, (end - start).norm(), 350);
@@ -174,6 +178,7 @@ void run() {
 	pd->addDrawConfig(&spline);
 	pd->addDrawConfig(&alt);
 	pd->addDrawConfig(&uav);
+	pd->addDrawConfig(&knots);
 
 	uav.data.emplace_back(0, altitude + offset);
 
@@ -207,6 +212,11 @@ void run() {
 		surf.data.clear();
 		for(const Pt& pt : tp.surface())
 			surf.data.emplace_back(pt.y(), pt.z());
+		std::vector<Pt> kts;
+		tp.knots(kts);
+		knots.data.clear();
+		for(const Pt& pt : kts)
+			knots.data.emplace_back(pt.y(), pt.z());
 
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
 			//std::cerr << "Couldn't get new altitude.";
