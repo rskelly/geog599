@@ -310,6 +310,10 @@ public:
 		return false;
 	}
 
+	bool knots(std::vector<P>& knots) {
+		return m_spline.knots(knots);
+	}
+
 	/**
 	 * Set the source of points.
 	 *
@@ -407,6 +411,7 @@ public:
 	void compute() {
 		m_spline.setXIndex(1);	// Set coordinates to y/z
 		m_spline.setYIndex(2);
+		m_spline.setKnotDistance(10);
 		processPoints2(m_start);
 		generateTrajectory2();
 	}

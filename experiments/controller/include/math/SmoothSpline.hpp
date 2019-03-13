@@ -284,8 +284,33 @@ private:
 	size_t m_yidx;
 
 	int m_k; 									// Degree
-
+	double m_knotDist;							// The distance between knots, if equidistant knots are required.
 	bool m_validFit;							// True if a fit has completed successfully.
+
+	/**
+	 * Populate the vector with regularly spaced doubles, according to knotDistance,
+	 * starting with x0, ending with x1. The spacing between x1 and lst[-2] may be less
+	 * than knotDistance. Padded with k-1 repeats at each end (where k is the order
+	 *
+	 * @param x0 The starting x.
+	 * @param x1 The ending x.
+	 * @param lst The output list of values.
+	 * @returns The number items added to the list.
+	 */
+	int linspace(double x0, double x1, std::vector<double>& lst) {
+		if(m_knotDist == 0)
+			return -1;
+
+		lst.clear();
+
+		for(int i = 0; i < m_k; ++i)
+			lst.push_back(x0);
+		for(double x = x0; x < x1; x += m_knotDist)
+			lst.push_back(x);
+		for(int i = 0; i < m_k + 1; ++i)
+			lst.push_back(x1);
+		return lst.size();
+	}
 
 public:
 
@@ -293,12 +318,23 @@ public:
 	 * Create a smoothing spline of the given order (default, 3).
 	 *
 	 * @param order The order of the spline's polynomial. Defaults to 3.
+	 * @param xidx The index into each point for the x coordinate (abscissa).
+	 * @param yidx The index into each point for the y coordinate (ordinate).
 	 */
 	SmoothSpline(int order = 3, size_t xidx = 0, size_t yidx = 1) :
 		m_xidx(xidx),
 		m_yidx(yidx),
 		m_k(order),
-		m_validFit(false) {}
+		m_validFit(false),
+		m_knotDist(0) {}
+
+	void setKnotDistance(double dist) {
+		m_knotDist = dist;
+	}
+
+	double knotDistance() const {
+		return m_knotDist;
+	}
 
 	void setXIndex(size_t xidx) {
 		m_xidx = xidx;
@@ -359,14 +395,12 @@ public:
 
 	/**
 	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
-	 * @param w		 	A list of weights at each data point.
+	 * @param weights	A list of weights at each data point.
 	 * @param s 		The smoothing factor.
-	 * @param out 		The output of the function; a list of "curve" objects containing the pair
-	 * 					of knots and the second derivative at each.
 	 */
 	bool fit(const std::vector<P>& pts, const std::vector<double>& weights, double s) {
 
-		int minn = 2 * m_k + 2; // The minimum number of points.
+		int minn = 2 * m_k + 2; // The minimum number of points. Why?
 
 		if(pts.size() != weights.size()) {
 			std::cerr << "Weights and points must have the same length\n";
@@ -379,22 +413,22 @@ public:
 		}
 
 		// Inputs
-		int iopt = 0;					// Determines how s is calculated.
+		int iopt = 1;					// Determines how s is calculated.
 		int m = (int) pts.size();		// Number of points.
 		m_x.resize(m); 					// Abscissae
 		m_y.resize(m); 					// Ordinates
 		m_w.resize(m); 					// Weights
-		double tol = 0.1;				// Epsilon
+		double tol = 0.0001;			// Epsilon
+
+		int k1 = m_k + 1;				// ?
+		int k2 = m_k + 2;;				// ?
+		int nest = m + m_k + 1; 		// Estimate for n.
+		double fp;						// ?
+		int maxit = 100;					// Maximum number of iterations.
 
 		// Outputs
 		int ierr = 0;					// Error return.
 		int n = -1;						// Number of knots.
-
-		int k1 = m_k + 1;				// ?
-		int k2 = m_k + 2;;				// ?
-		int nest = m + m_k + 1; 		// Estimate for n. s == 0.0 ? m + k + 1 : std::max(m / 2, 2 * k1);
-		double fp;						// ?
-		int maxit = 10;					// Maximum number of iterations.
 
 		m_t.resize(nest);					// Knots
 		m_c.resize(nest);					// Coefficients
@@ -417,10 +451,14 @@ public:
 		double xb = m_x[0];
 		double xe = m_x[m_x.size() - 1];
 
+		std::cout << "1 nest: " << nest << ", n: " << n << "\n";
+
 		fpcurf_(&iopt, m_x.data(), m_y.data(), m_w.data(), &m, &xb, &xe,
 			&m_k, &s, &nest, &tol, &maxit, &k1, &k2, &n,
 			m_t.data(), m_c.data(), &fp, fpint.data(), z.data(), a.data(), b.data(),
 			g.data(), q.data(), nrdata.data(), &ierr);
+
+		std::cout << "2 nest: " << nest << ", n: " << n << "\n";
 
 		// Trim the result arrays.
 		if(n != m_t.size()) {
@@ -428,7 +466,7 @@ public:
 			m_c.resize(n);
 		}
 
-		m_validFit = ierr == 0;
+		m_validFit = ierr == 0 || ierr == -2;
 
 		if(ierr != 0)
 			std::cerr << "Error: " << ierr << "\n";
@@ -447,6 +485,17 @@ public:
 		}
 
 		return true;
+	}
+
+	bool knots(std::vector<P>& kts) {
+		std::vector<double> y;
+		if(evaluate(m_t, y, 0)) {
+			kts.clear();
+			for(size_t i = 0; i < m_t.size(); ++i)
+				kts.emplace_back(0, m_t[i], y[i]);
+			return true;
+		}
+		return false;
 	}
 
 	/**
