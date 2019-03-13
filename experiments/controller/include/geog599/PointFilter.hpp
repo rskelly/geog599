@@ -11,6 +11,8 @@
 #include <list>
 
 namespace uav {
+namespace geog599 {
+namespace filter {
 
 /**
  * Provides an interface for filtering unneeded points out of a point list.
@@ -19,17 +21,22 @@ namespace uav {
 template <class P>
 class PointFilter {
 private:
-	PointFilter* m_nextFilter;
+	PointFilter* m_nextFilter;	///<! An optional filter that may be called after the current one.
 
 protected:
 
 	/**
-	 * Filter implementation.
+	 * Perform filtering on the list of points. Filtering performed in-place.
+	 *
+	 * @param pts The list of points.
 	 */
 	virtual void doFilter(std::list<P>& pts) = 0;
 
 public:
 
+	/**
+	 * Default constructor.
+	 */
 	PointFilter() :
 		m_nextFilter(nullptr) {}
 
@@ -53,10 +60,15 @@ public:
 			m_nextFilter->filter(pts);
 	}
 
+	/**
+	 * Destroy the filter.
+	 */
 	virtual ~PointFilter() {
 	}
 };
 
+} // geog500
+} // filter
 } // uav
 
 

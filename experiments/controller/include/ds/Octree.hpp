@@ -19,15 +19,25 @@
 namespace uav {
 namespace ds {
 
+/**
+ * Implementation of an octree node.
+ */
 template <class P>
 class Node {
 protected:
-	Node<P>* nodes[8] = {0};
-	std::list<P> items;
-	bool isSplit;
-	bool isLeaf;
-	double bounds[6];
+	Node<P>* nodes[8] = {0};	///<! A list of pointers to child nodes.
+	std::list<P> items;			///<! List of items contained in a leaf node.
+	bool isSplit;				///<! True if the node is split. Will have at least one child.
+	bool isLeaf;				///<! True if the node is a leaf.
+	double bounds[6];			///<! The bounds of the node. {xmin, xmax, ymin, ymax, zmin, zmax}
 
+	/**
+	 * Return a pointer to the node that would contain the given item, based
+	 * on its extents. If the node does not exist, create it.
+	 *
+	 * @param item An item.
+	 * @return A pointer to the node that would contain the item.
+	 */
 	Node* getNode(const P& item) {
 		int idx = 0;
 		if(item.x() > midx())
@@ -69,43 +79,165 @@ protected:
 		return nodes[idx];
 	}
 
+	/**
+	 * Split the node and distribute its children to the child nodes.
+	 */
+	void split() {
+		if(!isSplit) {
+			if((width() * height() * length()) <= 1) {
+				isLeaf = true;
+			} else {
+				isSplit = true;
+				for(const P& i : items)
+					getNode(i)->add(i);
+				items.clear();
+			}
+		}
+	}
+
+
 public:
+
+	/**
+	 * Construct a node with the given extents.
+	 *
+	 * @param minx The minimum x-coordinate.
+	 * @param maxx Tha maximum x-coordinate.
+	 * @param miny The minimum y-coordinate.
+	 * @param maxy Tha maximum y-coordinate.
+	 * @param minz The minimum z-coordinate.
+	 * @param maxz Tha maximum z-coordinate.
+	 */
 	Node(double minx, double maxx, double miny, double maxy, double minz, double maxz) :
 		isSplit(false),
 		isLeaf(false),
 		bounds({minx, maxx, miny, maxy, minz, maxz}) {}
 
+	/**
+	 * Delete the child nodes and reset the pointers to null.
+	 */
 	void reset() {
 		for(int i = 0; i < 8; ++i) {
-			if(nodes[i])
+			if(nodes[i]) {
 				delete nodes[i];
+				nodes[i] = nullptr;
+			}
 		}
 	}
 
+	/**
+	 * The middle x-coordinate.
+	 *
+	 * @return The middle x-coordinate.
+	 */
 	double midx() const {
 		return bounds[0] + (bounds[1] - bounds[0]) / 2.0;
 	}
 
+	/**
+	 * The minimum x-coordinate.
+	 *
+	 * @return The minimum x-coordinate.
+	 */
+	double minx() const {
+		return bounds[0];
+	}
+
+	/**
+	 * The maximum x-coordinate.
+	 *
+	 * @return The maximum x-coordinate.
+	 */
+	double maxx() const {
+		return bounds[1];
+	}
+
+	/**
+	 * The middle y-coordinate.
+	 *
+	 * @return The middle y-coordinate.
+	 */
 	double midy() const {
 		return bounds[2] + (bounds[3] - bounds[2]) / 2.0;
 	}
 
+	/**
+	 * The minimum y-coordinate.
+	 *
+	 * @return The minimum y-coordinate.
+	 */
+	double miny() const {
+		return bounds[2];
+	}
+
+	/**
+	 * The maximum y-coordinate.
+	 *
+	 * @return The maximum y-coordinate.
+	 */
+	double maxy() const {
+		return bounds[3];
+	}
+
+	/**
+	 * The middle z-coordinate.
+	 *
+	 * @return The middle z-coordinate.
+	 */
 	double midz() const {
 		return bounds[4] + (bounds[5] - bounds[4]) / 2.0;
 	}
 
+	/**
+	 * The minimum z-coordinate.
+	 *
+	 * @return The minimum z-coordinate.
+	 */
+	double minz() const {
+		return bounds[4];
+	}
+
+	/**
+	 * The maximum z-coordinate.
+	 *
+	 * @return The maximum z-coordinate.
+	 */
+	double maxz() const {
+		return bounds[5];
+	}
+
+	/**
+	 * The width of the node's extent.
+	 *
+	 * @return The width of the node's extent.
+	 */
 	double width() const {
 		return bounds[1] - bounds[0];
 	}
 
+	/**
+	 * The length of the node's extent.
+	 *
+	 * @return The length of the node's extent.
+	 */
 	double length() const {
 		return bounds[3] - bounds[2];
 	}
 
+	/**
+	 * The height of the node's extent.
+	 *
+	 * @return The height of the node's extent.
+	 */
 	double height() const {
 		return bounds[5] - bounds[4];
 	}
 
+	/**
+	 * Add an item to the node. If the item limit is exceeded, the node will split.
+	 *
+	 * @param item An item.
+	 */
 	void add(const P& item) {
 		if(isLeaf || (!isLeaf && items.size() < SIZE_LIMIT)) {
 			items.push_back(item);
@@ -117,6 +249,12 @@ public:
 		}
 	}
 
+	/**
+	 * Remove an item from the node. If the number of items
+	 * falls below the limit, the node will not un-split.
+	 *
+	 * @param item An item.
+	 */
 	void remove(const P& item) {
 		if(isSplit) {
 			getNode(item)->remove(item);
@@ -128,16 +266,52 @@ public:
 		}
 	}
 
-	void split() {
-		if(!isSplit) {
-			if((width() * height() * length()) <= 1) {
-				isLeaf = true;
-			} else {
-				isSplit = true;
-				for(const P& i : items)
-					getNode(i)->add(i);
-				items.clear();
+	/**
+	 * Return true if the node contains the given 2D coordinate.
+	 *
+	 * @param x The x-coordinate.
+	 * @param y The y-coordinate.
+	 * @return True if the node contains the given 2D coordinate.
+	 */
+	bool contains(double x, double y) const {
+		return x >= minx() && x <= maxx() && y >= miny() && y <= maxy();
+	}
+
+	/**
+	 * Return the item nearest the given 2D coordinate.
+	 *
+	 * @param x The x-coordinate.
+	 * @param y The y-coordinate.
+	 * @return The item nearest the given 2D coordinate.
+	 */
+	const P* nearest(double x, double y) const {
+		if(isSplit) {
+			double d, mind = std::numeric_limits<double>::max();
+			const P* cur = nullptr;
+			const P* pt = nullptr;
+			for(int i = 0; i < 8; ++i) {
+				if(nodes[i]) {
+					pt = nodes[i]->nearest(x, y);
+					if(pt) {
+						if(!cur || (d = std::pow(pt->x() - x, 2.0) + std::pow(pt->y() - y, 2.0)) < mind) {
+							cur = pt;
+							mind = d;
+						}
+					}
+				}
 			}
+			return cur;
+		} else {
+			double mind = std::numeric_limits<double>::max();
+			const P* cur = nullptr;
+			for(const P& i : items) {
+				double d = std::pow(i.x() - x, 2.0) + std::pow(i.y() - y, 2.0);
+				if(d < mind) {
+					mind = d;
+					cur = &i;
+				}
+			}
+			return cur;
 		}
 	}
 
@@ -155,6 +329,15 @@ public:
 		return  r2 <= r1;
 	}
 
+	/**
+	 * Search the node for all items within the given distance of the plane. Populate the result list
+	 * with the found items, and return their number.
+	 *
+	 * @param plane An Eigen::Hyperplane.
+	 * @param maxDist The maximum distance of an item from the plane.
+	 * @param result The result list.
+	 * @return The number of items found.
+	 */
 	size_t planeSearch(const Eigen::Hyperplane<double, 3>& plane, double maxDist, std::list<P>& result) const {
 
 		//printBounds();
@@ -189,17 +372,35 @@ public:
 
 	}
 
+	/**
+	 * Set the extents of the node.
+	 *
+	 * @param minx The minimum x-coordinate.
+	 * @param maxx Tha maximum x-coordinate.
+	 * @param miny The minimum y-coordinate.
+	 * @param maxy Tha maximum y-coordinate.
+	 * @param minz The minimum z-coordinate.
+	 * @param maxz Tha maximum z-coordinate.
+	 */
 	void setBounds(double minx, double maxx, double miny, double maxy, double minz, double maxz) {
 		double b[6] = {minx, maxx, miny, maxy, minz, maxz};
 		for(int i = 0; i < 6; ++i)
 			bounds[i] = b[i];
 	}
 
+	/**
+	 * Return the extents of the node.
+	 *
+	 * @param bounds An array to contain the extents. Must have room for six elements.
+	 */
 	void getBounds(double* bounds) {
 		for(int i = 0; i < 6; ++i)
 			bounds[i] = this->bounds[i];
 	}
 	
+	/**
+	 * Destroy the node and its children.
+	 */
 	~Node() {
 		if(isSplit) {
 			for(int i = 0; i < 6; ++i)
@@ -207,6 +408,9 @@ public:
 		}
 	}
 
+	/**
+	 * Print the extents of the node up to the given depth.
+	 */
 	void printBounds(int depth = 0) const {
 		std::cerr << std::setprecision(9);
 		std::stringstream ss;
@@ -226,6 +430,9 @@ public:
 
 };
 
+/**
+ * A wrapper for the octree Node, providing default instantiations.
+ */
 template <class P>
 class Octree : public Node<P> {
 public:

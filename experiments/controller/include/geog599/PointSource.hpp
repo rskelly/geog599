@@ -11,14 +11,21 @@
 #include "PointFilter.hpp"
 
 namespace uav {
+namespace geog599 {
 
+/**
+ * Provides a source of 3D Cartesian points from a point cloud or stream.
+ */
 template <class P>
 class PointSource {
 protected:
-	uav::PointFilter<P>* m_filter;
+	uav::geog599::filter::PointFilter<P>* m_filter;		///<! A filter for reducing the points.
 
 public:
 
+	/**
+	 * Default constructor.
+	 */
 	PointSource() :
 		m_filter(nullptr) {}
 
@@ -40,10 +47,21 @@ public:
 		throw std::runtime_error("Reset not implemented.");
 	}
 
-	void setFilter(uav::PointFilter<P>* filter) {
+	/**
+	 * Set the filter to use (optional.)
+	 *
+	 * @param filter A PointFilter.
+	 */
+	void setFilter(uav::geog599::filter::PointFilter<P>* filter) {
 		m_filter = filter;
 	}
 
+	/**
+	 * Compute the bounds of the point cloud and write to the given array. Must contain
+	 * six elements (minx, maxx, miny, maxy, minz, maxz).
+	 *
+	 * @param bounds A six-element array.
+	 */
 	virtual void computeBounds(double* bounds) {
 		P pt;
 		while(next(pt)) {
@@ -57,10 +75,15 @@ public:
 		reset();
 	}
 
+	/**
+	 * Destroy the PointSource.
+	 */
 	virtual ~PointSource() {
 	}
+
 };
 
+} // geog599
 } // uav
 
 

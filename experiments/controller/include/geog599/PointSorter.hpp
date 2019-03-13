@@ -11,19 +11,14 @@
 #include <list>
 
 namespace uav {
+namespace geog599 {
 
 /**
  * Inserts a point into the appropriate location in the point list.
  */
 template <class P>
 class PointSorter {
-private:
-	size_t m_curIdx; ///!< The most recent insertion index. Subsequent insertion points are located starting here.
-
 public:
-
-	PointSorter() :
-		m_curIdx(0) {}
 
 	/**
 	 * Insert the point into the list in such a way as to preserve the lexicographic sorting order.
@@ -35,11 +30,12 @@ public:
 	 */
 	void insert(const P& pt, std::list<P>& pts) {
 		pts.push_back(pt);
-		pts.sort();
+		pts.sort();				// TODO: Maybe something more efficient.
 	}
 
 };
 
+} // geog599
 } // uav
 
 

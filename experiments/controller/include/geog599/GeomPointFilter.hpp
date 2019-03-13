@@ -8,12 +8,16 @@
 #ifndef INCLUDE_GEOMPOINTFILTER_HPP_
 #define INCLUDE_GEOMPOINTFILTER_HPP_
 
-#include "PointFilter.hpp"
+#include <list>
+
+#include "geog599/PointFilter.hpp"
 
 namespace uav {
+namespace geog599 {
+namespace filter {
 
 template <class P>
-class GeomPointFilter : public PointFilter<P> {
+class GeomPointFilter : public uav::geog599::filter::PointFilter<P> {
 private:
 	double m_minY;
 
@@ -31,8 +35,11 @@ protected:
 
 public:
 
+	/**
+	 * Default constructor.
+	 */
 	GeomPointFilter() :
-		uav::PointFilter<P>(),
+		uav::geog599::filter::PointFilter<P>(),
 		m_minY(0) {}
 
 	/**
@@ -44,12 +51,17 @@ public:
 		m_minY = miny;
 	}
 
+	/**
+	 * Destroy the filter.
+	 */
 	~GeomPointFilter() {
 	}
 
 };
 
 
+} // filter
+} // geog599
 } // uav
 
 

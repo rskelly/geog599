@@ -377,6 +377,10 @@ public:
 		return m_validFit;
 	}
 
+	const std::vector<double>& knots() const {
+		return m_t;
+	}
+
 	/**
 	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
 	 * @param weight 	A scalar giving the weight for each data point.

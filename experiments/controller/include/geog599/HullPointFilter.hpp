@@ -10,10 +10,13 @@
 
 #include <cmath>
 #include <vector>
+#include <list>
 
 #include "PointFilter.hpp"
 
 namespace uav {
+namespace geog599 {
+namespace filter {
 
 namespace hullutils {
 
@@ -41,7 +44,7 @@ namespace hullutils {
 		return length;
 	}
 
-}
+} // hullutils
 
 
 /**
@@ -55,7 +58,7 @@ namespace hullutils {
  *
  */
 template <class P>
-class HullPointFilter : public uav::PointFilter<P> {
+class HullPointFilter : public uav::geog599::filter::PointFilter<P> {
 private:
 	double m_alpha; ///!< The alpha value.
 
@@ -86,8 +89,6 @@ protected:
 			hull.push_back(*iter);
 		} while(++iter != pts.end());
 
-		//std::cerr << hull.size() << " , " << pts.size() << "\n";
-
 		// Write the new items into the old list.
 		pts.assign(hull.begin(), hull.end());
 	}
@@ -99,14 +100,19 @@ public:
 	 * @param alpha Controls the maximum segment length of the hull. Zero is no limit.
 	 */
 	HullPointFilter(double alpha = 0) :
-		uav::PointFilter<P>(),
+		uav::geog599::filter::PointFilter<P>(),
 		m_alpha(alpha) {}
 
+	/**
+	 * Destroy the filter.
+	 */
 	~HullPointFilter() {
 	}
 
 };
 
+} // filter
+} // geog599
 } // uav
 
 

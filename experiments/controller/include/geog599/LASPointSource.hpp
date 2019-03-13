@@ -14,18 +14,18 @@
 
 #include <liblas/liblas.hpp>
 
-#include "Octree.hpp"
-#include "PointSource.hpp"
+#include "ds/Octree.hpp"
+#include "geog599/PointSource.hpp"
 
 namespace uav {
-namespace sim {
+namespace geog599 {
 
 /**
  * Reads a stream of points from a LAS file and provides the PointSource
  * interface.
  */
 template <class P>
-class LASPointSource : public uav::PointSource<P> {
+class LASPointSource : public uav::geog599::PointSource<P> {
 private:
 	liblas::Reader* m_reader;
 	std::ifstream m_stream;
@@ -76,17 +76,31 @@ public:
 		m_loaded = true;
 	}
 
+	/**
+	 * Reload the LAS file.
+	 */
 	void reset() {
 		if(m_loaded)
 			load(m_filename);
 	}
 
+	/**
+	 * Compute the bounds of the point cloud and write to the given six-element
+	 * array (xmin, xmax, ymin, ymax, zmin, zmax).
+	 *
+	 * @param bounds A six-element list to contain the point cloud bounds.
+	 */
 	void computeBounds(double* bounds) {
 		if(!m_loaded)
 			throw std::runtime_error("Point source is not loaded. Call load first.");
 		m_tree.getBounds(bounds);
 	}
 
+	/**
+	 * Return a reference to the Octree used by this class.
+	 *
+	 * @param The Octree.
+	 */
 	const uav::ds::Octree<P>& octree() const {
 		return m_tree;
 	}
@@ -110,6 +124,9 @@ public:
 		return false;
 	}
 
+	/**
+	 * Destroy the LASPointSource.
+	 */
 	~LASPointSource() {
 		if(m_reader)
 			delete m_reader;
@@ -117,7 +134,7 @@ public:
 
 };
 
-} // sim
+} // geog599
 } // uav
 
 #endif /* INCLUDE_SIM_LASPOINTSOURCE_HPP_ */
