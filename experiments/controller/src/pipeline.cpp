@@ -71,7 +71,7 @@ public:
 
 };
 
-void run() {
+void run(ProfileDialog* dlg) {
 
 	// Some pre-prepared configurations.
 	std::unordered_map<std::string, PipelineConfig> configs;
@@ -84,8 +84,8 @@ void run() {
 
 	LASPointSource<Pt> tps(ptsFile);
 	const Octree<Pt>& tree = tps.octree();
-	double startx, starty, endx, endy;
 
+	double startx, endx, starty, endy;
 	if(tree.width() > tree.length()) {
 		startx = tree.minx() - 100.0; // Start 100m back to give the laser space to work.
 		endx = tree.maxx();
@@ -102,80 +102,22 @@ void run() {
 	double offset = config.offset;
 	double altitude = config.startAltitude;
 
-	// Angle down from horizontal (rad) and scan angle (rad)
-	double laserAngle = _rad(config.laserAngle); // 10m altitude @ 100m range = 5.7 deg
-	double scanAngle = _rad(config.scanAngle);
-
-	// Maximum distance of a point from the scan plane.
-	double maxDist = MAX_DIST;
-
-	// Hypotenuse - this is just the maximum range; assumes that the laser
-	// angle is set so that the laser intersects flat ground at max range,
-	// given the platform elevation.
-	double h = MAX_RANGE;
-
 	// The start/origin and end points. These are determined by the point cloud.
 	Vector3d orig(startx, starty, altitude);
 	Vector3d start(startx, starty, altitude);
 	Vector3d end(endx, endy, altitude);
 
-	// The vehicle direction in the horizontal plane.
-	Vector3d direction = (end - start).normalized();
-	// The pitch axis for the vehicle and the scanning rangefinder.
-	Vector3d xaxis(direction[1], -direction[0], direction[2]);
-
-	// The rotation matrix for the rangefinder.
-	Matrix3d laserRot = AngleAxisd(-laserAngle, xaxis).matrix();
-	// The rotation matrix for the detection plane, perpendicular to the laser.
-	Matrix3d planeRot = AngleAxisd(-laserAngle + M_PI / 2.0, xaxis).matrix();
-
-	// The laser's and plane's normal.
-	Vector3d laserDir = laserRot * direction;
-	Vector3d planeNorm = planeRot * laserDir;
-
-	std::cout << "Direction: " << direction[0] << ", " << direction[1] << ", " << direction[2] << "\n";
-	std::cout << "Laser vector: " << laserDir[0] << ", " << laserDir[1] << ", " << laserDir[2] << "\n";
-	std::cout << "Plane normal: " << planeNorm[0] << ", " << planeNorm[1] << ", " << planeNorm[2] << "\n";
-
-	// The width of the detection plane.
-	double planeWidth = scanAngle * h;
-
-	// The plane and centreline used to detect points in the octree.
-	Eigen::Hyperplane<double, 3> plane(planeNorm, orig);
-	Eigen::ParametrizedLine<double, 3> line(orig, laserDir);
-
-	// Object for fintering points using the plane and centreline.
-	PlaneFilter<Pt> ppf(planeWidth, maxDist);
-	ppf.setOctree(&(tps.octree()));
-	ppf.setPlane(&plane);
-	ppf.setLine(&line);
-	tps.setFilter(&ppf);
-
 	// The concave hull point filter.
 	HullPointFilter<Pt> hpf(config.alpha);
-	GeomPointFilter<Pt> gpf;
-	gpf.setNextFilter(&hpf);
 
-	// The trajectory planner manages the point cloud source and filters to
-	// compute the trajectory.
 	Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp;
 	tp.setSmooth(config.smooth);
 	tp.setWeight(config.weight);
-	tp.setPointFilter(&gpf);
+	tp.setPointFilter(&hpf);
 	tp.setPointSource(&tps);
 	tp.setStartPoint(startPt);
 
-	double speed = SPEED;
-	int delay = TIME_DELAY;
-
-	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
-	double stepy = (endy - starty) / (speed * delay);
-
-	// The per-loop step, corresponding to the velocity of the platform.
-	Vector3d step(stepx, stepy, 0);
-
-	//tp.start();
 
 	/*
 	std::ofstream ostr;
@@ -227,109 +169,95 @@ void run() {
 	pd->addDrawConfig(&uav);
 	pd->addDrawConfig(&knots);
 
+	double dy = (orig - start).norm();
+
 	uav.data.emplace_back(0, altitude + offset);
 
-	while(true) {
+	tp.compute();
 
-		plane = Eigen::Hyperplane<double, 3>(planeNorm, orig);
-		line = Eigen::ParametrizedLine<double, 3>(orig, laserDir);
+	std::list<Pt> salt;
+	tp.splineAltitude(salt, 1);
 
-		// To clip off the points in the past.
-		double dy = (orig - start).norm();
-		gpf.setMinY(dy - 50.0);
-		//std::cout << dy << "\n";
+	uav.data[0].first = 0;
+	uav.data[0].second = altitude + offset;
+	alt.data.emplace_back(dy, altitude + offset);
 
-		ppf.setPlane(&plane);
-		ppf.setLine(&line);
+	spline.data.clear();
+	for(const Pt& pt : salt)
+		spline.data.emplace_back(pt.y(), pt.z());
+	allPts.data.clear();
+	for(const Pt& pt : tp.allPoints())
+		allPts.data.emplace_back(pt.y(), pt.z());
+	surf.data.clear();
+	for(const Pt& pt : tp.surface())
+		surf.data.emplace_back(pt.y(), pt.z());
+	knots.data.clear();
+	for(const Pt& pt : tp.knots())
+		knots.data.emplace_back(pt.y(), pt.z());
 
-		tp.compute();
+	std::cout << tp.lastY() - dy << "\n";
 
-		std::list<Pt> salt;
-		tp.splineAltitude(salt, 1);
-
-		uav.data[0].first = dy;
-		uav.data[0].second = altitude + offset;
-		alt.data.emplace_back(dy, altitude + offset);
-
-		spline.data.clear();
-		for(const Pt& pt : salt)
-			spline.data.emplace_back(pt.y(), pt.z());
-		allPts.data.clear();
-		for(const Pt& pt : tp.allPoints())
-			allPts.data.emplace_back(pt.y(), pt.z());
-		surf.data.clear();
-		for(const Pt& pt : tp.surface())
-			surf.data.emplace_back(pt.y(), pt.z());
-		knots.data.clear();
-		for(const Pt& pt : tp.knots())
-			knots.data.emplace_back(pt.y(), pt.z());
-
-		std::cout << tp.lastY() - dy << "\n";
-
-		if(!tp.getTrajectoryAltitude(dy, altitude)) {
-			//std::cerr << "Couldn't get new altitude.";
-		} else {
-			//std::cout << "Altitude: " << altitude << "\n";
+	if(!tp.getTrajectoryAltitude(dy, altitude)) {
+		//std::cerr << "Couldn't get new altitude.";
+	} else {
+		//std::cout << "Altitude: " << altitude << "\n";
 
 
-			/*
-			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
+		/*
+		ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
 
-			std::list<Pt> alt;
-			std::list<Pt> vel;
-			std::list<Pt> accel;
-			if(tp.splineAltitude(alt)) {
-				if(tp.splineVelocity(vel)) {
-					if(tp.splineAcceleration(accel)) {
-						tstr << "y,";
-						for(const Pt& p : alt)
-							tstr << p.y() << ",";
-						tstr << "\nalt,";
-						for(const Pt& p : alt)
-							tstr << p.z() << ",";
-						tstr << "\nacc,";
-						for(const Pt& p : accel)
-							tstr << p.z() << ",";
-						tstr << "\nvel,";
-						for(const Pt& p : vel)
-							tstr << p.z() << ",";
-						tstr << "\n";
-					}
+		std::list<Pt> alt;
+		std::list<Pt> vel;
+		std::list<Pt> accel;
+		if(tp.splineAltitude(alt)) {
+			if(tp.splineVelocity(vel)) {
+				if(tp.splineAcceleration(accel)) {
+					tstr << "y,";
+					for(const Pt& p : alt)
+						tstr << p.y() << ",";
+					tstr << "\nalt,";
+					for(const Pt& p : alt)
+						tstr << p.z() << ",";
+					tstr << "\nacc,";
+					for(const Pt& p : accel)
+						tstr << p.z() << ",";
+					tstr << "\nvel,";
+					for(const Pt& p : vel)
+						tstr << p.z() << ",";
+					tstr << "\n";
 				}
 			}
-			*/
-
-			altitude += offset;
-			orig[2] = altitude;
-			start[2] = altitude;
-			end[2] = altitude;
 		}
+		*/
 
-		pd->draw();
-
-		if(std::abs((end - orig).norm()) < 1)
-			break;
-
-		orig += step; // need to move along a vector
-
-		usleep(delay);
-
+		altitude += offset;
+		orig[2] = altitude;
+		start[2] = altitude;
+		end[2] = altitude;
 	}
 
-	//tp.stop();
+	pd->draw();
+
+	while(!dlg->done)
+		std::this_thread::yield();
 
 	std::cerr << "Done\n";
 }
 
-int main(int argc, char** argv) {
-
+void runGui(int argc, char** argv) {
 	QApplication app(argc, argv);
 	QDialog w;
 	ProfileDialog p;
 	p.setupUi(&w);
 	w.show();
-	std::thread th(run);
+	std::thread t(&run, &p);
 	app.exec();
+	if(t.joinable())
+		t.join();
+}
 
+int main(int argc, char** argv) {
+
+	runGui(argc, argv);
 
 }

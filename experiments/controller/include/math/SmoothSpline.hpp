@@ -336,6 +336,21 @@ extern "C" {
 namespace uav {
 namespace math {
 
+/**
+ * Cubic smoothing spline: S(x)
+ * - 2N (6) degrees of freedom.
+ * - We require that
+ * 	- S(x1) = S(x2),
+ * 	- S'(x1) = S'(x2) and
+ * 	- S''(x1) = S'(x2).
+ * - 2 criteria:
+ * 	- Passes as near to ordinates as possible.
+ * 	- As smooth as possible.
+ * 	- S(x) = p * sum((f(x) -
+ *
+ *
+ *
+ */
 template <class P>
 class SmoothSpline {
 private:

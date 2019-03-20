@@ -227,6 +227,7 @@ private:
 	std::list<P> m_allPoints;				///!< A list of all points.
 	std::list<P> m_points;					///!< The list of current points. May contain non-surface points during retrieval.
 	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
+	std::vector<double> m_slopes;			///!< The average slope between adjoining segments. First and last are zero.
 	double m_weight;						///!< The weight param for smoothing.
 	double m_smooth;						///!< The smooth param for smoothing.
 
@@ -448,6 +449,21 @@ public:
 		return m_lastY;
 	}
 
+	void computeSlopes() {
+		m_slopes.resize(m_surface.size());
+		if(m_surface.size() < 2)
+			return;
+		m_slopes[0] = 0;
+		m_slopes[m_slopes.size() - 1] = 0;
+		for(size_t i = 1; i < m_surface.size() - 1; ++i) {
+			m_slopes[i] = (
+					(m_surface[i + 1].z() - m_surface[i].z()) / (m_surface[i + 1].y() - m_surface[i].y())
+					+
+					(m_surface[i].z() - m_surface[i - 1].z()) / (m_surface[i].y() - m_surface[i - 1].y())
+			) / 2.0;
+		}
+	}
+
 	/**
 	 * Process points from the PointSource. Apply filters,
 	 * collapse to 2D.
@@ -487,6 +503,7 @@ public:
 		m_spline.setXIndex(1);	// Set coordinates to y/z
 		m_spline.setYIndex(2);
 		processPoints(m_start);
+		computeSlopes();
 		generateTrajectory();
 	}
 
