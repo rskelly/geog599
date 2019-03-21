@@ -73,9 +73,21 @@ S'(x_{i-1}) = S'(x_i), and
 S''(x_{i-1}) = S''(x_i).
 \end{equation}
 
-That is, at each knot, the ends of adjoining splines have not only the same value, but the same first (slope) and second (curvature) derivatives.
+That is, at each knot, the ends of adjoining splines have not only the same value, but the same first (slope) and second (curvature) derivatives. (In this usage, the function value is altitude with the first and second derivatives representing velocity and acceleration, respectively.) To find the spline function, it is possible by indefinite integration to find the original function, beginning with the slopes at the end of the segment and two knots.
 
 
+
+In the case of the so-called ``natural spline'', the derivatives at the first and last knots are held to zero. Here, we have a unique case where the curvature is known at only one end: as the vehicle moves, the point cloud is augmented with new data from the scanner. At some point, the existing point cloud must be ``finalized'' and used to develop the trajectory. A trajectory developed from the most recently-finalized block has a known curvature at the knot where it connects with the previous block (assuming there is one; otherwise the slope is zero), but not at the other end. 
+
+On possible solution to this connundrum is to to have three types of point cloud blocks: 
+
+\begin{itemize}
+\item dead blocks;
+\item finalized blocks;
+\item finished blocks.
+\end{itemize}
+
+A \emph{finished} block is one which is no longer subject to update by the scanner, though nothing is known about the conditions at the ends of the splines that would be produced from it. A \emph{finalized} block is a finished block except that the curvature of the spline is known at one end from the previous dead block. Somehow, a curvature constraint must be extracted from a finished block in order to complete the computation of the spline in the finalized block.
 
 
 

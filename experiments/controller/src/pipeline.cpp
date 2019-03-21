@@ -256,8 +256,102 @@ void runGui(int argc, char** argv) {
 		t.join();
 }
 
+class Spline {
+public:
+	double x, y, sigma, a, b, c, d;
+	Spline(double x, double y, double sigma) :
+		x(x), y(y), sigma(sigma), a(0), b(0), c(0), d(0) {}
+};
+
+using namespace Eigen;
+
+void quincunx(int n, double* u, double* v, double* w, double* q) {
+
+	u[-1 % n] = 0;
+	u[0] = 0;
+
+	// Factorize
+	for(int j = 1; j < n; ++j) {
+		u[j] = u[j] - u[(j - 2) % n] * std::sqrt(w[(j - 2) % n]) - u[(j - 1) % n] * std::sqrt(v[j - 1]);
+		v[j] = (v[j] - u[(j - 1) % n] * v[(j - 1) % n] * w[(j - 1) % n]) / u[j];
+		w[j] = w[j] / u[j];
+	}
+
+	// Forward substitution.
+	for(int j = 1; j < n - 1; ++j)
+		q[j] = q[j] - v[(j - 1) % n] * q[(j - 1) % n] - w[(j - 2) % 2] * q[(j - 2) % 2];
+
+	for(int j = 1; j < n - 1; ++j)
+		q[j] = q[j] / u[j];
+
+	// Back substitution
+	q[n + 1] = 0;
+	q[n] = 0;
+	for(int j = 1; j < n - 1; ++j)
+		q[j] = q[j] - v[j] * q[(j + 1) % n] - w[j] * q[(j + 2) % n];
+
+}
+
+void test() {
+// From "smoothing with cubic splines"
+
+	Spline s[] = {Spline(0,1,2), Spline(1,1,1), Spline(2,6,1), Spline(3,5,1), Spline(4,4,1), Spline(5,9,1), Spline(6,8,1)};
+	int n = 7;
+	double lambda = 0.5;
+
+	double h[n];
+	double r[n];
+	double f[n];
+	double p[n];
+	double q[n];
+	double u[n];
+	double v[n];
+	double w[n];
+
+	// Smoothing spline
+	double mu = 2 * (1 - lambda) / (3 * lambda);
+
+	h[0] = s[1].x - s[0].x;
+	r[0] = 3 / h[0];
+
+	for(int i = 1; i < n; ++i) {
+		h[i] = s[i + 1].x - s[i].x;
+		r[i] = 3 / h[i];
+		f[i] = -(r[(i - 1) % n] + r[i]);
+		p[i] = 2 * (s[i + 1].x - s[i - 1].x);
+		q[i] = 3 * (s[i + 1].y - s[i].y) / h[i] - 3 * (s[i].y - s[i - 1].y) / h[(i - 1) % n];
+	}
+
+	for(int i = 1; i < n; ++i) {
+		u[i] = std::sqrt(r[(i - 1) % n]) * s[i - 1].sigma + std::sqrt(f[i]) * s[i].sigma + std::sqrt(r[i]) * s[i + 1].sigma;
+		u[i] = mu * u[i] + p[i];
+		v[i] = f[i] * r[i] * s[i].sigma + r[i] * f[(i + 1) % n] * s[i + 1].sigma;
+		v[i] = mu * v[i] + h[i];
+		w[i] = mu * r[i] * r[(i + 1) % n] * s[i + 1].sigma;
+	}
+
+	quincunx(n, u, v, w, q);
+
+	// Spline parameters
+	s[0].d = s[0].y - mu * r[0] * q[1] * s[0].sigma;
+	s[1].d = s[1].y - mu * (f[1] * q[1] * r[1] * q[2]) * s[0].sigma;
+	s[0].a = q[1] / (3 * h[0]);
+	s[0].b = 0;
+	s[0].c = (s[1].d - s[0].d) / h[0] - q[1] * h[0] / 3;
+	r[0] = 0;
+
+	for(int j = 1; j < n; ++j) {
+		s[j].a = (q[(j + 1) % n] - q[j])/ (3 * h[j]);
+		s[j].b = q[j];
+		s[j].c = (q[j] + q[j - 1]) * h[(j - 1) % n] + s[j - 1].c;
+		s[j].d = r[(j - 1) % n] * q[(j - 1) % n] + f[j] * q[j] + r[j] * q[(j + 1) % n];
+		s[j].d = s[j].y - mu * s[j].d * s[j].sigma;
+	}
+}
+
 int main(int argc, char** argv) {
 
-	runGui(argc, argv);
+	//runGui(argc, argv);
+	test();
 
 }
