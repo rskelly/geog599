@@ -110,7 +110,7 @@ public:
 	bool next(P& pt) {
 		if(m_filtered.empty()) {
 			if(!this->m_filter)
-				return false;
+				return m_tree.next(pt);
 			this->m_filter->filter(m_filtered);
 		}
 		while(!m_filtered.empty()) {

@@ -15,9 +15,9 @@ protected:
 
 public:
 
-	void setupUi(QDialog *dialog);
+	bool done;
 
-	void closeClicked();
+	void setupUi(QDialog *dialog);
 
 	void addDrawConfig(DrawConfig* config);
 
@@ -28,5 +28,9 @@ public:
 	void draw();
 
 	static ProfileDialog* instance();
+
+public slots:
+
+	void closeClicked();
 
 };

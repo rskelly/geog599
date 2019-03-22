@@ -26,10 +26,12 @@ template <class P>
 class Node {
 protected:
 	Node<P>* nodes[8] = {0};	///<! A list of pointers to child nodes.
-	std::list<P> items;			///<! List of items contained in a leaf node.
+	std::vector<P> items;		///<! List of items contained in a leaf node.
 	bool isSplit;				///<! True if the node is split. Will have at least one child.
 	bool isLeaf;				///<! True if the node is a leaf.
 	double bounds[6];			///<! The bounds of the node. {xmin, xmax, ymin, ymax, zmin, zmax}
+	int iterIdx;				///<! Iteration index.
+	bool needReset;				///<! True if the iteration index should be reset.
 
 	/**
 	 * Return a pointer to the node that would contain the given item, based
@@ -111,12 +113,15 @@ public:
 	Node(double minx, double maxx, double miny, double maxy, double minz, double maxz) :
 		isSplit(false),
 		isLeaf(false),
-		bounds({minx, maxx, miny, maxy, minz, maxz}) {}
+		bounds({minx, maxx, miny, maxy, minz, maxz}),
+		iterIdx(0),
+		needReset(true) {}
 
 	/**
 	 * Delete the child nodes and reset the pointers to null.
 	 */
-	void reset() {
+	void clear() {
+		reset();
 		for(int i = 0; i < 8; ++i) {
 			if(nodes[i]) {
 				delete nodes[i];
@@ -208,6 +213,7 @@ public:
 
 	/**
 	 * The width of the node's extent.
+	 *				return true;
 	 *
 	 * @return The width of the node's extent.
 	 */
@@ -233,12 +239,40 @@ public:
 		return bounds[5] - bounds[4];
 	}
 
+	void reset() {
+		iterIdx = 0;
+		for(size_t i = 0; i < 8; ++i) {
+			if(nodes[i]) nodes[i]->reset();
+		}
+		needReset = false;
+	}
+
+	bool next(P& p) {
+		if(needReset)
+			reset();
+		if(isLeaf) {
+			if(iterIdx >= items.size())
+				return false;
+			p = items[iterIdx++];
+			return true;
+		} else {
+			if(iterIdx >= 8)
+				return false;
+			do {
+				if(nodes[iterIdx] && nodes[iterIdx]->next(p))
+					return true;
+				++iterIdx;
+			} while(iterIdx < 8);
+			return false;
+		}
+	}
 	/**
 	 * Add an item to the node. If the item limit is exceeded, the node will split.
 	 *
 	 * @param item An item.
 	 */
 	void add(const P& item) {
+		needReset = true;
 		if(isLeaf || (!isLeaf && items.size() < SIZE_LIMIT)) {
 			items.push_back(item);
 		} else if(isSplit) {
@@ -256,6 +290,7 @@ public:
 	 * @param item An item.
 	 */
 	void remove(const P& item) {
+		needReset = true;
 		if(isSplit) {
 			getNode(item)->remove(item);
 		} else {
