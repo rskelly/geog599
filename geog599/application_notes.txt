@@ -60,3 +60,39 @@ Objective:
 2) Measure the deviation of the spline from the terrain model at regular intervals.
 3) Characterize the power requirements for each trajectory.
 
+
+
+
+
+
+
+
+Define an area within which all points are final.
+The area is bounded by everthing behind (in y) the vehicle, and everything below (z) the vehicle.
+
+----------- v
+            |
+ safe       |  ---> direction
+            |
+
+The vehicle is never "safe" until the surface has passed behind it. We can theorize a zone of decreasing
+safety extending in front of the vehicle.
+
+----------- v
+            |  \
+ safe       |      \					---> direction
+            |          \
+
+At the lower-right point of the triangle, we're very unsure of the safety of the surface, because 
+items may exist above the path of the laser. As the vehicle moves forward, a higher, nearer
+part of the laser intersects any higher surface features. If the laser intercepts a feature
+at the vehicle itself (range zero) the vehicle has crashed. Somewhere within the triangle, 
+the pointset must be finalized so that an invariant trajectory can be formed. For example,
+we could say that behing 1/2 the length of the ground distance between the vehicle and the ground/beam
+intersection (on flat terrain), the point set is finalized. Any points that appear in this 
+zone after finalization constitute an obstacle, resulting in evasive manouvring.
+
+
+
+Add to the final region, an area in front of the vehicle. Since the laser is angled down and forward,
+it is impossible to know whether the pointset is "safe" until 
