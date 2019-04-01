@@ -35,15 +35,19 @@ def plane_filter(coords, dist, v1, v2, ox, oy, oz, ex, ey, ez):
 	m = math.pi / 2.
 	n = math.pi * 1.5
 	for x, y, z in list(coords):
-		ds = abs(nhat[0] * (x - ox) + nhat[1] * (y - oy) + nhat[2] * (z - oz)) / math.sqrt(nhat[0] ** 2. + nhat[1] ** 2. + nhat[2] ** 2.)
-		a = (x - ox, y - oy, 0.)
-		b = (ex - ox, ey - oy, 0.)
-		ro = math.acos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
-		a = (x - ex, y - ey, 0.)
-		b = (ox - ex, oy - ey, 0.)
-		re = math.acos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
-		if ds <= dist and (ro <= m or ro >= n) and (re <= m or re >= n):
-			out.append((x, y, z))
+		try:
+			ds = abs(nhat[0] * (x - ox) + nhat[1] * (y - oy) + nhat[2] * (z - oz)) / math.sqrt(nhat[0] ** 2. + nhat[1] ** 2. + nhat[2] ** 2.)
+			a = (x - ox, y - oy, 0.)
+			b = (ex - ox, ey - oy, 0.)
+			ro = math.acos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+			a = (x - ex, y - ey, 0.)
+			b = (ox - ex, oy - ey, 0.)
+			re = math.acos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+			if ds <= dist and (ro <= m or ro >= n) and (re <= m or re >= n):
+				out.append((x, y, z))
+		except Exception as e:
+			print(e)
+			print(x, y, z, ox, oy, oz, ex, ey, ez)
 	return np.array(out)
 
 def define_plane(start, end):

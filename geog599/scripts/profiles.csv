@@ -1,8 +1,8 @@
 active,lasfile,swath,startx,starty,endx,endy,outfile
-1,/home/rob/Documents/msc/data/lidar/source/Processed_GC_adjusted/swan_lk.las, 2.,473736.,5370599.,474848.,5371878.,/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt
-1,/home/rob/Documents/msc/data/lidar/source/Processed_GC_adjusted/swan_lk.las,2.,474470.,5370001.,474485.,5371028.,/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt
-1,/home/rob/Documents/msc/data/lidar/source/Processed_GC_adjusted/swan_lk.las,2.,471616.,5368447.,472532.,5369482.,/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt
-1,/home/rob/Documents/msc/data/lidar/source/Processed_GC_adjusted/swan_lk.las,2.,473209., 5369825.,473531., 5370044.,/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt
+0,/home/rob/Documents/msc/data/lidar/source/swan_lk.las, 2.,473736.,5370599.,474848.,5371878.,/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt
+0,/home/rob/Documents/msc/data/lidar/source/swan_lk.las,2.,474470.,5370001.,474485.,5371028.,/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt
+0,/home/rob/Documents/msc/data/lidar/source/swan_lk.las,2.,471616.,5368447.,472532.,5369482.,/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt
+1,/home/rob/Documents/msc/data/lidar/source/swan_lk.las,2.,473209., 5369825.,473531., 5370044.,/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt
 1,/home/rob/Documents/msc/data/lidar/source/nrcan_4.las,2.,620151.,5613109.,620199.,5613631.,/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt
 1,/home/rob/Documents/msc/data/lidar/source/VITI_D168_BART_sess12_v1_cropped.las,2.,312941.,5445651.,313088.,5445643.,/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt,
 1,/home/rob/Documents/msc/data/lidar/source/VITI_D168_BART_sess12_v1_cropped.las,2.,312939.,5445638.,313084.,5445614.,/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt,

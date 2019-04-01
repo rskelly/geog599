@@ -76,7 +76,7 @@ set (CMAKE_AUTOMOC_OPTIONS "-Isrc/ui")
 
 enable_language (Fortran)
 
-add_library (fitpack_mod SHARED src/fitpack/fpcurf.f src/fitpack/fpback.f src/fitpack/fpbspl.f 
+add_library (fitpack_mod SHARED src/fitpack/curfit.f src/fitpack/fpchec.f src/fitpack/fpcurf.f src/fitpack/fpback.f src/fitpack/fpbspl.f 
 	src/fitpack/fpgivs.f src/fitpack/fpdisc.f src/fitpack/fprati.f src/fitpack/fpknot.f 
 	src/fitpack/fprota.f src/fitpack/splev.f src/fitpack/splder.f) 
 
