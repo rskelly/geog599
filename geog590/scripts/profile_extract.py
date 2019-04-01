@@ -21,6 +21,20 @@ def get_points(lasfile):
 	print('Got', len(coords), 'points')
 	return coords
 
+def p3angle(p1, p2, p3):
+	'''
+	Return the angle between 3 points. p2 is the middle point.
+	'''
+	_, x1, y1 = p1
+	_, x2, y2 = p2
+	_, x3, y3 = p3
+	ax = x1 - x2
+	ay = y1 - y2
+	bx = x3 - x2
+	by = y3 - y2
+	return math.atan2(ay, ax) - math.atan2(by, bx)
+
+
 def plane_filter(coords, dist, v1, v2, ox, oy, oz, ex, ey, ez):
 	'''
 	Filters the ndarray for points that are within the given distance of the plane.
@@ -37,12 +51,8 @@ def plane_filter(coords, dist, v1, v2, ox, oy, oz, ex, ey, ez):
 	for x, y, z in list(coords):
 		try:
 			ds = abs(nhat[0] * (x - ox) + nhat[1] * (y - oy) + nhat[2] * (z - oz)) / math.sqrt(nhat[0] ** 2. + nhat[1] ** 2. + nhat[2] ** 2.)
-			a = (x - ox, y - oy, 0.)
-			b = (ex - ox, ey - oy, 0.)
-			ro = math.acos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
-			a = (x - ex, y - ey, 0.)
-			b = (ox - ex, oy - ey, 0.)
-			re = math.acos(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+			ro = p3angle((x, y), (ox, oy), (ex, ey))
+			re = p3angle((x, y), (ex, ey), (ox, oy))
 			if ds <= dist and (ro <= m or ro >= n) and (re <= m or re >= n):
 				out.append((x, y, z))
 		except Exception as e:

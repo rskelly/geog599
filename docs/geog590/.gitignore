@@ -1,0 +1,11 @@
+*.aux
+*.bbl
+*.blg
+*.pdf
+*.gz
+report.4ct
+report.4tc
+report.docx
+report.dvi
+report.tmp
+report.xref

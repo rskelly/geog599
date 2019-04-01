@@ -61,9 +61,16 @@ Objective:
 3) Characterize the power requirements for each trajectory.
 
 
+** Compute weights by taking the angle between 3 subsequent points. Triads with a small angle
+should be de-weighted so stop overshoots below ground or up into the sky.
 
 
-
+Thrust per rotor: 5100g
+Max mass per rotor: 2500g (recommended payload max: 1/2 rotor thrust.)
+Total max mass: 15kg.
+Total thrust 297.162N
+Max acceleration: 9.873 m/s/s
+Max vertical velocity: 5m/s
 
 
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: UTF-8 -*-
 
 from scipy.interpolate import UnivariateSpline
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import numpy as np
 import sys
 import csv
 import os
+import math
 
 ''' 
 Extracts a 'surface' from a point cloud using a modified convex hull algorithm.
@@ -64,7 +66,7 @@ def trajectory(coords, smooth, weight):
 	'''
 	x = coords[:,1]
 	y = coords[:,2]
-	return UnivariateSpline(x, y, k = 3, s = smooth)
+	return UnivariateSpline(x, y, w = weight, k = 3, s = smooth)
 
 
 
@@ -108,36 +110,94 @@ def plot(outfile, smooth, weight, coords, hull, x, alt, vel, acc):
 
 
 
-smooths = [0, 1., 2., 3., 4., 5.]
-weights = [1.]
+smooths = [.1, .5, 1., 2., 3., 4., 5.]
 
-def run(filename, outdir):
+
+def p3angle(p1, p2, p3):
+	'''
+	Return the angle between 3 points. p2 is the middle point.
+	'''
+	_, x1, y1 = p1
+	_, x2, y2 = p2
+	_, x3, y3 = p3
+	ax = x1 - x2
+	ay = y1 - y2
+	bx = x3 - x2
+	by = y3 - y2
+	return math.atan2(by, bx) - math.atan2(ay, ax)
+
+def weights(pts):
+	'''
+	Compute normalized weights for the pointset based on the angle between
+	triples of points. A 'peak' has a high weight. A 'valley' gets a low weight.
+	'''
+	w = [1.]
+	for i in range(1, len(pts) - 1):
+		a = p3angle(pts[i - 1], pts[i], pts[i + 1])
+		w.append(math.pow(a / -math.pi, 10.) if a <= 0 else 1.)
+	w.append(1.)
+	w = np.array(w)
+	#std = np.std(w)
+	#w /= w.max()
+	#w *= std
+	return w
+
+def run_angle_weights(filename, outdir):
 	
 	try:
 		os.makedirs(outdir)
 	except: pass
 
-	tpl = os.path.splitext(os.path.basename(filename))[0] + '_{s}_{w}.png'
+	mass = 15.1
+
+	tpl = os.path.splitext(os.path.basename(filename))[0] + '_{s}_aw.png'
 	clip = 3
 
-	for w in weights:
-		for s in smooths:
-			ww = str(w).replace('.', '_')
-			ss = str(s).replace('.', '_')
-			outfile = os.path.join(outdir, tpl.format(s = ss, w = ww))
-			coords = load_points(filename)
-			chull = hull(coords, 10.)
-			spline = trajectory(chull, s, 0.)
-			x = np.linspace(chull[0,1], chull[-1,1], 1000)
-			alt = spline(x, 0)
-			vel = spline(x, 1)
-			acc = spline(x, 2)
-			plot(outfile, s, w, coords, chull, x[clip:-clip], alt[clip:-clip], vel[clip:-clip], acc[clip:-clip]) # Clip the ends -- they tend to have outliers.
+	for s in smooths:
+		ss = str(s).replace('.', '_')
+		outfile = os.path.join(outdir, tpl.format(s = ss))
+		coords = load_points(filename)
+		chull = hull(coords, 10.)
+		wts = weights(chull)
+		#for i in range(len(wts)):
+		#	print(wts[i], chull[i])
+		spline = trajectory(chull, s, wts)
+		x = np.linspace(chull[0,1], chull[-1,1], 1000)	# Regular x-coords (actually, y)
+		alt = spline(x, 0)								# Altitude
+		vel = spline(x, 1)								# Velocity
+		acc = spline(x, 2)								# Acceleration
+		force = (acc + 9.08665) * mass					# Force (thrust) using mass.
+		plot(outfile, s, '(By Angle)', coords, chull, x[clip:-clip], alt[clip:-clip], vel[clip:-clip], force[clip:-clip]) # Clip the ends -- they tend to have outliers.
 
-with open('profiles.csv', 'r') as f:
-	db = csv.reader(f)
-	head = next(db)
-	for line in db:
-		if line[0] == '1':
-			run(line[7], 'plots')
 
+def run():
+	with open('profiles.csv', 'r') as f:
+		db = csv.reader(f)
+		head = next(db)
+		for line in db:
+			if line[0] == '1':
+				print(line[7])
+				run_angle_weights(line[7], 'plots')
+				break
+
+if __name__ == '__main__':
+
+	run()
+
+	# p1 = [0, 0, 0]
+	# p2 = [0, 1, 0]
+	# p3 = [0, 1, 1]
+	# a = p3angle(p1, p2, p3)
+	# print(a)
+
+	# p1 = [0, 0, 0]
+	# p2 = [0, 1, 0]
+	# p3 = [0, 2, 0]
+	# a = p3angle(p1, p2, p3)
+	# print(a)	
+
+	# p1 = [0, 1, 0]
+	# p2 = [0, 0, 0]
+	# p3 = [0, 0, 1]
+	# a = p3angle(p1, p2, p3)
+	# print(a)	
