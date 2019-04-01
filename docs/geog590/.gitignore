@@ -9,3 +9,5 @@ report.docx
 report.dvi
 report.tmp
 report.xref
+*.doc
+.4og
