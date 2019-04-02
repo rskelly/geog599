@@ -75,10 +75,8 @@ set (CMAKE_AUTOMOC_OPTIONS "-Isrc/ui")
 # Build support libraries ################################################################################
 
 enable_language (Fortran)
-
-add_library (fitpack_mod SHARED src/fitpack/curfit.f src/fitpack/fpchec.f src/fitpack/fpcurf.f src/fitpack/fpback.f src/fitpack/fpbspl.f 
-	src/fitpack/fpgivs.f src/fitpack/fpdisc.f src/fitpack/fprati.f src/fitpack/fpknot.f 
-	src/fitpack/fprota.f src/fitpack/splev.f src/fitpack/splder.f) 
+file (GLOB FSRC src/fitpack/*.f)
+add_library (fitpack_mod SHARED ${FSRC}) 
 
 add_library (deboor_smooth SHARED src/deboor/chol1d.f src/deboor/setupq.f src/deboor/smooth.f)
  
@@ -104,7 +102,7 @@ target_link_libraries (uav_teensy uav_serial)
 #add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
 #target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
 
-add_executable(pipeline src/pipeline.cpp src/ui/profile.cpp)
+add_executable(pipeline src/geog590.cpp src/ui/profile.cpp)
 target_link_libraries (pipeline las deboor_smooth fitpack_mod  Qt5::Gui Qt5::Core Qt5::Widgets)
 
 #add_executable (curve src/curve.cpp)
