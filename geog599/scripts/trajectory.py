@@ -70,7 +70,7 @@ def trajectory(coords, smooth, weight):
 
 
 
-def plot(outfile, smooth, weight, coords, hull, x, alt, vel, acc):
+def plot_profile(outfile, smooth, weight, coords, hull, x, alt, vel, acc):
 
 	fig = plt.figure(figsize=(12, 4))
 	ax1 = fig.add_subplot(111)
@@ -108,9 +108,28 @@ def plot(outfile, smooth, weight, coords, hull, x, alt, vel, acc):
 
 	return (weight, smooth, outfile)
 
+def plot_hull(outfile, alpha, coords, hull):
+	'''
+	Plot the concave hull and point cloud.
+	'''
+	fig = plt.figure(figsize=(12, 4))
+	ax1 = fig.add_subplot(111)
 
+	l_pts, = ax1.plot(coords[...,1], coords[...,2], 'o', color='#cccccc', ms=1)
+	l_hpts, = ax1.plot(hull[...,1], hull[...,2], 'ro', ms=1)
+	l_hseg, = ax1.plot(hull[...,1], hull[...,2], 'l', color='#ff9999', lw=1)
 
-smooths = [.1, .5, 1., 2., 3., 4., 5.]
+	ax1.set_ylabel('Elevation (m)')
+	ax1.set_xlabel('Distance (m)')
+	for tl in ax1.get_yticklabels():
+	    tl.set_color('g')
+
+	plt.legend([l_pts, l_hpts], ['Point Cloud', 'Hull Vertices'])
+	plt.savefig(outfile, bbox_inches='tight', format='png', dpi=300)
+	#plt.show()
+	plt.close()
+
+	return (weight, smooth, outfile)
 
 
 def p3angle(p1, p2, p3):
@@ -143,7 +162,12 @@ def weights(pts):
 	return w
 
 def run_angle_weights(filename, outdir):
-	
+	'''
+	Run the profile with angle-based weights.
+	'''
+
+	smooths = [.1, .5, 1., 2., 3., 4., 5.]
+
 	try:
 		os.makedirs(outdir)
 	except: pass
@@ -167,10 +191,10 @@ def run_angle_weights(filename, outdir):
 		vel = spline(x, 1)								# Velocity
 		acc = spline(x, 2)								# Acceleration
 		force = (acc + 9.08665) * mass					# Force (thrust) using mass.
-		plot(outfile, s, '(By Angle)', coords, chull, x[clip:-clip], alt[clip:-clip], vel[clip:-clip], force[clip:-clip]) # Clip the ends -- they tend to have outliers.
+		plot_profile(outfile, s, '(By Angle)', coords, chull, x[clip:-clip], alt[clip:-clip], vel[clip:-clip], force[clip:-clip]) # Clip the ends -- they tend to have outliers.
 
 
-def run():
+def run_profiles():
 	with open('profiles.csv', 'r') as f:
 		db = csv.reader(f)
 		head = next(db)
@@ -179,6 +203,42 @@ def run():
 				print(line[7])
 				run_angle_weights(line[7], 'plots')
 				break
+
+def run_hull():
+	with open('profiles.csv', 'r') as f:
+		db = csv.reader(f)
+		head = next(db)
+		for line in db:
+			if line[0] == '1':
+				print(line[7])
+
+
+				try:
+					os.makedirs(outdir)
+				except: pass
+
+				mass = 15.1
+
+				tpl = os.path.splitext(os.path.basename(filename))[0] + '_{s}_aw.png'
+				clip = 3
+
+				for s in smooths:
+					ss = str(s).replace('.', '_')
+					outfile = os.path.join(outdir, tpl.format(s = ss))
+					coords = load_points(filename)
+					chull = hull(coords, 10.)
+					wts = weights(chull)
+					#for i in range(len(wts)):
+					#	print(wts[i], chull[i])
+					spline = trajectory(chull, s, wts)
+					x = np.linspace(chull[0,1], chull[-1,1], 1000)	# Regular x-coords (actually, y)
+					alt = spline(x, 0)								# Altitude
+					vel = spline(x, 1)								# Velocity
+					acc = spline(x, 2)								# Acceleration
+					force = (acc + 9.08665) * mass					# Force (thrust) using mass.
+					plot(outfile, s, '(By Angle)', coords, chull, x[clip:-clip], alt[clip:-clip], vel[clip:-clip], force[clip:-clip]) # Clip the ends -- they tend to have outliers.
+				break
+
 
 if __name__ == '__main__':
 
