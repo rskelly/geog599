@@ -102,7 +102,7 @@ target_link_libraries (uav_teensy uav_serial)
 #add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
 #target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
 
-add_executable(pipeline src/geog590.cpp src/ui/profile.cpp)
+add_executable(pipeline src/geog599.cpp src/ui/profile.cpp)
 target_link_libraries (pipeline las deboor_smooth fitpack_mod  Qt5::Gui Qt5::Core Qt5::Widgets)
 
 #add_executable (curve src/curve.cpp)
