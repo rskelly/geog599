@@ -16,10 +16,13 @@ namespace uav {
 namespace geog599 {
 namespace filter {
 
+/**
+ * Filters a point cloud according to some geometric predicate.
+ */
 template <class P>
 class GeomPointFilter : public uav::geog599::filter::PointFilter<P> {
 private:
-	double m_minY;
+	double m_minY;	///<! The minimum y-coordinate passed.
 
 protected:
 
@@ -29,7 +32,6 @@ protected:
 			if(pt.y() >= m_minY)
 				lst.push_back(pt);
 		}
-		//std::cout << "dif " << lst.size() << ", " << pts.size() << "\n";
 		pts.swap(lst);
 	}
 
