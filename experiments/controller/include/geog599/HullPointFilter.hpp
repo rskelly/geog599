@@ -48,10 +48,10 @@ namespace hullutils {
 
 
 /**
- * Filters a point list by performing a convex hull operation on the top surface and
+ * Filters a point list by performing a concave hull operation on the top surface and
  * preserving only the vertices of the hull. If the alpha parameter is 0, a standard
- * Andrew's algorithm is used, otherwise the segment length is limited, producing a
- * degenerate "concave" hull, whereing the segments can be shorter than alpha, but
+ * Andrew's Monotone Scan algorithm is used, otherwise the segment length is limited,
+ * producing a degenerate "concave" hull, wherein the segments can be shorter than alpha, but
  * not longer. Smaller alpha will have the effect of following the surface more closely,
  * but too small an alpha may break the algorithm, if the point cloud is clustered at
  * distances larger than alpha.
