@@ -19,14 +19,19 @@ namespace uav {
 namespace geog599 {
 namespace filter {
 
+/**
+ * Filters a point cloud by bisecting it with a hyperplane, taking the nearby
+ * points, then doing the same with a line segment representing the medial
+ * axis of the plane.
+ */
 template <class P>
 class PlaneFilter : public uav::geog599::filter::PointFilter<P> {
 private:
-	const Eigen::Hyperplane<double, 3>* m_plane;
-	const Eigen::ParametrizedLine<double, 3>* m_line;
-	const uav::ds::Octree<P>* m_tree;
-	double m_planeWidth;
-	double m_maxDist;
+	const Eigen::Hyperplane<double, 3>* m_plane;		///<! The hyperplane.
+	const Eigen::ParametrizedLine<double, 3>* m_line;	///<! The line segment.
+	const uav::ds::Octree<P>* m_tree;					///<! An octree from which to retrieve points.
+	double m_planeWidth;								///<! The width of the plane.
+	double m_maxDist;									///<! The maximum point distance from the plane.
 
 protected:
 
