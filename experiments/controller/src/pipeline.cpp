@@ -26,7 +26,7 @@
 #include "ui/profile.hpp"
 #include "ui/drawconfig.hpp"
 
-#define MAX_RANGE 1000 // The maximum laser range
+#define MAX_RANGE 100 // The maximum laser range
 #define MAX_DIST 1 // The maximum distance between a point and the search plane.
 #define TIME_DELAY 100
 #define SPEED 10
@@ -75,8 +75,8 @@ void run(ProfileDialog* dlg) {
 
 	// Some pre-prepared configurations.
 	std::unordered_map<std::string, PipelineConfig> configs;
-	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 5, 1, 15, 5.7, 5));
-	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, 5.7, 5));
+	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 15, 1, 15, 5.7, 2. * M_PI / 180.));
+	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, 5.7, 2. * M_PI / 180.));
 
 	const PipelineConfig& config = configs["nrcan_1"];
 
@@ -102,19 +102,41 @@ void run(ProfileDialog* dlg) {
 	double offset = config.offset;
 	double altitude = config.startAltitude;
 
+
 	// The start/origin and end points. These are determined by the point cloud.
 	Vector3d orig(startx, starty, altitude);
 	Vector3d start(startx, starty, altitude);
 	Vector3d end(endx, endy, altitude);
 
+	Vector3d direction = (end - start).normalized();
+	Vector3d xaxis(direction[1], -direction[0], direction[2]);
+
+	Matrix3d laserRot = AngleAxisd(-config.laserAngle, xaxis).matrix();
+	Matrix3d planeRot = AngleAxisd(-config.laserAngle + M_PI / 2.0, xaxis).matrix();
+
+	Vector3d laserDir = laserRot * direction;
+	Vector3d planeNorm = planeRot * laserDir;
+
+	double planeWidth = config.scanAngle * MAX_RANGE;
+	Eigen::Hyperplane<double, 3> plane(planeNorm, orig);
+	Eigen::ParametrizedLine<double, 3> line(orig, laserDir);
+
 	// The concave hull point filter.
 	HullPointFilter<Pt> hpf(config.alpha);
+	GeomPointFilter<Pt> gpf;
+	gpf.setNextFilter(&hpf);
+
+	PlaneFilter<Pt> plf(planeWidth, MAX_DIST);
+	plf.setOctree(&tree);
+	plf.setPlane(&plane);
+	plf.setLine(&line);
+	tps.setFilter(&plf);
 
 	Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp;
 	tp.setSmooth(config.smooth);
 	tp.setWeight(config.weight);
-	tp.setPointFilter(&hpf);
+	tp.setPointFilter(&gpf);
 	tp.setPointSource(&tps);
 	tp.setStartPoint(startPt);
 
@@ -169,77 +191,99 @@ void run(ProfileDialog* dlg) {
 	pd->addDrawConfig(&uav);
 	pd->addDrawConfig(&knots);
 
-	double dy = (orig - start).norm();
+	double speed = 10.0; // m/s
+	int delay = 1000;	// 1 ms
+
+	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
+	double stepy = (endy - starty) / (speed * delay);
+
+	Vector3d step(stepx, stepy, 0);
 
 	uav.data.emplace_back(0, altitude + offset);
 
-	tp.compute();
+	while(!dlg->done) {
 
-	std::list<Pt> salt;
-	tp.splineAltitude(salt, 1);
+		plane = Eigen::Hyperplane<double, 3>(planeNorm, orig);
+		line = Eigen::ParametrizedLine<double, 3>(orig, laserDir);
 
-	uav.data[0].first = 0;
-	uav.data[0].second = altitude + offset;
-	alt.data.emplace_back(dy, altitude + offset);
+		// To clip off the points in the past.
+		double dy = (orig - start).norm();
+		gpf.setMinY(dy - 100.0);
 
-	spline.data.clear();
-	for(const Pt& pt : salt)
-		spline.data.emplace_back(pt.y(), pt.z());
-	allPts.data.clear();
-	for(const Pt& pt : tp.allPoints())
-		allPts.data.emplace_back(pt.y(), pt.z());
-	surf.data.clear();
-	for(const Pt& pt : tp.surface())
-		surf.data.emplace_back(pt.y(), pt.z());
-	knots.data.clear();
-	for(const Pt& pt : tp.knots())
-		knots.data.emplace_back(pt.y(), pt.z());
+		orig += step;
 
-	std::cout << tp.lastY() - dy << "\n";
+		plf.setPlane(&plane);
+		plf.setLine(&line);
 
-	if(!tp.getTrajectoryAltitude(dy, altitude)) {
-		//std::cerr << "Couldn't get new altitude.";
-	} else {
-		//std::cout << "Altitude: " << altitude << "\n";
+		if(!tp.compute()) {
+			std::this_thread::yield();
+			continue;
+		}
+
+		std::list<Pt> salt;
+		tp.splineAltitude(salt, 200);
+
+		uav.data[0].first = 0;
+		uav.data[0].second = altitude + offset;
+		alt.data.emplace_back(dy, altitude + offset);
+
+		spline.data.clear();
+		for(const Pt& pt : salt)
+			spline.data.emplace_back(pt.y(), pt.z());
+		allPts.data.clear();
+		for(const Pt& pt : tp.allPoints())
+			allPts.data.emplace_back(pt.y(), pt.z());
+		surf.data.clear();
+		for(const Pt& pt : tp.surface())
+			surf.data.emplace_back(pt.y(), pt.z());
+		knots.data.clear();
+		for(const Pt& pt : tp.knots())
+			knots.data.emplace_back(pt.y(), pt.z());
+
+		std::cout << tp.lastY() - dy << "\n";
+
+		if(!tp.getTrajectoryAltitude(dy, altitude)) {
+			//std::cerr << "Couldn't get new altitude.";
+		} else {
+			//std::cout << "Altitude: " << altitude << "\n";
 
 
-		/*
-		ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
+			/*
+			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
 
-		std::list<Pt> alt;
-		std::list<Pt> vel;
-		std::list<Pt> accel;
-		if(tp.splineAltitude(alt)) {
-			if(tp.splineVelocity(vel)) {
-				if(tp.splineAcceleration(accel)) {
-					tstr << "y,";
-					for(const Pt& p : alt)
-						tstr << p.y() << ",";
-					tstr << "\nalt,";
-					for(const Pt& p : alt)
-						tstr << p.z() << ",";
-					tstr << "\nacc,";
-					for(const Pt& p : accel)
-						tstr << p.z() << ",";
-					tstr << "\nvel,";
-					for(const Pt& p : vel)
-						tstr << p.z() << ",";
-					tstr << "\n";
+			std::list<Pt> alt;
+			std::list<Pt> vel;
+			std::list<Pt> accel;
+			if(tp.splineAltitude(alt)) {
+				if(tp.splineVelocity(vel)) {
+					if(tp.splineAcceleration(accel)) {
+						tstr << "y,";
+						for(const Pt& p : alt)
+							tstr << p.y() << ",";
+						tstr << "\nalt,";
+						for(const Pt& p : alt)
+							tstr << p.z() << ",";
+						tstr << "\nacc,";
+						for(const Pt& p : accel)
+							tstr << p.z() << ",";
+						tstr << "\nvel,";
+						for(const Pt& p : vel)
+							tstr << p.z() << ",";
+						tstr << "\n";
+					}
 				}
 			}
+			*/
+
+			altitude += offset;
+			orig[2] = altitude;
+			start[2] = altitude;
+			end[2] = altitude;
 		}
-		*/
 
-		altitude += offset;
-		orig[2] = altitude;
-		start[2] = altitude;
-		end[2] = altitude;
+		pd->draw();
+
 	}
-
-	pd->draw();
-
-	while(!dlg->done)
-		std::this_thread::yield();
 
 	std::cerr << "Done\n";
 }
@@ -256,102 +300,8 @@ void runGui(int argc, char** argv) {
 		t.join();
 }
 
-class Spline {
-public:
-	double x, y, sigma, a, b, c, d;
-	Spline(double x, double y, double sigma) :
-		x(x), y(y), sigma(sigma), a(0), b(0), c(0), d(0) {}
-};
-
-using namespace Eigen;
-
-void quincunx(int n, double* u, double* v, double* w, double* q) {
-
-	u[-1 % n] = 0;
-	u[0] = 0;
-
-	// Factorize
-	for(int j = 1; j < n; ++j) {
-		u[j] = u[j] - u[(j - 2) % n] * std::sqrt(w[(j - 2) % n]) - u[(j - 1) % n] * std::sqrt(v[j - 1]);
-		v[j] = (v[j] - u[(j - 1) % n] * v[(j - 1) % n] * w[(j - 1) % n]) / u[j];
-		w[j] = w[j] / u[j];
-	}
-
-	// Forward substitution.
-	for(int j = 1; j < n - 1; ++j)
-		q[j] = q[j] - v[(j - 1) % n] * q[(j - 1) % n] - w[(j - 2) % 2] * q[(j - 2) % 2];
-
-	for(int j = 1; j < n - 1; ++j)
-		q[j] = q[j] / u[j];
-
-	// Back substitution
-	q[n + 1] = 0;
-	q[n] = 0;
-	for(int j = 1; j < n - 1; ++j)
-		q[j] = q[j] - v[j] * q[(j + 1) % n] - w[j] * q[(j + 2) % n];
-
-}
-
-void test() {
-// From "smoothing with cubic splines"
-
-	Spline s[] = {Spline(0,1,2), Spline(1,1,1), Spline(2,6,1), Spline(3,5,1), Spline(4,4,1), Spline(5,9,1), Spline(6,8,1)};
-	int n = 7;
-	double lambda = 0.5;
-
-	double h[n];
-	double r[n];
-	double f[n];
-	double p[n];
-	double q[n];
-	double u[n];
-	double v[n];
-	double w[n];
-
-	// Smoothing spline
-	double mu = 2 * (1 - lambda) / (3 * lambda);
-
-	h[0] = s[1].x - s[0].x;
-	r[0] = 3 / h[0];
-
-	for(int i = 1; i < n; ++i) {
-		h[i] = s[i + 1].x - s[i].x;
-		r[i] = 3 / h[i];
-		f[i] = -(r[(i - 1) % n] + r[i]);
-		p[i] = 2 * (s[i + 1].x - s[i - 1].x);
-		q[i] = 3 * (s[i + 1].y - s[i].y) / h[i] - 3 * (s[i].y - s[i - 1].y) / h[(i - 1) % n];
-	}
-
-	for(int i = 1; i < n; ++i) {
-		u[i] = std::sqrt(r[(i - 1) % n]) * s[i - 1].sigma + std::sqrt(f[i]) * s[i].sigma + std::sqrt(r[i]) * s[i + 1].sigma;
-		u[i] = mu * u[i] + p[i];
-		v[i] = f[i] * r[i] * s[i].sigma + r[i] * f[(i + 1) % n] * s[i + 1].sigma;
-		v[i] = mu * v[i] + h[i];
-		w[i] = mu * r[i] * r[(i + 1) % n] * s[i + 1].sigma;
-	}
-
-	quincunx(n, u, v, w, q);
-
-	// Spline parameters
-	s[0].d = s[0].y - mu * r[0] * q[1] * s[0].sigma;
-	s[1].d = s[1].y - mu * (f[1] * q[1] * r[1] * q[2]) * s[0].sigma;
-	s[0].a = q[1] / (3 * h[0]);
-	s[0].b = 0;
-	s[0].c = (s[1].d - s[0].d) / h[0] - q[1] * h[0] / 3;
-	r[0] = 0;
-
-	for(int j = 1; j < n; ++j) {
-		s[j].a = (q[(j + 1) % n] - q[j])/ (3 * h[j]);
-		s[j].b = q[j];
-		s[j].c = (q[j] + q[j - 1]) * h[(j - 1) % n] + s[j - 1].c;
-		s[j].d = r[(j - 1) % n] * q[(j - 1) % n] + f[j] * q[j] + r[j] * q[(j + 1) % n];
-		s[j].d = s[j].y - mu * s[j].d * s[j].sigma;
-	}
-}
-
 int main(int argc, char** argv) {
 
-	//runGui(argc, argv);
-	test();
+	runGui(argc, argv);
 
 }

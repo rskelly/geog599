@@ -11,6 +11,8 @@
 #include <vector>
 #include <cmath>
 
+#define NOT_RUN 1000
+
 extern "C" {
 
 	/*
@@ -242,7 +244,7 @@ public:
 		m_xidx(xidx),
 		m_yidx(yidx),
 		m_k(order),
-		m_ier(-10),
+		m_ier(NOT_RUN),
 		m_resid(0) {}
 
 	void setXIndex(size_t xidx) {
@@ -345,11 +347,15 @@ public:
 			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
 
 		m_errStr = "";
-		m_ier = -10;
+		m_ier = NOT_RUN;
+
+		if(pts.size() < m_k - std::max((int) bc.size() - 1, 0) - std::max((int) ec.size() - 1, 0)) {
+			m_errStr = "Too few points.";
+			return false;
+		}
 
 		if(weights.size() != pts.size()) {
 			m_errStr = "Weights and coordinates must be the same size.";
-			m_ier = -1;
 			return false;
 		}
 
@@ -363,14 +369,14 @@ public:
 		static std::vector<double> wrk;		// Work space.
 		static std::vector<int> iwrk;		// Work space.
 
-		int iopt = 0;				// Smooth spline -- no previous run.
-		int idim = 2;				// Number of dimensions.
-		int k = m_k;				// Degree of spline.
-
 		int ib = bc.size();			// The number of derivative constraints at beginning. Max: (k + 1) / 2
 		int ie = ec.size();			// The number of derivative constraints at end. Max: (k + 1) / 2
+		int m = pts.size();			// Number of points.
 
-		int m = 10;					// Number of points.
+		int iopt = 0;				// Smooth spline -- no previous run.
+		int idim = 1;				// Number of dimensions.
+		int k = m_k;				// Degree of spline.
+
 		int mx = m * idim;			// Dimension of x array.
 		int nest = m + k + 1;		// Estimate of number of knots for storage allotment.
 		int nc = nest * idim;		// Dimension of coefficient array.
@@ -385,7 +391,6 @@ public:
 		// Initalize the arrays.
 		u.resize(m);
 		w.resize(m);
-		u.resize(m);
 		x.resize(mx);
 		xx.resize(mx);
 		wrk.resize(lwrk);
@@ -398,9 +403,8 @@ public:
 
 		// Populate the points buffer.
 		for(size_t i = 0; i < pts.size(); ++i) {
-			x[i] = pts[i][m_xidx];
-			x[i + m] = pts[i][m_yidx];
-			u[i] = pts[i][m_xidx];			// Assumed to be monotonically increasing.
+			u[i] = pts[i][m_xidx];
+			x[i] = pts[i][m_yidx];
 			w[i] = weights[i];
 		}
 
@@ -422,6 +426,12 @@ public:
 				&ib, db.data(), &nb, &ie, de.data(), &ne,
 				&k, &s, &nest, &n, m_t.data(), &nc, m_c.data(),
 				&np, cp.data(), &m_resid, wrk.data(), &lwrk, iwrk.data(), &m_ier);
+
+		// Trim the coef and knot arrays.
+		if(nc < m_c.size())
+			m_c.resize(nc);
+		if(n < m_t.size())
+			m_t.resize(n);
 
 		if(m_ier != 0)
 			std::cerr << "Error: " << m_ier << "\n";
@@ -504,11 +514,11 @@ public:
 		 int m = x.size();
 		 int n = m_t.size();
 		 int e = 3; // No extrapolate
-		 int ier = 0;
+		 int ier = NOT_RUN;
 		 y.resize(x.size());
 		 if(derivative == 0) {
 			 splev_(m_t.data(), &n, m_c.data(), &m_k, (double*) x.data(), y.data(), &m, &e, &ier);
-		 } else if(derivative > 0 && derivative <= 3) {
+		 } else {
 			 std::vector<double> wrk(n);
 			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, (double*) x.data(), y.data(), &m, &e, wrk.data(), &ier);
 		 }
@@ -522,7 +532,7 @@ public:
 	 * @param derivative The derivative to evaluate. Defaults to zero, the original function.
 	 */
 	bool evaluate(double x, double& y, int derivative = 0) {
-		if(!valid() || x < m_t[0] || x > m_t[m_t.size() - 1]) {
+		if(!valid()) {
 			y = 0;
 			return false;
 		}
@@ -545,12 +555,17 @@ public:
 	 */
 	void linspace(double x0, double x1, std::vector<double>& lst, int count) {
 		lst.clear();
-		count = std::max(2, count);
-		lst.resize(count);
-		double dist = (x1 - x0) / count;
-		for(size_t i = 0; i < count - 1; ++i)
-			lst[i] = x0 + dist * i;
-		lst[count - 1] = x1;
+		if(count <= 2) {
+			lst.push_back(x0);
+			lst.push_back(x1);
+		} else {
+			count = std::max(2, count);
+			lst.resize(count);
+			double dist = (x1 - x0) / (count - 1);
+			for(size_t i = 0; i < count - 1; ++i)
+				lst[i] = x0 + dist * i;
+			lst[count - 1] = x1;
+		}
 	}};
 
 } // math

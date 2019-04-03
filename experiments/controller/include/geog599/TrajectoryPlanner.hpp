@@ -228,6 +228,7 @@ private:
 	std::list<P> m_points;					///!< The list of current points. May contain non-surface points during retrieval.
 	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
 	std::vector<double> m_slopes;			///!< The average slope between adjoining segments. First and last are zero.
+	std::vector<P> m_smoothed;				///!< The smoothed points from m_surface.
 	double m_weight;						///!< The weight param for smoothing.
 	double m_smooth;						///!< The smooth param for smoothing.
 
@@ -340,19 +341,14 @@ public:
 	 * and return it as a list of P, where y occurs every step from the start to end
 	 * points and z is the velocity.
 	 *
-	 * @param step The step distance in map units.
+	 * @param count The number of equally spaced abscissae to compute the velocity on.
 	 */
-	bool splineVelocity(std::list<P>& velocity, double step = 1) {
+	bool splineVelocity(std::list<P>& velocity, int count) {
 		if(m_surface.empty())
 			return false;
-		std::vector<double> z1;
-		std::vector<double> y;
-		double y0 = m_surface[0].y();
-		double y1 = m_surface[m_surface.size() - 1].y();
-		while(y0 <= y1) {
-			y.push_back(y0);
-			y0 += step;
-		}
+		std::vector<double> y(count);
+		std::vector<double> z1(count);
+		m_spline.linspace(m_surface[0].y(),m_surface[m_surface.size() - 1].y(), y, count);
 		if(m_spline.evaluate(y, z1, 1)) {
 			for(size_t i = 0; i < y.size(); ++i)
 				velocity.emplace_back(0, y[i], z1[i], 0);
@@ -366,19 +362,14 @@ public:
 	 * and return it as a list of P, where y occurs every step from the start to end
 	 * points and z is the velocity.
 	 *
-	 * @param step The step distance in map units.
+	 * @param count The number of equally spaced abscissae to compute the altitude on.
 	 */
-	bool splineAltitude(std::list<P>& altitude, double step = 1) {
+	bool splineAltitude(std::list<P>& altitude, int count) {
 		if(m_surface.empty())
 			return false;
-		std::vector<double> z0;
-		std::vector<double> y;
-		double y0 = m_surface[0].y();
-		double y1 = m_surface[m_surface.size() - 1].y();
-		while(y0 <= y1) {
-			y.push_back(y0);
-			y0 += step;
-		}
+		std::vector<double> y(count);
+		std::vector<double> z0(count);
+		m_spline.linspace(m_surface[0].y(),m_surface[m_surface.size() - 1].y(), y, count);
 		if(m_spline.evaluate(y, z0, 0)) {
 			for(size_t i = 0; i < y.size(); ++i)
 				altitude.emplace_back(0, y[i], z0[i], 0);
@@ -392,19 +383,14 @@ public:
 	 * and return it as a list of P, where y occurs every step from the start to end
 	 * points and z is the velocity.
 	 *
-	 * @param step The step distance in map units.
+	 * @param count The number of equally spaced abscissae to compute the acceleration on.
 	 */
-	bool splineAcceleration(std::list<P>& acceleration, double step = 1) {
+	bool splineAcceleration(std::list<P>& acceleration, int count) {
 		if(m_surface.empty())
 			return false;
-		std::vector<double> z2;
-		std::vector<double> y;
-		double y0 = m_surface[0].y();
-		double y1 = m_surface[m_surface.size() - 1].y();
-		while(y0 <= y1) {
-			y.push_back(y0);
-			y0 += step;
-		}
+		std::vector<double> y(count);
+		std::vector<double> z2(count);
+		m_spline.linspace(m_surface[0].y(),m_surface[m_surface.size() - 1].y(), y, count);
 		if(m_spline.evaluate(y, z2, 2)) {
 			for(size_t i = 0; i < y.size(); ++i)
 				acceleration.emplace_back(0, y[i], z2[i], 0);
@@ -468,9 +454,10 @@ public:
 	 * Process points from the PointSource. Apply filters,
 	 * collapse to 2D.
 	 */
-	void processPoints(const P& startPt) {
+	bool processPoints(const P& startPt) {
 		P pt;
 		// Get the available points and sort them into the points list.
+		size_t n = 0;
 		while(m_ptSource->next(pt)) {
 			pt.to2D(startPt);
 			m_lastY = pt.y();
@@ -480,31 +467,33 @@ public:
 			m_ptFilter->filter(m_points);
 			m_surface.assign(m_points.begin(), m_points.end());
 			//std::cout << "Hull: " << m_points.size() << "\n";
+			++n;
 		}
+		return n > 0;
 	}
 
 	/**
 	 * Generate the trajectory from the filtered point-set.
 	 */
-	void generateTrajectory() {
+	bool generateTrajectory() {
 		if(!m_points.empty()){
-			try {
-				m_spline.fit(m_surface, m_weight, m_smooth);
-			} catch(const std::exception& ex) {
-				std::cerr << ex.what() << "\n";
-			}
+			if(m_spline.fit(m_surface, m_weight, m_smooth))
+				return true;
 		}
+		return false;
 	}
 
 	/**
 	 * Compute the spline on the current filtered point-set.
 	 */
-	void compute() {
+	bool compute() {
 		m_spline.setXIndex(1);	// Set coordinates to y/z
 		m_spline.setYIndex(2);
-		processPoints(m_start);
-		computeSlopes();
-		generateTrajectory();
+		if(!processPoints(m_start))
+			return false;
+		if(!generateTrajectory())
+			return false;
+		return true;
 	}
 
 	/**
