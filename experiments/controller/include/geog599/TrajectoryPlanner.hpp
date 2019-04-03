@@ -41,7 +41,7 @@ namespace trajectoryutils {
 
 /**
  * Represents a single Cartesian point in 3D space. Can be converted to a point
- * in 2D (y-z) space.
+ * in 2D (y-z) space using an origin point.
  */
 class Pt {
 private:
@@ -212,7 +212,7 @@ public:
 
 
 /**
- * The trajectory planner reads a stream of Cartesian points from a real or simlated
+ * The trajectory planner reads a stream of Cartesian points from a real or simulated
  * LiDAR device and develops a surface-following trajectory using cubic splines.
  */
 template <class P>
@@ -227,16 +227,16 @@ private:
 	std::list<P> m_allPoints;				///!< A list of all points.
 	std::list<P> m_points;					///!< The list of current points. May contain non-surface points during retrieval.
 	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
-	std::vector<double> m_slopes;			///!< The average slope between adjoining segments. First and last are zero.
-	std::vector<P> m_smoothed;				///!< The smoothed points from m_surface.
 	double m_weight;						///!< The weight param for smoothing.
 	double m_smooth;						///!< The smooth param for smoothing.
 
+	/* TODO: For threading.
 	bool m_running;							///!< True if the planner is currently running.
 	bool m_procComplete;					///!< True when processing is complete.
 	bool m_genComplete;						///!< True when generation is complete.
-	P m_start;								///!< The start-point for the trajectory.
+	*/
 
+	P m_start;								///!< The start-point for the trajectory.
 	double m_lastY;							///!< The y-coordinate from the most recent 2D point.
 
 public:
@@ -247,8 +247,8 @@ public:
 	TrajectoryPlanner() :
 		m_ptFilter(nullptr), m_ptSource(nullptr),
 		m_weight(1), m_smooth(0.5),
-		m_running(false),
-		m_procComplete(false), m_genComplete(false),
+		//m_running(false),
+		//m_procComplete(false), m_genComplete(false),
 		m_lastY(0) {
 	}
 
@@ -334,6 +334,15 @@ public:
 				lst.emplace_back(0, t[i], z[i]);
 		}
 		return lst;
+	}
+
+	/**
+	 * Return a reference to the SmoothSpline instance owned by this class.
+	 *
+	 * @return A reference to the SmoothSpline instance owned by this class.
+	 */
+	uav::math::SmoothSpline& spline() const {
+		return m_spline;
 	}
 
 	/**
@@ -435,21 +444,6 @@ public:
 		return m_lastY;
 	}
 
-	void computeSlopes() {
-		m_slopes.resize(m_surface.size());
-		if(m_surface.size() < 2)
-			return;
-		m_slopes[0] = 0;
-		m_slopes[m_slopes.size() - 1] = 0;
-		for(size_t i = 1; i < m_surface.size() - 1; ++i) {
-			m_slopes[i] = (
-					(m_surface[i + 1].z() - m_surface[i].z()) / (m_surface[i + 1].y() - m_surface[i].y())
-					+
-					(m_surface[i].z() - m_surface[i - 1].z()) / (m_surface[i].y() - m_surface[i - 1].y())
-			) / 2.0;
-		}
-	}
-
 	/**
 	 * Process points from the PointSource. Apply filters,
 	 * collapse to 2D.
@@ -463,10 +457,9 @@ public:
 			m_lastY = pt.y();
 			m_allPoints.push_back(pt);
 			m_ptSorter.insert(pt, m_points);
-			// Filter the points.
+			// Filter the points, create hull.
 			m_ptFilter->filter(m_points);
 			m_surface.assign(m_points.begin(), m_points.end());
-			//std::cout << "Hull: " << m_points.size() << "\n";
 			++n;
 		}
 		return n > 0;
@@ -487,8 +480,6 @@ public:
 	 * Compute the spline on the current filtered point-set.
 	 */
 	bool compute() {
-		m_spline.setXIndex(1);	// Set coordinates to y/z
-		m_spline.setYIndex(2);
 		if(!processPoints(m_start))
 			return false;
 		if(!generateTrajectory())
@@ -529,6 +520,21 @@ public:
 			z2.resize(z.size());
 		for(size_t i = 0; i < y.size(); ++i) {
 			str << y[i] << "," << z[i] << ","<< z0[i] << "," << z1[i] << "," << z2[i] << "\n";
+		}
+	}
+
+	/**
+	 * Write the calculated values to a file in the given directory.
+	 *
+	 * @param A target directory. Must exist.
+	 */
+	void writeToFile(const std::string& dir) {
+		std::ofstream ostr;
+		{
+			std::stringstream ss;
+			ss << "traj_" << (int) (smooth() * 1000) << "_" << (int) (weight() * 1000) << ".csv";
+			ostr.open(ss.str());
+			write(ostr);
 		}
 	}
 
