@@ -11,7 +11,7 @@
 #include <vector>
 #include <cmath>
 
-#define NOT_RUN 1000
+#define NOT_RUN 1000 // Just an error value to show that a spline hasn't been computed yet.
 
 extern "C" {
 
@@ -201,35 +201,23 @@ namespace uav {
 namespace math {
 
 /**
- * Cubic smoothing spline: S(x)
- * - 2N (6) degrees of freedom.
- * - We require that
- * 	- S(x1) = S(x2),
- * 	- S'(x1) = S'(x2) and
- * 	- S''(x1) = S'(x2).
- * - 2 criteria:
- * 	- Passes as near to ordinates as possible.
- * 	- As smooth as possible.
- * 	- S(x) = p * sum((f(x) -
- *
- *
- *
+ * Cubic smoothing spline with end constraints.
  */
 template <class P>
 class SmoothSpline {
 private:
 
-	std::vector<double> m_t;					// Knots
-	std::vector<double> m_c;					// Coefficients
+	std::vector<double> m_t;					///<! Knots
+	std::vector<double> m_c;					///<! Coefficients
 
-	size_t m_xidx;								// Indices for getting coordinates from the P object.
-	size_t m_yidx;
+	size_t m_xidx;								///<! Index for getting the x coordinate from the point object.
+	size_t m_yidx;								///<! Index for getting the y coordinate from the point object.
 
-	int m_k; 									// Degree
-	int m_ier;									// Error result.
-	double m_resid;								// The sum of squared residuals.
+	int m_k; 									///<! Degree of spline function.
+	int m_ier;									///<! Error result.
+	double m_resid;								///<! The sum of squared residuals.
 
-	std::string m_errStr;
+	std::string m_errStr;						///<! Descriptive message about the most recent error.
 
 public:
 
@@ -559,7 +547,6 @@ public:
 			lst.push_back(x0);
 			lst.push_back(x1);
 		} else {
-			count = std::max(2, count);
 			lst.resize(count);
 			double dist = (x1 - x0) / (count - 1);
 			for(size_t i = 0; i < count - 1; ++i)
