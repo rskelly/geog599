@@ -25,12 +25,26 @@ public:
 	 * The y dimension is first, z second. The position of the insertion is preserved between calls.
 	 * The point object is copied into the list.
 	 *
+	 * TODO: Find a way to remember the position between calls?
+	 *
 	 * @param pt A point object. Must have a < operator on y and z.
 	 * @param pts A list of points.
 	 */
 	void insert(const P& pt, std::list<P>& pts) {
-		pts.push_back(pt);
-		pts.sort();				// TODO: Maybe something more efficient.
+		if(pt >= pts.back()) {
+			pts.push_back(pt);
+		} else {
+			auto it = pts.end();	// TODO: rbegin doesn't seem to work here.
+			do {
+				--it;
+			} while(pt < *it && it != pts.begin());
+			if(it == pts.begin()) {
+				pts.push_front(pt);
+			} else {
+				++it;
+				pts.insert(it, pt);
+			}
+		}
 	}
 
 };
