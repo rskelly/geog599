@@ -12,6 +12,7 @@
 #include <cmath>
 #include <list>
 #include <iostream>
+#include <fstream>
 
 #include "geog599/PointSorter.hpp"
 #include "geog599/PointSource.hpp"
@@ -38,7 +39,7 @@ namespace trajectoryutils {
 
 } // trajectoryutils
 
-
+size_t __pt_time = 0;
 /**
  * Represents a single Cartesian point in 3D space. Can be converted to a point
  * in 2D (y-z) space using an origin point.
@@ -60,7 +61,7 @@ public:
 	/**
 	 * Create a point at the given 3D coordinate and the current time.
 	 */
-	Pt(double x, double y, double z) : Pt(x, y, z, 0) {}
+	Pt(double x, double y, double z) : Pt(x, y, z, ++__pt_time) {}
 
 	/**
 	 * Create a point at the given 3D coordinate and time.
@@ -224,8 +225,7 @@ private:
 
 	uav::math::SmoothSpline<P> m_spline;	///!< Computes and stores the spline coefficients.
 
-	std::list<P> m_allPoints;				///!< A list of all points.
-	std::list<P> m_points;					///!< The list of current points. May contain non-surface points during retrieval.
+	std::list<P> m_points;					///!< The list of all points.
 	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
 	double m_weight;						///!< The weight param for smoothing.
 	double m_smooth;						///!< The smooth param for smoothing.
@@ -299,23 +299,12 @@ public:
 	}
 
 	/**
-	 * Return a reference to the current point-set -- a vector containing the points which constitute the
-	 * hull-filtered surface, plus those that have been added but not yet re-filtered.
+	 * Return a reference to the current point-set.
 	 *
 	 * @return A reference to the current point-set.
 	 */
 	const std::list<P>& points() const {
 		return m_points;
-	}
-
-	/**
-	 * Return a reference to the vector containing all collected points, unfiltered.
-	 *
-	 * @return A reference to the vector containing all collected points, unfiltered.
-	 */
-
-	const std::list<P>& allPoints() const {
-		return m_allPoints;
 	}
 
 	/**
@@ -341,7 +330,7 @@ public:
 	 *
 	 * @return A reference to the SmoothSpline instance owned by this class.
 	 */
-	uav::math::SmoothSpline& spline() const {
+	uav::math::SmoothSpline<P>& spline() {
 		return m_spline;
 	}
 
@@ -449,20 +438,20 @@ public:
 	 * collapse to 2D.
 	 */
 	bool processPoints(const P& startPt) {
-		P pt;
 		// Get the available points and sort them into the points list.
-		size_t n = 0;
-		while(m_ptSource->next(pt)) {
-			pt.to2D(startPt);
-			m_lastY = pt.y();
-			m_allPoints.push_back(pt);
-			m_ptSorter.insert(pt, m_points);
-			// Filter the points, create hull.
-			m_ptFilter->filter(m_points);
-			m_surface.assign(m_points.begin(), m_points.end());
-			++n;
+		std::list<P> pts;
+		if(m_ptSource->getPoints(pts)) {
+			for(P& pt : pts) {
+				pt.to2D(startPt);
+				m_lastY = pt.y();
+				m_ptSorter.insert(pt, m_points);
+			}
+			std::list<P> surf(m_points.begin(), m_points.end());
+			m_ptFilter->filter(surf);
+			m_surface.assign(surf.begin(), surf.end());
 		}
-		return n > 0;
+		std::cout << m_points.size() << ", " << m_surface.size() << "\n";
+		return m_surface.size() > 0;
 	}
 
 	/**

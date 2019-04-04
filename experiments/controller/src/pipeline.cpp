@@ -11,8 +11,7 @@
 #include <unordered_map>
 #include <thread>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+
 
 #include <QtWidgets/QApplication>
 
@@ -21,13 +20,13 @@
 #include "geog599/GeomPointFilter.hpp"
 #include "geog599/PlaneFilter.hpp"
 #include "geog599/PointSorter.hpp"
-#include "geog599/LASPointSource.hpp"
+#include "geog599/ProfilePointSource.hpp"
 
 #include "ui/profile.hpp"
 #include "ui/drawconfig.hpp"
 
 #define MAX_RANGE 100 // The maximum laser range
-#define MAX_DIST 1 // The maximum distance between a point and the search plane.
+#define MAX_DIST .1 // The maximum distance between a point and the search plane.
 #define TIME_DELAY 100
 #define SPEED 10
 
@@ -54,20 +53,21 @@ class PipelineConfig {
 public:
 	std::string filename;
 	double startAltitude;
-	double offset;
+	double altitude;
 	double smooth;
 	double weight;
 	double alpha;
 	double laserAngle;
-	double scanAngle;
 
 	PipelineConfig() :
-		PipelineConfig("", 0, 0, 0, 0, 0, 0, 0) {}
+		PipelineConfig("", 0, 0, 0, 0, 0, 0) {}
 
-	PipelineConfig(const std::string& filename, double startAltitude, double offset,
-			double smooth, double weight, double alpha, double laserAngle, double scanAngle) :
-		filename(filename), startAltitude(startAltitude), offset(offset), smooth(smooth),
-		weight(weight), alpha(alpha), laserAngle(laserAngle), scanAngle(scanAngle) {}
+	PipelineConfig(const std::string& filename, double startAltitude, double altitude,
+			double smooth, double weight, double alpha, double laserAngle) :
+		filename(filename),
+		startAltitude(startAltitude), altitude(altitude),
+		smooth(smooth), weight(weight), alpha(alpha),
+		laserAngle(laserAngle) {}
 
 };
 
@@ -75,31 +75,32 @@ void run(ProfileDialog* dlg) {
 
 	// Some pre-prepared configurations.
 	std::unordered_map<std::string, PipelineConfig> configs;
-	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 15, 1, 15, 5.7, 2. * M_PI / 180.));
-	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, 5.7, 2. * M_PI / 180.));
+	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 15, 1, 15, _rad(5.7)));
+	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/source/swan_lk.las", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 316, 10, 5, 1, 2, _rad(5.7)));
 
-	const PipelineConfig& config = configs["nrcan_1"];
+	const PipelineConfig& config = configs["bart_1"];
 
 	std::string ptsFile = config.filename;
 
-	LASPointSource<Pt> tps(ptsFile);
+	ProfilePointSource<Pt> tps(ptsFile);
 	const Octree<Pt>& tree = tps.octree();
 
 	double startx, endx, starty, endy;
 	if(tree.width() > tree.length()) {
-		startx = tree.minx() - 100.0; // Start 100m back to give the laser space to work.
+		startx = tree.minx();
 		endx = tree.maxx();
 		starty = tree.midy();
 		endy = tree.midy();
 	} else {
 		startx = tree.midx();
 		endx = tree.midx();
-		starty = tree.miny() - 100.0; // Start 100m back to give the laser space to work.
+		starty = tree.miny();
 		endy = tree.maxy();
 	}
 
 	// Offset from trajectory, and vehicle altitude (start altitude + offset)
-	double offset = config.offset;
 	double altitude = config.startAltitude;
 
 
@@ -107,55 +108,42 @@ void run(ProfileDialog* dlg) {
 	Vector3d orig(startx, starty, altitude);
 	Vector3d start(startx, starty, altitude);
 	Vector3d end(endx, endy, altitude);
+	Vector3d planeNorm;
 
-	Vector3d direction = (end - start).normalized();
-	Vector3d xaxis(direction[1], -direction[0], direction[2]);
+	{
+		// The direction of the vehicle's travel and the direction of the x-axis (orthogonal).
+		Vector3d direction = (end - start).normalized();
+		Vector3d xaxis(direction[1], -direction[0], direction[2]);
+		//std::cout << direction << ", " << xaxis << "\n";
 
-	Matrix3d laserRot = AngleAxisd(-config.laserAngle, xaxis).matrix();
-	Matrix3d planeRot = AngleAxisd(-config.laserAngle + M_PI / 2.0, xaxis).matrix();
+		// The laser rotation matrix and the plane rotation matrix (orthogonal).
+		Matrix3d laserRot = AngleAxisd(-config.laserAngle, xaxis).matrix();
+		Matrix3d planeRot = AngleAxisd(-config.laserAngle + M_PI / 2.0, xaxis).matrix();
+		//std::cout << laserRot << ", " << planeRot << "\n";
 
-	Vector3d laserDir = laserRot * direction;
-	Vector3d planeNorm = planeRot * laserDir;
+		// The laser direction and the plane normal.
+		Vector3d laserDir = laserRot * direction;
+		planeNorm = Vector3d(0, 1, 0);//planeRot * laserDir;
+		planeNorm.normalize();
+	}
 
-	double planeWidth = config.scanAngle * MAX_RANGE;
-	Eigen::Hyperplane<double, 3> plane(planeNorm, orig);
-	Eigen::ParametrizedLine<double, 3> line(orig, laserDir);
+	tps.setNormal(planeNorm);
+	tps.setMaxDist(MAX_DIST);
 
 	// The concave hull point filter.
 	HullPointFilter<Pt> hpf(config.alpha);
-	GeomPointFilter<Pt> gpf;
-	gpf.setNextFilter(&hpf);
-
-	PlaneFilter<Pt> plf(planeWidth, MAX_DIST);
-	plf.setOctree(&tree);
-	plf.setPlane(&plane);
-	plf.setLine(&line);
-	tps.setFilter(&plf);
+	//GeomPointFilter<Pt> gpf;
+	//gpf.setNextFilter(&hpf);
 
 	Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp;
 	tp.setSmooth(config.smooth);
 	tp.setWeight(config.weight);
-	tp.setPointFilter(&gpf);
-	tp.setPointSource(&tps);
+	tp.setPointFilter(&hpf);
 	tp.setStartPoint(startPt);
-
-
-	/*
-	std::ofstream ostr;
-	{
-		std::stringstream ss;
-		ss << "pos_" << tp.smooth() << "_" << tp.weight() << ".csv";
-		ostr.open(ss.str());
-	}
-
-	std::ofstream tstr;
-	{
-		std::stringstream ss;
-		ss << "traj_" << tp.smooth() << "_" << tp.weight() << ".csv";
-		tstr.open(ss.str());
-	}
-	*/
+	tp.setPointSource(&tps);
+	tp.spline().setXIndex(1);	// Set the indices on on the point object for y/z
+	tp.spline().setYIndex(2);
 
 	DrawConfig uav;
 	uav.setType(DrawType::Points);
@@ -192,46 +180,43 @@ void run(ProfileDialog* dlg) {
 	pd->addDrawConfig(&knots);
 
 	double speed = 10.0; // m/s
-	int delay = 1000;	// 1 ms
+	int delay = 100;	// 1 ms
 
 	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
 	double stepy = (endy - starty) / (speed * delay);
 
 	Vector3d step(stepx, stepy, 0);
 
-	uav.data.emplace_back(0, altitude + offset);
+	uav.data.emplace_back(0, altitude);
 
 	while(!dlg->done) {
 
-		plane = Eigen::Hyperplane<double, 3>(planeNorm, orig);
-		line = Eigen::ParametrizedLine<double, 3>(orig, laserDir);
+		orig += step;
 
 		// To clip off the points in the past.
 		double dy = (orig - start).norm();
-		gpf.setMinY(dy - 100.0);
+		//gpf.setMinY(dy - 100.0);
+		//std::cout << "d: " << dy << "\n";
 
-		orig += step;
-
-		plf.setPlane(&plane);
-		plf.setLine(&line);
+		tps.setOrigin(orig);
 
 		if(!tp.compute()) {
 			std::this_thread::yield();
-			continue;
+		//	continue;
 		}
 
 		std::list<Pt> salt;
 		tp.splineAltitude(salt, 200);
 
 		uav.data[0].first = 0;
-		uav.data[0].second = altitude + offset;
-		alt.data.emplace_back(dy, altitude + offset);
+		uav.data[0].second = altitude;
+		alt.data.emplace_back(dy, altitude);
 
 		spline.data.clear();
 		for(const Pt& pt : salt)
 			spline.data.emplace_back(pt.y(), pt.z());
 		allPts.data.clear();
-		for(const Pt& pt : tp.allPoints())
+		for(const Pt& pt : tp.points())
 			allPts.data.emplace_back(pt.y(), pt.z());
 		surf.data.clear();
 		for(const Pt& pt : tp.surface())
@@ -243,39 +228,11 @@ void run(ProfileDialog* dlg) {
 		std::cout << tp.lastY() - dy << "\n";
 
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
-			//std::cerr << "Couldn't get new altitude.";
+			std::cerr << "Couldn't get new altitude.";
 		} else {
-			//std::cout << "Altitude: " << altitude << "\n";
+			std::cout << "Altitude: " << altitude << "\n";
 
-
-			/*
-			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
-
-			std::list<Pt> alt;
-			std::list<Pt> vel;
-			std::list<Pt> accel;
-			if(tp.splineAltitude(alt)) {
-				if(tp.splineVelocity(vel)) {
-					if(tp.splineAcceleration(accel)) {
-						tstr << "y,";
-						for(const Pt& p : alt)
-							tstr << p.y() << ",";
-						tstr << "\nalt,";
-						for(const Pt& p : alt)
-							tstr << p.z() << ",";
-						tstr << "\nacc,";
-						for(const Pt& p : accel)
-							tstr << p.z() << ",";
-						tstr << "\nvel,";
-						for(const Pt& p : vel)
-							tstr << p.z() << ",";
-						tstr << "\n";
-					}
-				}
-			}
-			*/
-
-			altitude += offset;
+			altitude += config.altitude;
 			orig[2] = altitude;
 			start[2] = altitude;
 			end[2] = altitude;

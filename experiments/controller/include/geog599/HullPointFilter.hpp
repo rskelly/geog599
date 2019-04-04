@@ -78,8 +78,7 @@ protected:
 		hull.push_back(*iter);
 		++iter;
 
-		// If there's an alpha do a degenerate hull. It could have been one loop but we save a bit of
-		// time and visual complexity this way.
+		// Compute concave hull.
 		do {
 			while(hull.size() >= 2
 					&& cross(hull[hull.size() - 2], hull[hull.size() - 1], *iter) >= 0

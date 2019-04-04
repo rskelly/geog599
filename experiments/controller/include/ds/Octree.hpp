@@ -81,12 +81,16 @@ protected:
 		return nodes[idx];
 	}
 
+	double area() const {
+		return width() * height() + length() * height() + width() * length();
+	}
+
 	/**
 	 * Split the node and distribute its children to the child nodes.
 	 */
 	void split() {
 		if(!isSplit) {
-			if((width() * height() * length()) <= 1) {
+			if(area() <= 1) {
 				isLeaf = true;
 			} else {
 				isSplit = true;
@@ -273,14 +277,15 @@ public:
 	 */
 	void add(const P& item) {
 		needReset = true;
-		if(isLeaf || (!isLeaf && items.size() < SIZE_LIMIT)) {
+		//if(isLeaf || (!isLeaf && items.size() < SIZE_LIMIT)) {
+		isLeaf = true;
 			items.push_back(item);
-		} else if(isSplit) {
-			getNode(item)->add(item);
-		} else {
-			split();
-			add(item);
-		}
+		//} else if(isSplit) {
+		//	getNode(item)->add(item);
+		//} else {
+		//	split();
+		//	add(item);
+		//}
 	}
 
 	/**
@@ -359,7 +364,7 @@ public:
 	 */
 	inline bool isNearPlane(const Eigen::Hyperplane<double, 3>& plane, double maxDist) const {
 		Eigen::Vector3d v(midx(), midy(), midz());
-		double r1 = std::pow(std::abs(bounds[0] - midx()) + maxDist, 2.0) + std::pow(std::abs(bounds[2] - midy()) + maxDist, 2.0) + std::pow(std::abs(bounds[4] - midz()) + maxDist, 2.0);
+		double r1 = std::pow(std::abs(minx() - midx()) + maxDist, 2.0) + std::pow(std::abs(miny() - midy()) + maxDist, 2.0) + std::pow(std::abs(minz() - midz()) + maxDist, 2.0);
 		double r2 = std::pow(plane.absDistance(v), 2.0);
 		return  r2 <= r1;
 	}
@@ -394,7 +399,6 @@ public:
 			for(const P& i : items) {
 				Eigen::Vector3d v(i.x(), i.y(), i.z());
 				double d = plane.absDistance(v);
-				//std::cerr << "Dist: " << d << ", " << maxDist << "\n";
 				if(d <= maxDist) {
 					result.push_back(i);
 					++c;
@@ -419,6 +423,10 @@ public:
 	 */
 	void setBounds(double minx, double maxx, double miny, double maxy, double minz, double maxz) {
 		double b[6] = {minx, maxx, miny, maxy, minz, maxz};
+		setBounds(b);
+	}
+
+	void setBounds(double* b) {
 		for(int i = 0; i < 6; ++i)
 			bounds[i] = b[i];
 	}
@@ -433,6 +441,28 @@ public:
 			bounds[i] = this->bounds[i];
 	}
 	
+	/*
+	void computeBounds() {
+		if(split) {
+			for(int i = 0; i < 8; ++i) {
+				if(nodes[i])
+					nodes[i]->computeBounds();
+			}
+		} else {
+			bounds[0] = bounds[2] = bounds[4] = std::numeric_limits<double>::max();
+			bounds[1] = bounds[3] = bounds[5] = std::numeric_limits<double>::lowest();
+			for(const P& p : items) {
+				if(p.x() < minx) minx = p.x();
+				if(p.x() > maxx) maxx = p.x();
+				if(p.y() < miny) miny = p.y();
+				if(p.y() > maxy) maxy = p.y();
+				if(p.z() < minz) minz = p.z();
+				if(p.z() > maxz) maxz = p.z();
+			}
+		}
+	}
+	*/
+
 	/**
 	 * Destroy the node and its children.
 	 */

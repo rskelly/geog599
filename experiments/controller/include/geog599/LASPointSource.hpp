@@ -117,8 +117,8 @@ public:
 		while(!m_filtered.empty()) {
 			pt = m_filtered.front();
 			m_filtered.pop_front();
-			if(_seen.find(pt.time()) == _seen.end()) {
-				_seen.insert(pt.time());
+			if(m_seen.find(pt.time()) == m_seen.end()) {
+				m_seen.insert(pt.time());
 				return true;
 			}
 		}
