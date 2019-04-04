@@ -24,8 +24,8 @@ namespace hullutils {
 	 * Determine what side of the line joining p0 and p1, p is on.
 	 */
 	template <class P>
-	int cross(const P& p0, const P& p1, const P& p) {
-		int cross = (p0.y() - p.y()) * (p1.z() - p.z()) - (p0.z() - p.z()) * (p1.y() - p.y());
+	double cross(const P& p1, const P& p2, const P& p3) {
+		double cross = (p2.y() - p1.y()) * (p3.z() - p1.z()) - (p2.z() - p1.z()) * (p3.y() - p1.y());
 		return cross;
 	}
 
@@ -73,16 +73,13 @@ protected:
 
 		auto iter = pts.begin();
 		std::vector<P> hull;
-		hull.push_back(*iter);
-		++iter;
-		hull.push_back(*iter);
-		++iter;
 
 		// Compute concave hull.
 		do {
 			while(hull.size() >= 2
 					&& cross(hull[hull.size() - 2], hull[hull.size() - 1], *iter) >= 0
-					&& lengthY(hull[hull.size() - 2], *iter) <= (m_alpha * m_alpha)) {
+					&& lengthY(hull[hull.size() - 2], *iter) <= (m_alpha * m_alpha)
+					) {
 				hull.pop_back();
 			}
 			hull.push_back(*iter);
