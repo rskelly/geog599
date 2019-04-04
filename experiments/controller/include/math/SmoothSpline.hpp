@@ -235,18 +235,38 @@ public:
 		m_ier(NOT_RUN),
 		m_resid(0) {}
 
+	/**
+	 * Set the index of the x-coordinate in the point object.
+	 *
+	 * @param xidx The index of the x-coordinate in the point object.
+	 */
 	void setXIndex(size_t xidx) {
 		m_xidx = xidx;
 	}
 
+	/**
+	 * Get the index of the x-coordinate in the point object.
+	 *
+	 * @return The index of the x-coordinate in the point object.
+	 */
 	size_t xIndex() const {
 		return m_xidx;
 	}
 
+	/**
+	 * Set the index of the y-coordinate in the point object.
+	 *
+	 * @param yidx The index of the y-coordinate in the point object.
+	 */
 	void setYIndex(size_t yidx) {
 		m_yidx = yidx;
 	}
 
+	/**
+	 * The index of the y-coordinate in the point object.
+	 *
+	 * @return The index of the y-coordinate in the point object.
+	 */
 	size_t yIndex() const {
 		return m_yidx;
 	}
@@ -303,8 +323,38 @@ public:
 		return m_ier <= 0;
 	}
 
+	/**
+	 * Returns the locations of the knots of the spline.
+	 *
+	 * @return The locations of the knots of the spline.
+	 */
 	const std::vector<double>& knots() const {
 		return m_t;
+	}
+
+	/**
+	 * Returns the coefficients of the spline.
+	 *
+	 * @return The coefficients of the spline.
+	 */
+	const std::vector<double>& coefficients() const {
+		return m_c;
+	}
+
+	/**
+	 * @param begin 	An iterator into list of points with an x and y property. X is the abscissa; y is the ordinate.
+	 * @param end	 	The end iterator of the point list.
+	 * @param weight 	A scalar giving the weight for each data point.
+	 * @param s 		The smoothing factor.
+	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 */
+	template <class Iter>
+	bool fit(Iter begin, Iter end, double weight, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		std::vector<P> pts(begin, end);
+		fit(pts, weight, s, bc, ec);
 	}
 
 	/**
@@ -321,6 +371,22 @@ public:
 		for(size_t i = 0; i < weights.size(); ++i)
 			weights[i] = weight;
 
+		return fit(pts, weights, s, bc, ec);
+	}
+
+	/**
+	 * @param begin 	An iterator into list of points with an x and y property. X is the abscissa; y is the ordinate.
+	 * @param end	 	The end iterator of the point list.
+	 * @param weights	A list of weights at each data point.
+	 * @param s 		The smoothing factor.
+	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 */
+	template <class Iter>
+	bool fit(Iter begin, Iter end, const std::vector<double>& weights, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		std::vector<P> pts(begin, end);
 		return fit(pts, weights, s, bc, ec);
 	}
 
@@ -531,6 +597,26 @@ public:
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Return a list of the derivative values at the given location,
+	 * for the derivative orders in k (starting with zero).
+	 *
+	 * @param at The x-coordinate.
+	 * @param k A vector containing derivative indices.
+	 * @return A vector of derivative values.
+	 */
+	std::vector<double> derivatives(double at, std::vector<int> k) {
+		if(!valid())
+			return {};
+		std::vector<double> xx(1), yy(1), result(k.size());
+		xx[0] = at;
+		for(int i = 0; i < k.size(); ++i) {
+			evaluate(xx, yy, k[i]);
+			result[i] = k[i];
+		}
+		return result;
 	}
 
 	/**
