@@ -1,12 +1,12 @@
 /*
- * HullPointFilter.hpp
+ * CONCAVEHULL.hpp
  *
  *  Created on: Feb 7, 2019
  *      Author: rob
  */
 
-#ifndef INCLUDE_HULLPOINTFILTER_HPP_
-#define INCLUDE_HULLPOINTFILTER_HPP_
+#ifndef INCLUDE_CONCAVEHULL_HPP_
+#define INCLUDE_CONCAVEHULL_HPP_
 
 #include <cmath>
 #include <vector>
@@ -16,7 +16,6 @@
 
 namespace uav {
 namespace geog599 {
-namespace filter {
 
 namespace hullutils {
 
@@ -58,18 +57,17 @@ namespace hullutils {
  *
  */
 template <class P>
-class HullPointFilter : public uav::geog599::filter::PointFilter<P> {
-private:
-	double m_alpha; ///!< The alpha value.
+class ConcaveHull {
+public:
 
-protected:
-
-	void doFilter(std::list<P>& pts) {
+	static void buildHull(std::list<P>& pts, double alpha) {
 
 		if(pts.size() < 3)
 			return;
 
 		using namespace hullutils;
+
+		alpha *= alpha;
 
 		auto iter = pts.begin();
 		std::vector<P> hull;
@@ -78,7 +76,7 @@ protected:
 		do {
 			while(hull.size() >= 2
 					&& cross(hull[hull.size() - 2], hull[hull.size() - 1], *iter) >= 0
-					&& lengthY(hull[hull.size() - 2], *iter) <= (m_alpha * m_alpha)
+					&& lengthY(hull[hull.size() - 2], *iter) <= alpha
 					) {
 				hull.pop_back();
 			}
@@ -89,28 +87,11 @@ protected:
 		pts.assign(hull.begin(), hull.end());
 	}
 
-public:
-	/**
-	 * Create a HullPointFilter with optional alpha value.
-	 *
-	 * @param alpha Controls the maximum segment length of the hull. Zero is no limit.
-	 */
-	HullPointFilter(double alpha = 0) :
-		uav::geog599::filter::PointFilter<P>(),
-		m_alpha(alpha) {}
-
-	/**
-	 * Destroy the filter.
-	 */
-	~HullPointFilter() {
-	}
-
 };
 
-} // filter
 } // geog599
 } // uav
 
 
 
-#endif /* INCLUDE_HULLPOINTFILTER_HPP_ */
+#endif /* INCLUDE_CONCAVEHULL_HPP_ */
