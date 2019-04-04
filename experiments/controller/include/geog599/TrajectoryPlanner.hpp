@@ -132,7 +132,7 @@ public:
 	 * @param p A Pt.
 	 * @return True if this point is less than the given point, according to y-z ordering.
 	 */
-	bool operator<(const Pt& p) {
+	bool operator<(const Pt& p) const {
 		if(y() == p.y()) {
 			return z() < p.z();
 		} else {
@@ -147,7 +147,7 @@ public:
 	 * @param p A Pt.
 	 * @return True if this point is greater than the given point, according to y-z ordering.
 	 */
-	bool operator>(const Pt& p) {
+	bool operator>(const Pt& p) const {
 		if(y() == p.y()) {
 			return z() > p.z();
 		} else {
@@ -162,7 +162,7 @@ public:
 	 * @param p A Pt.
 	 * @return True if this point is less than or equal to the given point, according to y-z ordering.
 	 */
-	bool operator<=(const Pt& p) {
+	bool operator<=(const Pt& p) const {
 		if(y() == p.y()) {
 			return z() <= p.z();
 		} else {
@@ -177,7 +177,7 @@ public:
 	 * @param p A Pt.
 	 * @return True if this point is greater than or equal to the given point, according to y-z ordering.
 	 */
-	bool operator>=(const Pt& p) {
+	bool operator>=(const Pt& p) const {
 		if(y() == p.y()) {
 			return z() >= p.z();
 		} else {
@@ -225,7 +225,8 @@ private:
 
 	uav::math::SmoothSpline<P> m_spline;	///!< Computes and stores the spline coefficients.
 
-	std::list<P> m_points;					///!< The list of all points.
+	std::list<P> m_allPoints;				///!< The entire received pointset.
+	std::list<P> m_points;					///!< The list of current filtered points, including new ones.
 	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
 	double m_weight;						///!< The weight param for smoothing.
 	double m_smooth;						///!< The smooth param for smoothing.
@@ -305,6 +306,15 @@ public:
 	 */
 	const std::list<P>& points() const {
 		return m_points;
+	}
+
+	/**
+	 * Return a reference to the entire point-set.
+	 *
+	 * @return A reference to the entire point-set.
+	 */
+	const std::list<P>& allPoints() const {
+		return m_allPoints;
 	}
 
 	/**
@@ -444,13 +454,12 @@ public:
 			for(P& pt : pts) {
 				pt.to2D(startPt);
 				m_lastY = pt.y();
+				m_allPoints.push_back(pt);
 				m_ptSorter.insert(pt, m_points);
 			}
-			std::list<P> surf(m_points.begin(), m_points.end());
-			m_ptFilter->filter(surf);
-			m_surface.assign(surf.begin(), surf.end());
+			m_ptFilter->filter(m_points);
+			m_surface.assign(m_points.begin(), m_points.end());
 		}
-		std::cout << m_points.size() << ", " << m_surface.size() << "\n";
 		return m_surface.size() > 0;
 	}
 
@@ -458,7 +467,7 @@ public:
 	 * Generate the trajectory from the filtered point-set.
 	 */
 	bool generateTrajectory() {
-		if(!m_points.empty()){
+		if(!m_surface.empty()){
 			if(m_spline.fit(m_surface, m_weight, m_smooth))
 				return true;
 		}
