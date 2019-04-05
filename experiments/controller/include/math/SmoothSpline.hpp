@@ -320,7 +320,7 @@ public:
 	 * Returns true if the most recent call to fit was successful.
 	 */
 	bool valid() const {
-		return m_ier <= 0;
+		return m_ier == 0;
 	}
 
 	/**
@@ -354,7 +354,7 @@ public:
 			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
 
 		std::vector<P> pts(begin, end);
-		fit(pts, weight, s, bc, ec);
+		return fit(pts, weight, s, bc, ec);
 	}
 
 	/**
@@ -612,9 +612,9 @@ public:
 			return {};
 		std::vector<double> xx(1), yy(1), result(k.size());
 		xx[0] = at;
-		for(int i = 0; i < k.size(); ++i) {
+		for(size_t i = 0; i < k.size(); ++i) {
 			evaluate(xx, yy, k[i]);
-			result[i] = k[i];
+			result[i] = yy[i];
 		}
 		return result;
 	}
@@ -627,11 +627,12 @@ public:
 	 * @param lst The output list of values.
 	 * @param count The number of items.
 	 */
-	void linspace(double x0, double x1, std::vector<double>& lst, int count) {
-		lst.clear();
-		if(count <= 2) {
-			lst.push_back(x0);
-			lst.push_back(x1);
+	static std::vector<double> linspace(double x0, double x1, int count) {
+		if(count < 2) count = 2;
+		std::vector<double> lst(count);
+		if(count == 2) {
+			lst[0] = x0;
+			lst[1] = x1;
 		} else {
 			lst.resize(count);
 			double dist = (x1 - x0) / (count - 1);
@@ -639,7 +640,10 @@ public:
 				lst[i] = x0 + dist * i;
 			lst[count - 1] = x1;
 		}
-	}};
+		return lst;
+	}
+
+};
 
 } // math
 } // uav

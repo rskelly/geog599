@@ -211,6 +211,7 @@ public:
 	}
 };
 
+using namespace uav::math;
 
 /**
  * The trajectory planner reads a stream of Cartesian points from a real or simulated
@@ -219,17 +220,19 @@ public:
 template <class P>
 class TrajectoryPlanner {
 private:
-	uav::geog599::filter::PointFilter<P>* m_ptFilter;	///!< A filter for the point stream.
 	uav::geog599::PointSource<P>* m_ptSource;			///!< A source for 3D points, either fake or real.
 	uav::geog599::PointSorter<P> m_ptSorter;			///!< A 2D sorter for the point stream.
 
-	uav::math::SmoothSpline<P> m_spline;	///!< Computes and stores the spline coefficients.
+	std::list<P> m_all;					///!< The entire received pointset.
+	std::list<P> m_points;				///!< The list of current filtered points, including new ones.
+	std::list<P> m_surface;				///!< The list of surface points extracted from points list.
+	std::vector<double> m_coeffs;		///!< The spline coefficients.
+	std::vector<double> m_knots;		///!< The spline knots.
+	std::vector<double> m_derivs;		///!< End derivatives.
 
-	std::list<P> m_allPoints;				///!< The entire received pointset.
-	std::list<P> m_points;					///!< The list of current filtered points, including new ones.
-	std::vector<P> m_surface;				///!< The list of surface points extracted from points list.
 	double m_weight;						///!< The weight param for smoothing.
 	double m_smooth;						///!< The smooth param for smoothing.
+	double m_alpha;
 
 	/* TODO: For threading.
 	bool m_running;							///!< True if the planner is currently running.
@@ -240,17 +243,30 @@ private:
 	P m_start;								///!< The start-point for the trajectory.
 	double m_lastY;							///!< The y-coordinate from the most recent 2D point.
 
+	double m_splineY;							///!< The current spline y boundary.
+	int m_splineIdx;							///!< The current spline index.
+	double m_blockSize;							///!< The length of trajectory sections that can be finalized. Used to calculate the spline index.
+	int m_finalIndex;							///!< The last finalized index.
+	std::map<int, SmoothSpline<P>> m_splines;	///!< Computes and stores the spline coefficients.
+
+
 public:
 
 	/**
 	 * Default constructor.
+	 *
+	 * @param blockSize This is the horizontal length of a block of points that will be
+	 * 					"finalized" and have a static trajectory computed on it. Subsequent
+	 * 					trajectories will be constrained using the end state of the previous.
 	 */
-	TrajectoryPlanner() :
-		m_ptFilter(nullptr), m_ptSource(nullptr),
-		m_weight(1), m_smooth(0.5),
+	TrajectoryPlanner(double blockSize = 2) :
+		m_ptSource(nullptr),
+		m_weight(1), m_smooth(0.5), m_alpha(10),
 		//m_running(false),
 		//m_procComplete(false), m_genComplete(false),
-		m_lastY(0) {
+		m_lastY(0),
+		m_splineY(0), m_splineIdx(0),
+		m_blockSize(blockSize), m_finalIndex(-1) {
 	}
 
 	/**
@@ -272,6 +288,10 @@ public:
 		m_smooth = s;
 	}
 
+	void setAlpha(double a) {
+		m_alpha = a;
+	}
+
 	/**
 	 * Return the weight.
 	 *
@@ -291,30 +311,30 @@ public:
 	}
 
 	/**
-	 * Return a reference to the vector containing the points which constitute the hull-filtered surface.
+	 * Return a copy of the vector containing the points which constitute the hull-filtered surface.
 	 *
-	 * @return A reference to the vector containing the points which constitute the hull-filtered surface.
+	 * @return A copy of the vector containing the points which constitute the hull-filtered surface.
 	 */
-	const std::vector<P>& surface() const {
+	const std::list<P>& surface() const {
 		return m_surface;
 	}
 
 	/**
-	 * Return a reference to the current point-set.
+	 * Return a copy of the current point-set.
 	 *
-	 * @return A reference to the current point-set.
+	 * @return A copy of the current point-set.
 	 */
 	const std::list<P>& points() const {
 		return m_points;
 	}
 
 	/**
-	 * Return a reference to the entire point-set.
+	 * Return a copy of the entire point-set.
 	 *
-	 * @return A reference to the entire point-set.
+	 * @return A copy of the entire point-set.
 	 */
 	const std::list<P>& allPoints() const {
-		return m_allPoints;
+		return m_all;
 	}
 
 	/**
@@ -323,14 +343,17 @@ public:
 	 *
 	 * @return A list of the knots found by the spline algorithm.
 	 */
-	std::list<P> knots() {
-		std::list<P> lst;
-		if(m_spline.valid()) {
-			const std::vector<double>& t = m_spline.knots();
-			std::vector<double> z(t.size());
-			m_spline.evaluate(t, z, 0);
-			for(size_t i = 0; i < t.size(); ++i)
-				lst.emplace_back(0, t[i], z[i]);
+	std::vector<P> knots() {
+		std::vector<P> lst;
+		for(auto& it : m_splines) {
+			SmoothSpline<P>& spline = it.second;
+			if(spline.valid()) {
+				const std::vector<double>& t = spline.knots();
+				std::vector<double> z(t.size());
+				spline.evaluate(t, z, 0);
+				for(size_t i = 0; i < t.size(); ++i)
+					lst.emplace_back(0, t[i], z[i]);
+			}
 		}
 		return lst;
 	}
@@ -340,8 +363,8 @@ public:
 	 *
 	 * @return A reference to the SmoothSpline instance owned by this class.
 	 */
-	uav::math::SmoothSpline<P>& spline() {
-		return m_spline;
+	const std::map<int, uav::math::SmoothSpline<P>>& splines() {
+		return m_splines;
 	}
 
 	/**
@@ -352,6 +375,7 @@ public:
 	 * @param count The number of equally spaced abscissae to compute the velocity on.
 	 */
 	bool splineVelocity(std::list<P>& velocity, int count) {
+		/*
 		if(m_surface.empty())
 			return false;
 		std::vector<double> y(count);
@@ -362,6 +386,7 @@ public:
 				velocity.emplace_back(0, y[i], z1[i], 0);
 			return true;
 		}
+		*/
 		return false;
 	}
 
@@ -373,17 +398,19 @@ public:
 	 * @param count The number of equally spaced abscissae to compute the altitude on.
 	 */
 	bool splineAltitude(std::list<P>& altitude, int count) {
-		if(m_surface.empty())
+		using namespace uav::math;
+		if(m_splines.empty())
 			return false;
-		std::vector<double> y(count);
+		std::vector<double> y = SmoothSpline<P>::linspace(0, m_splineY, count);
 		std::vector<double> z0(count);
-		m_spline.linspace(m_surface[0].y(),m_surface[m_surface.size() - 1].y(), y, count);
-		if(m_spline.evaluate(y, z0, 0)) {
-			for(size_t i = 0; i < y.size(); ++i)
-				altitude.emplace_back(0, y[i], z0[i], 0);
-			return true;
+		for(int i = 0; i < m_splineIdx; ++i) {
+			SmoothSpline<P>& spline = m_splines.at(i);
+			if(spline.evaluate(y, z0, 0)) {
+				for(size_t i = 0; i < y.size(); ++i)
+					altitude.emplace_back(0, y[i], z0[i], 0);
+			}
 		}
-		return false;
+		return true;
 	}
 
 	/**
@@ -394,6 +421,7 @@ public:
 	 * @param count The number of equally spaced abscissae to compute the acceleration on.
 	 */
 	bool splineAcceleration(std::list<P>& acceleration, int count) {
+		/*
 		if(m_surface.empty())
 			return false;
 		std::vector<double> y(count);
@@ -404,6 +432,7 @@ public:
 				acceleration.emplace_back(0, y[i], z2[i], 0);
 			return true;
 		}
+		*/
 		return false;
 	}
 
@@ -414,15 +443,6 @@ public:
 	 */
 	void setPointSource(uav::geog599::PointSource<P>* psrc) {
 		m_ptSource = psrc;
-	}
-
-	/**
-	 * Set the point filter.
-	 *
-	 * @param pfilt The point filter.
-	 */
-	void setPointFilter(uav::geog599::filter::PointFilter<P>* pfilt) {
-		m_ptFilter = pfilt;
 	}
 
 	/**
@@ -446,41 +466,98 @@ public:
 	/**
 	 * Process points from the PointSource. Apply filters,
 	 * collapse to 2D.
+	 *
+	 * @param start The start point of the flight.
+	 * @param current The current point of the flight. TODO: Could be the finalization point.
 	 */
-	bool processPoints(const P& startPt) {
-		// Get the available points and sort them into the points list.
+	bool processPoints(double finalY) {
+
+		// Get all the available points.
 		std::list<P> pts;
 		if(m_ptSource->getPoints(pts)) {
 			for(P& pt : pts) {
-				pt.to2D(startPt);
+				if(pt.y() < finalY)
+					continue;	// Skip points behind the finalization.
+				pt.to2D(m_start);
 				m_lastY = pt.y();
-				m_allPoints.push_back(pt);
+				m_all.push_back(pt);	// TODO: Only useful for display.
 				m_ptSorter.insert(pt, m_points);
 			}
-			m_ptFilter->filter(m_points);
 			m_surface.assign(m_points.begin(), m_points.end());
+			uav::geog599::ConcaveHull<P>::buildHull(m_surface, m_alpha);
+			return true;
 		}
-		return m_surface.size() > 0;
+		return false;
 	}
 
 	/**
 	 * Generate the trajectory from the filtered point-set.
 	 */
-	bool generateTrajectory() {
-		if(!m_surface.empty()){
-			if(m_spline.fit(m_surface, m_weight, m_smooth))
+	bool generateTrajectory(bool finalize) {
+		using namespace uav::math;
+
+		if(finalize) {
+			// First, find the iterators bounding the block's y-range.
+			double dy0 = m_splineY;
+			double dy1 = (m_finalIndex + 1) * m_blockSize;
+			auto first = m_surface.begin();
+			while(first->y() < dy0)
+				++first;
+			if(first != m_surface.begin())
+				--first;
+			auto last = first;
+			while(last->y() < dy1)
+				++last;
+
+			// Create a list from the range. If it's too smal, wait til next time.
+			std::list<P> surface(first, last);
+			if(surface.size() < 4)
+				return false;
+
+			// Create a spline for this block if there isn't one.
+			if(m_splines.find(m_splineIdx) == m_splines.end())
+				m_splines.insert(std::make_pair(m_splineIdx, SmoothSpline<P>(3, 1, 2)));
+
+			SmoothSpline<P>& spline = m_splines.at(m_splineIdx);
+
+			// Get the boundary constraints.
+			std::vector<double> cb;
+			if(m_splineIdx > 0) {
+				SmoothSpline<P>& spline0 = m_splines[m_splineIdx - 1];
+				cb = spline0.derivatives(last->y(), {0, 1});
+			}
+
+			// Try to compute the spline. If it fails, don't update the index or boundary position.
+			if(spline.fit(first, last, m_weight, m_smooth, cb)) {
+				m_knots.insert(m_knots.end(), spline.knots().begin(), spline.knots().end());
+				//m_coeffs.assign(m_spline.coefficients().begin(), m_spline.coefficients().end());
+				//m_spline.derivatives(block.endPos, {0, 1});
+				++m_splineIdx;
+				m_splineY = last->y();
 				return true;
+			}
 		}
 		return false;
 	}
 
 	/**
 	 * Compute the spline on the current filtered point-set.
+	 *
+	 * @param current The current position of the vehicle.
 	 */
-	bool compute() {
-		if(!processPoints(m_start))
+	bool compute(const P& current) {
+		// Set the y coordinate behind which the point cloud is final; nothing
+		// can be added and the trajectory can't be changed.
+		int final = std::max(0, (int) (current.y() / m_blockSize));
+		bool finalize = false;
+		if((final - 1) > m_finalIndex) {
+			m_finalIndex = final - 1;
+			finalize = true;
+		}
+		double finalY = (m_finalIndex + 1) * m_blockSize;
+		if(!processPoints(finalY))
 			return false;
-		if(!generateTrajectory())
+		if(!generateTrajectory(finalize))
 			return false;
 		return true;
 	}
@@ -491,7 +568,12 @@ public:
 	 * @return The altitude of the trajectory at the given y-coordinate.
 	 */
 	bool getTrajectoryAltitude(double y, double& z) {
-		return m_spline.evaluate(y, z, 0);
+		int idx = (int) (y / m_blockSize);
+		if(m_splines.find(idx) != m_splines.end()) {
+			uav::math::SmoothSpline<P>& spline = m_splines.at(idx);
+			return spline.evaluate(y, z, 0);
+		}
+		return false;
 	}
 
 	/**
@@ -505,17 +587,21 @@ public:
 		std::vector<double> z0;
 		std::vector<double> z1;
 		std::vector<double> z2;
-		for(size_t i = 0; i < m_surface.size(); ++i) {
-			const P& pt = m_surface[i];
+		std::vector<P> surface = surface();
+		for(size_t i = 0; i < surface.size(); ++i) {
+			const P& pt = surface[i];
 			y.push_back(pt.y());
 			z.push_back(pt.z());
 		}
-		if(!m_spline.evaluate(y, z0, 0))
-			z0.resize(z.size());
-		if(!m_spline.evaluate(y, z1, 1))
-			z1.resize(z.size());
-		if(!m_spline.evaluate(y, z2, 2))
-			z2.resize(z.size());
+		for(auto& it : m_splines) {
+			uav::math::SmoothSpline<P>& spline = it.second;
+			if(!spline.evaluate(y, z0, 0))
+				z0.resize(z.size());
+			if(!spline.evaluate(y, z1, 1))
+				z1.resize(z.size());
+			if(!spline.evaluate(y, z2, 2))
+				z2.resize(z.size());
+		}
 		for(size_t i = 0; i < y.size(); ++i) {
 			str << y[i] << "," << z[i] << ","<< z0[i] << "," << z1[i] << "," << z2[i] << "\n";
 		}

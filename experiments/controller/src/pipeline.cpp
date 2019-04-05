@@ -15,8 +15,8 @@
 
 #include <QtWidgets/QApplication>
 
+#include "../include/geog599/ConcaveHull.hpp"
 #include "geog599/TrajectoryPlanner.hpp"
-#include "geog599/HullPointFilter.hpp"
 #include "geog599/GeomPointFilter.hpp"
 #include "geog599/PlaneFilter.hpp"
 #include "geog599/PointSorter.hpp"
@@ -75,12 +75,15 @@ void run(ProfileDialog* dlg) {
 
 	// Some pre-prepared configurations.
 	std::unordered_map<std::string, PipelineConfig> configs;
-	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 15, 1, 15, _rad(5.7)));
-	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, _rad(5.7)));
-	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/source/swan_lk.las", 80, 10, 5, 1, 15, _rad(5.7)));
-	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 316, 10, 5, 1, 2, _rad(5.7)));
+	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt", 305, 10, 15, 1, 15, _rad(5.7)));
+	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 80, 10, 5, 1, 10, _rad(5.7)));
+	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 316, 10, 5, 1, 3, _rad(5.7)));
+	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 316, 10, 5, 1, 3, _rad(5.7)));
 
-	const PipelineConfig& config = configs["bart_1"];
+	const PipelineConfig& config = configs["mt_doug_2"];
 
 	std::string ptsFile = config.filename;
 
@@ -130,20 +133,13 @@ void run(ProfileDialog* dlg) {
 	tps.setNormal(planeNorm);
 	tps.setMaxDist(MAX_DIST);
 
-	// The concave hull point filter.
-	HullPointFilter<Pt> hpf(config.alpha);
-	//GeomPointFilter<Pt> gpf;
-	//gpf.setNextFilter(&hpf);
-
 	Pt startPt(startx, starty, altitude);
-	TrajectoryPlanner<Pt> tp;
+	TrajectoryPlanner<Pt> tp(10);
 	tp.setSmooth(config.smooth);
 	tp.setWeight(config.weight);
-	tp.setPointFilter(&hpf);
 	tp.setStartPoint(startPt);
+	tp.setAlpha(config.alpha);
 	tp.setPointSource(&tps);
-	tp.spline().setXIndex(1);	// Set the indices on on the point object for y/z
-	tp.spline().setYIndex(2);
 
 	DrawConfig uav;
 	uav.setType(DrawType::Points);
@@ -180,7 +176,7 @@ void run(ProfileDialog* dlg) {
 	pd->addDrawConfig(&knots);
 
 	double speed = 10.0; // m/s
-	int delay = 100;	// 1 ms
+	int delay = 1000;	// 1 ms
 
 	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
 	double stepy = (endy - starty) / (speed * delay);
@@ -193,14 +189,12 @@ void run(ProfileDialog* dlg) {
 
 		orig += step;
 
-		// To clip off the points in the past.
-		double dy = (orig - start).norm();
-		//gpf.setMinY(dy - 100.0);
-		//std::cout << "d: " << dy << "\n";
+		// Points prior to this are finalized.
+		double dy = (orig - start).norm() - 20;
 
 		tps.setOrigin(orig);
 
-		if(!tp.compute()) {
+		if(!tp.compute(Pt(0, dy, 0))) {
 			std::this_thread::yield();
 		//	continue;
 		}
@@ -212,25 +206,34 @@ void run(ProfileDialog* dlg) {
 		uav.data[0].second = altitude;
 		alt.data.emplace_back(dy, altitude);
 
-		spline.data.clear();
-		for(const Pt& pt : salt)
-			spline.data.emplace_back(pt.y(), pt.z());
-		allPts.data.clear();
-		for(const Pt& pt : tp.points())
-			allPts.data.emplace_back(pt.y(), pt.z());
-		surf.data.clear();
-		for(const Pt& pt : tp.surface())
-			surf.data.emplace_back(pt.y(), pt.z());
-		knots.data.clear();
-		for(const Pt& pt : tp.knots())
-			knots.data.emplace_back(pt.y(), pt.z());
+		{
+			spline.data.clear();
+			for(const Pt& pt : salt)
+				spline.data.emplace_back(pt.y(), pt.z());
+		}
+		{
+			allPts.data.clear();
+			for(const Pt& pt : tp.allPoints())
+				allPts.data.emplace_back(pt.y(), pt.z());
+		}
+		{
+			surf.data.clear();
+			for(const Pt& pt : tp.surface())
+				surf.data.emplace_back(pt.y(), pt.z());
+		}
+		{
+			knots.data.clear();
+			std::vector<Pt> pts = tp.knots();
+			for(const Pt& pt : pts)
+				knots.data.emplace_back(pt.y(), pt.z());
+		}
 
 		std::cout << tp.lastY() - dy << "\n";
 
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
-			std::cerr << "Couldn't get new altitude.";
+			//std::cerr << "Couldn't get new altitude.";
 		} else {
-			std::cout << "Altitude: " << altitude << "\n";
+			//std::cout << "Altitude: " << altitude << "\n";
 
 			altitude += config.altitude;
 			orig[2] = altitude;
