@@ -401,10 +401,10 @@ public:
 		using namespace uav::math;
 		if(m_splines.empty())
 			return false;
-		std::vector<double> y = SmoothSpline<P>::linspace(0, m_splineY, count);
-		std::vector<double> z0(count);
 		for(int i = 0; i < m_splineIdx; ++i) {
 			SmoothSpline<P>& spline = m_splines.at(i);
+			std::vector<double> y = SmoothSpline<P>::linspace(spline.min(), spline.max(), count);
+			std::vector<double> z0(count);
 			if(spline.evaluate(y, z0, 0)) {
 				for(size_t i = 0; i < y.size(); ++i)
 					altitude.emplace_back(0, y[i], z0[i], 0);
@@ -470,22 +470,20 @@ public:
 	 * @param start The start point of the flight.
 	 * @param current The current point of the flight. TODO: Could be the finalization point.
 	 */
-	bool processPoints(double finalY) {
+	bool processPoints() {
 
 		// Get all the available points.
 		std::list<P> pts;
 		if(m_ptSource->getPoints(pts)) {
 			for(P& pt : pts) {
-				if(pt.y() < finalY)
+				if(pt.y() < m_splineY)
 					continue;	// Skip points behind the finalization.
 				pt.to2D(m_start);
 				m_lastY = pt.y();
 				m_all.push_back(pt);	// TODO: Only useful for display.
 				m_ptSorter.insert(pt, m_points);
 			}
-			m_surface.assign(m_points.begin(), m_points.end());
-			uav::geog599::ConcaveHull<P>::buildHull(m_surface, m_alpha);
-			return true;
+			return uav::geog599::ConcaveHull<P>::buildHull(m_points, m_surface, m_alpha);
 		}
 		return false;
 	}
@@ -493,49 +491,48 @@ public:
 	/**
 	 * Generate the trajectory from the filtered point-set.
 	 */
-	bool generateTrajectory(bool finalize) {
+	bool generateTrajectory() {
 		using namespace uav::math;
 
-		if(finalize) {
-			// First, find the iterators bounding the block's y-range.
-			double dy0 = m_splineY;
-			double dy1 = (m_finalIndex + 1) * m_blockSize;
-			auto first = m_surface.begin();
-			while(first->y() < dy0)
-				++first;
-			if(first != m_surface.begin())
-				--first;
-			auto last = first;
-			while(last->y() < dy1)
-				++last;
+		// First, find the iterators bounding the block's y-range.
+		double dy0 = m_splineY;
+		double dy1 = (m_finalIndex + 1) * m_blockSize;
+		auto first = m_surface.begin();
+		while(first->y() < dy0)
+			++first;
+		if(first != m_surface.begin())
+			--first;
+		auto last = first;
+		while(last->y() < dy1)
+			++last;
 
-			// Create a list from the range. If it's too smal, wait til next time.
-			std::list<P> surface(first, last);
-			if(surface.size() < 4)
-				return false;
+		// Create a list from the range. If it's too smal, wait til next time.
+		std::list<P> surface(first, last);
+		if(surface.size() < 4)
+			return false;
 
-			// Create a spline for this block if there isn't one.
-			if(m_splines.find(m_splineIdx) == m_splines.end())
-				m_splines.insert(std::make_pair(m_splineIdx, SmoothSpline<P>(3, 1, 2)));
+		// Create a spline for this block if there isn't one.
+		if(m_splines.find(m_splineIdx) == m_splines.end())
+			m_splines.insert(std::make_pair(m_splineIdx, SmoothSpline<P>(3, 1, 2)));
 
-			SmoothSpline<P>& spline = m_splines.at(m_splineIdx);
+		SmoothSpline<P>& spline = m_splines.at(m_splineIdx);
 
-			// Get the boundary constraints.
-			std::vector<double> cb;
-			if(m_splineIdx > 0) {
-				SmoothSpline<P>& spline0 = m_splines[m_splineIdx - 1];
-				cb = spline0.derivatives(last->y(), {0, 1});
-			}
+		// Get the boundary constraints.
+		std::vector<double> cb;
+		if(m_splineIdx > 0) {
+			SmoothSpline<P>& spline0 = m_splines[m_splineIdx - 1];
+			cb = spline0.derivatives(last->y(), {0, 1});
+		}
 
-			// Try to compute the spline. If it fails, don't update the index or boundary position.
-			if(spline.fit(first, last, m_weight, m_smooth, cb)) {
-				m_knots.insert(m_knots.end(), spline.knots().begin(), spline.knots().end());
-				//m_coeffs.assign(m_spline.coefficients().begin(), m_spline.coefficients().end());
-				//m_spline.derivatives(block.endPos, {0, 1});
-				++m_splineIdx;
-				m_splineY = last->y();
-				return true;
-			}
+		// Try to compute the spline. If it fails, don't update the index or boundary position.
+		if(spline.fit(first, last, m_weight, m_smooth, cb)) {
+			m_knots.insert(m_knots.end(), spline.knots().begin(), spline.knots().end());
+			//m_coeffs.assign(m_spline.coefficients().begin(), m_spline.coefficients().end());
+			//m_spline.derivatives(block.endPos, {0, 1});
+			++m_splineIdx;
+			--last;
+			m_splineY = last->y();
+			return true;
 		}
 		return false;
 	}
@@ -554,10 +551,8 @@ public:
 			m_finalIndex = final - 1;
 			finalize = true;
 		}
-		double finalY = (m_finalIndex + 1) * m_blockSize;
-		if(!processPoints(finalY))
-			return false;
-		if(!generateTrajectory(finalize))
+		processPoints();
+		if(finalize && !generateTrajectory())
 			return false;
 		return true;
 	}

@@ -60,31 +60,35 @@ template <class P>
 class ConcaveHull {
 public:
 
-	static void buildHull(std::list<P>& pts, double alpha) {
+	static bool buildHull(std::list<P>& pts, std::list<P>& hull, double alpha) {
 
 		if(pts.size() < 3)
-			return;
+			return false;
 
 		using namespace hullutils;
 
 		alpha *= alpha;
 
 		auto iter = pts.begin();
-		std::vector<P> hull;
+		std::vector<P> hull0;
 
 		// Compute concave hull.
 		do {
-			while(hull.size() >= 2
-					&& cross(hull[hull.size() - 2], hull[hull.size() - 1], *iter) >= 0
-					&& lengthY(hull[hull.size() - 2], *iter) <= alpha
+			while(hull0.size() >= 2
+					&& cross(hull0[hull0.size() - 2], hull0[hull0.size() - 1], *iter) >= 0
+					&& lengthY(hull0[hull0.size() - 2], *iter) <= alpha
 					) {
-				hull.pop_back();
+				hull0.pop_back();
 			}
-			hull.push_back(*iter);
+			hull0.push_back(*iter);
 		} while(++iter != pts.end());
 
-		// Write the new items into the old list.
-		pts.assign(hull.begin(), hull.end());
+		if(hull0.size() >= 2) {
+			// Write the new items into the old list.
+			hull.assign(hull0.begin(), hull0.end());
+			return true;
+		}
+		return false;
 	}
 
 };

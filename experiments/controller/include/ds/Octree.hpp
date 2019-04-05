@@ -277,15 +277,14 @@ public:
 	 */
 	void add(const P& item) {
 		needReset = true;
-		//if(isLeaf || (!isLeaf && items.size() < SIZE_LIMIT)) {
-		isLeaf = true;
+		if(isLeaf || (!isLeaf && items.size() < SIZE_LIMIT)) {
 			items.push_back(item);
-		//} else if(isSplit) {
-		//	getNode(item)->add(item);
-		//} else {
-		//	split();
-		//	add(item);
-		//}
+		} else if(isSplit) {
+			getNode(item)->add(item);
+		} else {
+			split();
+			add(item);
+		}
 	}
 
 	/**
@@ -429,6 +428,18 @@ public:
 	void setBounds(double* b) {
 		for(int i = 0; i < 6; ++i)
 			bounds[i] = b[i];
+		if(width() == 0) {
+			bounds[0] -= std::numeric_limits<double>::min();
+			bounds[1] += std::numeric_limits<double>::min();
+		}
+		if(height() == 0) {
+			bounds[2] -= std::numeric_limits<double>::min();
+			bounds[3] += std::numeric_limits<double>::min();
+		}
+		if(length() == 0) {
+			bounds[4] -= std::numeric_limits<double>::min();
+			bounds[5] += std::numeric_limits<double>::min();
+		}
 	}
 
 	/**

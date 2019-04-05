@@ -79,7 +79,7 @@ void run(ProfileDialog* dlg) {
 	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
 	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
 	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
-	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 80, 10, 5, 1, 10, _rad(5.7)));
+	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 80, 10, 10, 1, 10, _rad(5.7)));
 	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 316, 10, 5, 1, 3, _rad(5.7)));
 	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 316, 10, 5, 1, 3, _rad(5.7)));
 
@@ -176,7 +176,7 @@ void run(ProfileDialog* dlg) {
 	pd->addDrawConfig(&knots);
 
 	double speed = 10.0; // m/s
-	int delay = 1000;	// 1 ms
+	int delay = 10000;	// 1 ms
 
 	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
 	double stepy = (endy - starty) / (speed * delay);
@@ -196,15 +196,17 @@ void run(ProfileDialog* dlg) {
 
 		if(!tp.compute(Pt(0, dy, 0))) {
 			std::this_thread::yield();
-		//	continue;
+			continue;
 		}
 
-		std::list<Pt> salt;
-		tp.splineAltitude(salt, 200);
+		std::this_thread::yield();
 
-		uav.data[0].first = 0;
-		uav.data[0].second = altitude;
-		alt.data.emplace_back(dy, altitude);
+		std::list<Pt> salt;
+		tp.splineAltitude(salt, 10);
+
+		//uav.data[0].first = 0;
+		//uav.data[0].second = altitude;
+		//alt.data.emplace_back(dy, altitude);
 
 		{
 			spline.data.clear();
@@ -228,7 +230,7 @@ void run(ProfileDialog* dlg) {
 				knots.data.emplace_back(pt.y(), pt.z());
 		}
 
-		std::cout << tp.lastY() - dy << "\n";
+		//std::cout << tp.lastY() - dy << "\n";
 
 		if(!tp.getTrajectoryAltitude(dy, altitude)) {
 			//std::cerr << "Couldn't get new altitude.";

@@ -209,6 +209,8 @@ private:
 
 	std::vector<double> m_t;					///<! Knots
 	std::vector<double> m_c;					///<! Coefficients
+	double m_min;								///<! The minimum abscissa.
+	double m_max;								///<! The maximum abscissa.
 
 	size_t m_xidx;								///<! Index for getting the x coordinate from the point object.
 	size_t m_yidx;								///<! Index for getting the y coordinate from the point object.
@@ -229,8 +231,8 @@ public:
 	 * @param yidx The index into each point for the y coordinate (ordinate).
 	 */
 	SmoothSpline(int order = 3, size_t xidx = 0, size_t yidx = 1) :
-		m_xidx(xidx),
-		m_yidx(yidx),
+		m_min(std::numeric_limits<double>::max()), m_max(std::numeric_limits<double>::lowest()),
+		m_xidx(xidx), m_yidx(yidx),
 		m_k(order),
 		m_ier(NOT_RUN),
 		m_resid(0) {}
@@ -339,6 +341,24 @@ public:
 	 */
 	const std::vector<double>& coefficients() const {
 		return m_c;
+	}
+
+	/**
+	 * Return the minimum abscissa value.
+	 *
+	 * @return The minimum abscissa value.
+	 */
+	double min() const {
+		return m_min;
+	}
+
+	/**
+	 * Return the maximum abscissa value.
+	 *
+	 * @return The maximum abscissa value.
+	 */
+	double max() const {
+		return m_max;
 	}
 
 	/**
@@ -455,10 +475,17 @@ public:
 		m_t.resize(nest);
 		m_c.resize(nc);
 
+		m_min = std::numeric_limits<double>::max();
+		m_max = std::numeric_limits<double>::lowest();
+
 		// Populate the points buffer.
 		for(size_t i = 0; i < pts.size(); ++i) {
-			u[i] = pts[i][m_xidx];
-			x[i] = pts[i][m_yidx];
+			double x0 = pts[i][m_xidx];
+			double y0 = pts[i][m_yidx];
+			if(x0 < m_min) m_min = x0;
+			if(x0 > m_max) m_max = x0;
+			u[i] = x0;
+			x[i] = y0;
 			w[i] = weights[i];
 		}
 
