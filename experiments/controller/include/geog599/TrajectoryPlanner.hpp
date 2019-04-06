@@ -13,6 +13,7 @@
 #include <list>
 #include <iostream>
 #include <fstream>
+#include <unordered_set>
 
 #include "geog599/PointSorter.hpp"
 #include "geog599/PointSource.hpp"
@@ -406,8 +407,8 @@ public:
 			std::vector<double> y = SmoothSpline<P>::linspace(spline.min(), spline.max(), count);
 			std::vector<double> z0(count);
 			if(spline.evaluate(y, z0, 0)) {
-				for(size_t i = 0; i < y.size(); ++i)
-					altitude.emplace_back(0, y[i], z0[i], 0);
+				for(size_t j = 0; j < y.size(); ++j)
+					altitude.emplace_back(0, y[j], z0[j], 0);
 			}
 		}
 		return true;
@@ -463,6 +464,8 @@ public:
 		return m_lastY;
 	}
 
+	std::unordered_set<size_t> m_yseen;	///<! To find and pertub duplicate y-values.
+
 	/**
 	 * Process points from the PointSource. Apply filters,
 	 * collapse to 2D.
@@ -479,6 +482,15 @@ public:
 				if(pt.y() < m_splineY)
 					continue;	// Skip points behind the finalization.
 				pt.to2D(m_start);
+				while(true) {
+					size_t yy = (size_t) (pt.y() * 100000000);
+					if (m_yseen.find(yy) == m_yseen.end()) {
+						m_yseen.insert(yy);
+						break;
+					} else {
+						pt.y(pt.y() - 1.0/10000000.0);
+					}
+				}
 				m_lastY = pt.y();
 				m_all.push_back(pt);	// TODO: Only useful for display.
 				m_ptSorter.insert(pt, m_points);
@@ -500,8 +512,6 @@ public:
 		auto first = m_surface.begin();
 		while(first->y() < dy0)
 			++first;
-		if(first != m_surface.begin())
-			--first;
 		auto last = first;
 		while(last->y() < dy1)
 			++last;
@@ -519,18 +529,21 @@ public:
 
 		// Get the boundary constraints.
 		std::vector<double> cb;
+		std::vector<double> ce;
 		if(m_splineIdx > 0) {
 			SmoothSpline<P>& spline0 = m_splines[m_splineIdx - 1];
-			cb = spline0.derivatives(last->y(), {0, 1});
+			cb = spline0.derivatives(first->y(), {0, 1});
 		}
 
+		std::cout << first->y() << " - " << last->y() << " -- " << m_surface.size() << "\n";
+		auto next = last;
+		next++;
 		// Try to compute the spline. If it fails, don't update the index or boundary position.
-		if(spline.fit(first, last, m_weight, m_smooth, cb)) {
+		if(spline.fit(first, next, m_smooth, cb, ce)) {
 			m_knots.insert(m_knots.end(), spline.knots().begin(), spline.knots().end());
 			//m_coeffs.assign(m_spline.coefficients().begin(), m_spline.coefficients().end());
 			//m_spline.derivatives(block.endPos, {0, 1});
 			++m_splineIdx;
-			--last;
 			m_splineY = last->y();
 			return true;
 		}

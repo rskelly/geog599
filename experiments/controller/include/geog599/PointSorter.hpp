@@ -31,14 +31,16 @@ public:
 	 * @param pts A list of points.
 	 */
 	void insert(const P& pt, std::list<P>& pts) {
-		if(pt >= pts.back()) {
+		if(pts.empty() || pt >= pts.back()) {
 			pts.push_back(pt);
+		} else if(pt < pts.front()) {
+			pts.push_front(pt);
 		} else {
 			auto it = pts.end();	// TODO: rbegin doesn't seem to work here.
 			do {
 				--it;
 			} while(pt < *it && it != pts.begin());
-			if(it == pts.begin()) {
+			if(pt < *it && it == pts.begin()) {
 				pts.push_front(pt);
 			} else {
 				++it;

@@ -11,6 +11,8 @@
 #include <vector>
 #include <cmath>
 
+#include "math/Util.hpp"
+
 #define NOT_RUN 1000 // Just an error value to show that a spline hasn't been computed yet.
 
 extern "C" {
@@ -322,7 +324,7 @@ public:
 	 * Returns true if the most recent call to fit was successful.
 	 */
 	bool valid() const {
-		return m_ier == 0;
+		return m_ier == 0;// && m_ier >= -2;
 	}
 
 	/**
@@ -361,6 +363,37 @@ public:
 		return m_max;
 	}
 
+	double angle(const P& p1, const P& p2, const P& p3) {
+		double x1 = p1.y() - p2.y();
+		double y1 = p1.z() - p2.z();
+		double x2 = p3.y() - p2.y();
+		double y2 = p3.z() - p2.z();
+		double a = std::atan2(y1, x1);
+		double b = std::atan2(y2, x2);
+		a = a - b;
+		while(a < 0)
+			a += M_PI * 2;
+		while(a > M_PI * 2)
+			a -= M_PI * 3;
+		return a;
+	}
+
+	void computeWeights(const std::vector<P>& pts, std::vector<double>& weights) {
+		weights.resize(pts.size());
+		double max = 0;
+		double min = 100;
+		for(size_t i = 1; i < pts.size() - 1; ++i) {
+			double a = std::abs(angle(pts[i - 1], pts[i], pts[i + 1]));
+			if(a > max) max = a;
+			if(a < min) min = a;
+			weights[i] = a;
+		}
+		for(size_t i = 1; i < pts.size() - 1; ++i)
+			weights[i] = std::pow(2, (weights[i] - min) / (max - min) * 4);
+		weights[0] = 1;
+		weights[weights.size() - 1] = 1;
+	}
+
 	/**
 	 * @param begin 	An iterator into list of points with an x and y property. X is the abscissa; y is the ordinate.
 	 * @param end	 	The end iterator of the point list.
@@ -375,6 +408,17 @@ public:
 
 		std::vector<P> pts(begin, end);
 		return fit(pts, weight, s, bc, ec);
+	}
+
+	template <class Iter>
+	bool fit(Iter begin, Iter end, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		std::vector<P> pts(begin, end);
+		std::vector<double> weights;
+		computeWeights(pts, weights);
+
+		return fit(pts, weights, s, bc, ec);
 	}
 
 	/**
@@ -393,6 +437,16 @@ public:
 
 		return fit(pts, weights, s, bc, ec);
 	}
+
+	bool fit(const std::vector<P>& pts, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		std::vector<P> weights;
+		computeWeights(pts, weights);
+
+		return fit(pts, weights, s, bc, ec);
+	}
+
 
 	/**
 	 * @param begin 	An iterator into list of points with an x and y property. X is the abscissa; y is the ordinate.
@@ -443,13 +497,14 @@ public:
 		static std::vector<double> wrk;		// Work space.
 		static std::vector<int> iwrk;		// Work space.
 
-		int ib = bc.size();			// The number of derivative constraints at beginning. Max: (k + 1) / 2
-		int ie = ec.size();			// The number of derivative constraints at end. Max: (k + 1) / 2
 		int m = pts.size();			// Number of points.
 
 		int iopt = 0;				// Smooth spline -- no previous run.
 		int idim = 1;				// Number of dimensions.
 		int k = m_k;				// Degree of spline.
+
+		int ib = std::min((k + 1) / 2, (int) bc.size());	// The number of derivative constraints at beginning. Max: (k + 1) / 2
+		int ie = std::min((k + 1) / 2, (int) ec.size());	// The number of derivative constraints at end. Max: (k + 1) / 2
 
 		int mx = m * idim;			// Dimension of x array.
 		int nest = m + k + 1;		// Estimate of number of knots for storage allotment.
@@ -474,6 +529,212 @@ public:
 		cp.resize(np);
 		m_t.resize(nest);
 		m_c.resize(nc);
+
+		m_min = std::numeric_limits<double>::max();
+		m_max = std::numeric_limits<double>::lowest();
+
+		// Populate the points buffer.
+		for(size_t i = 0; i < pts.size(); ++i) {
+			double x0 = pts[i][m_xidx];
+			double y0 = pts[i][m_yidx];
+			if(x0 < m_min) m_min = x0;
+			if(x0 > m_max) m_max = x0;
+			u[i] = x0;
+			x[i] = y0;
+			w[i] = weights[i];
+		}
+
+		// Populate the constraints buffers.
+		if(ib > 0) {
+			for(int l = 0; l < ib; ++l) {
+				for(int j = 0; j < idim; ++j)
+					db[idim * l + j] = bc[l];
+			}
+		}
+		if(ie > 0) {
+			for(int l = 0; l < ie; ++l) {
+				for(int j = 0; j < idim; ++j)
+					de[idim * l + j] = ec[l];
+			}
+		}
+
+		concur_(&iopt, &idim, &m, u.data(), &mx, x.data(), xx.data(), w.data(),
+				&ib, db.data(), &nb, &ie, de.data(), &ne,
+				&k, &s, &nest, &n, m_t.data(), &nc, m_c.data(),
+				&np, cp.data(), &m_resid, wrk.data(), &lwrk, iwrk.data(), &m_ier);
+
+		// Trim the coef and knot arrays.
+		if(nc < m_c.size())
+			m_c.resize(nc);
+		if(n < m_t.size())
+			m_t.resize(n);
+
+		std::cerr << "Resid: " << m_resid << "\n";
+
+		if(m_ier != 0)
+			std::cerr << "Error: " << m_ier << "\n";
+
+		switch(m_ier) {
+		case -1:
+			m_errStr = "Interpolating spline.";
+			break;
+		case -2:
+			m_errStr = "Least squares spline.";
+			break;
+		case 1:
+			m_errStr = "nest is too small.";
+			break;
+		case 2:
+			m_errStr = "s is probably too small.";
+			break;
+		case 3:
+			m_errStr = "Maximum number of iterations exceeded. s may be too small";
+			break;
+		case 4:
+			m_errStr = "x values are not strictly increasing.";
+			break;
+		case 5:
+			m_errStr = "d value must be positive.";
+			break;
+		case 10:
+			if(ib > (m_k + 1) / 2 || ie > (m_k + 1) / 2)
+				m_errStr = "Constraint array is too large.";
+			if(iopt < -1 || iopt > 1)
+				m_errStr = "iopt must be in the range -1 - 1.";
+			if(m_k < 1 || m_k > 5 || m_k % 2 == 0)
+				m_errStr = "Degree must be odd, in the range 1 - 5.";
+			if(m <= m_k)
+				m_errStr = "Number of coordinates must be larger than the degree.";
+			if(nest <= 2 * m_k + 2)
+				m_errStr = "Nest must be larger than 2 * k + 2.";
+			if(weights.size() != pts.size())
+				m_errStr = "Number of weights must equal number of coordinates.";
+			if(lwrk < (m_k + 1) * m + nest * (7 + 3 * m_k))
+				m_errStr = "lwrk is too small.";
+			if(iopt == -1 && ((n < 2 * m_k + 2) || (n > std::min(nest, m + m_k + 1))))
+				m_errStr = "n is out of range.";
+			break;
+		}
+
+		return valid();
+	}
+
+	/**
+	 * @param begin 	An iterator into list of points with an x and y property. X is the abscissa; y is the ordinate.
+	 * @param end	 	The end iterator of the point list.
+	 * @param weight 	A scalar giving the weight for each data point.
+	 * @param s 		The smoothing factor.
+	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 */
+	template <class Iter>
+	bool fitLS(Iter begin, Iter end, double weight, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		std::vector<P> pts(begin, end);
+		return fitLS(pts, weight, s, bc, ec);
+	}
+
+	/**
+	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
+	 * @param weight 	A scalar giving the weight for each data point.
+	 * @param s 		The smoothing factor.
+	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 */
+	bool fitLS(const std::vector<P>& pts, double weight, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		std::vector<double> weights(pts.size());
+		for(size_t i = 0; i < weights.size(); ++i)
+			weights[i] = weight;
+
+		return fitLS(pts, weights, s, bc, ec);
+	}
+
+	/**
+	 * @param begin 	An iterator into list of points with an x and y property. X is the abscissa; y is the ordinate.
+	 * @param end	 	The end iterator of the point list.
+	 * @param weights	A list of weights at each data point.
+	 * @param s 		The smoothing factor.
+	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 */
+	template <class Iter>
+	bool fitLS(Iter begin, Iter end, const std::vector<double>& weights, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		std::vector<P> pts(begin, end);
+		return fitLS(pts, weights, s, bc, ec);
+	}
+
+	/**
+	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
+	 * @param weights	A list of weights at each data point.
+	 * @param s 		The smoothing factor.
+	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 */
+	bool fitLS(const std::vector<P>& pts, const std::vector<double>& weights, double s,
+			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+
+		m_errStr = "";
+		m_ier = NOT_RUN;
+
+		if(pts.size() < m_k - std::max((int) bc.size() - 1, 0) - std::max((int) ec.size() - 1, 0)) {
+			m_errStr = "Too few points.";
+			return false;
+		}
+
+		if(weights.size() != pts.size()) {
+			m_errStr = "Weights and coordinates must be the same size.";
+			return false;
+		}
+
+		static std::vector<double> u; 		// ? If iopt is zero, need not be supplied.
+		static std::vector<double> x; 		// Coordinates (multi dimensional).
+		static std::vector<double> w; 		// Weights
+		static std::vector<double> db;		// Constains the constraints on the derivatives from 0->n at beginning.
+		static std::vector<double> de;		// Constains the constraints on the derivatives from 0->n at end.
+		static std::vector<double> cp;		// Coefficients with boundary constraints.
+		static std::vector<double> xx;		// Working space.
+		static std::vector<double> wrk;		// Work space.
+		static std::vector<int> iwrk;		// Work space.
+
+		int m = pts.size();			// Number of points.
+
+		int iopt = -1;				// Smooth spline -- no previous run.
+		int idim = 1;				// Number of dimensions.
+		int k = m_k;				// Degree of spline.
+
+		int ib = std::min((k + 1) / 2, (int) bc.size());	// The number of derivative constraints at beginning. Max: (k + 1) / 2
+		int ie = std::min((k + 1) / 2, (int) ec.size());	// The number of derivative constraints at end. Max: (k + 1) / 2
+
+		int mx = m * idim;			// Dimension of x array.
+		int nest = m + k + 1;		// Estimate of number of knots for storage allotment.
+		int nc = nest * idim;		// Dimension of coefficient array.
+
+		int nb = std::max(1, ib * idim);					// Dimension of db.
+		int ne = std::max(1, ie * idim);					// Dimension of de.
+		int np = 2 * (k + 1) * idim;							// Number of coefficients with boundary constraints.
+		int lwrk = m * (k + 1) + nest * (6 + idim + 3 * k);		// Size of work space.
+
+		int n;	// Number of resulting knots.
+
+		// Initalize the arrays.
+		u.resize(m);
+		w.resize(m);
+		x.resize(mx);
+		xx.resize(mx);
+		wrk.resize(lwrk);
+		iwrk.resize(nest);
+		db.resize(nb);
+		de.resize(ne);
+		cp.resize(np);
+
+		n = nest;
+		m_t = Util::linspace(u[0], u[u.size() - 1], n);
+		m_c.resize(n);
 
 		m_min = std::numeric_limits<double>::max();
 		m_max = std::numeric_limits<double>::lowest();
@@ -559,7 +820,7 @@ public:
 			break;
 		}
 
-		return m_ier == 0;
+		return valid();
 	}
 
 	/**
@@ -594,7 +855,7 @@ public:
 		}
 		 int m = x.size();
 		 int n = m_t.size();
-		 int e = 3; // No extrapolate
+		 int e = 2; // No extrapolate
 		 int ier = NOT_RUN;
 		 y.resize(x.size());
 		 if(derivative == 0) {
@@ -603,6 +864,8 @@ public:
 			 std::vector<double> wrk(n);
 			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, (double*) x.data(), y.data(), &m, &e, wrk.data(), &ier);
 		 }
+		 if(ier != 0)
+			 std::cerr << "Evaluate error: " << ier << "\n";
 		 return ier == 0;
 	}
 
@@ -637,37 +900,15 @@ public:
 	std::vector<double> derivatives(double at, std::vector<int> k) {
 		if(!valid())
 			return {};
-		std::vector<double> xx(1), yy(1), result(k.size());
+		static std::vector<double> xx(1);
+		static std::vector<double> yy(1);
+		std::vector<double> result(k.size());
 		xx[0] = at;
 		for(size_t i = 0; i < k.size(); ++i) {
 			evaluate(xx, yy, k[i]);
-			result[i] = yy[i];
+			result[i] = yy[0];
 		}
 		return result;
-	}
-
-	/**
-	 * Populate the vector with regularly spaced doubles, according to count.
-	 *
-	 * @param x0 The starting x.
-	 * @param x1 The ending x.
-	 * @param lst The output list of values.
-	 * @param count The number of items.
-	 */
-	static std::vector<double> linspace(double x0, double x1, int count) {
-		if(count < 2) count = 2;
-		std::vector<double> lst(count);
-		if(count == 2) {
-			lst[0] = x0;
-			lst[1] = x1;
-		} else {
-			lst.resize(count);
-			double dist = (x1 - x0) / (count - 1);
-			for(size_t i = 0; i < count - 1; ++i)
-				lst[i] = x0 + dist * i;
-			lst[count - 1] = x1;
-		}
-		return lst;
 	}
 
 };

@@ -35,7 +35,7 @@ private:
 	Eigen::Vector3d m_planeOrigin;
 	double m_maxDist;
 
-	std::unordered_set<size_t> m_seen; ///<! Map to prevent duplicates. TODO: Hack.
+	std::unordered_set<size_t> m_seen; 	///<! Map to prevent duplicates. TODO: Hack.
 
 public:
 
