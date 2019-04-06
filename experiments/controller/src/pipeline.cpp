@@ -240,9 +240,9 @@ void run(ProfileDialog* dlg) {
 			//std::cout << "Altitude: " << altitude << "\n";
 
 			altitude += config.altitude;
-			orig[2] = altitude;
-			start[2] = altitude;
-			end[2] = altitude;
+			//orig[2] = altitude;
+			//start[2] = altitude;
+			//end[2] = altitude;
 		}
 
 		pd->draw();

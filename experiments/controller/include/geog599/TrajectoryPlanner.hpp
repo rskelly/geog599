@@ -19,7 +19,7 @@
 #include "geog599/PointSource.hpp"
 #include "geog599/PointFilter.hpp"
 #include "ds/Octree.hpp"
-#include "math/SmoothSpline.hpp"
+#include "math/RBF.hpp"
 
 namespace uav {
 namespace geog599 {
@@ -248,7 +248,7 @@ private:
 	int m_splineIdx;							///!< The current spline index.
 	double m_blockSize;							///!< The length of trajectory sections that can be finalized. Used to calculate the spline index.
 	int m_finalIndex;							///!< The last finalized index.
-	std::map<int, SmoothSpline<P>> m_splines;	///!< Computes and stores the spline coefficients.
+	std::map<int, RBF<P>> m_splines;	///!< Computes and stores the spline coefficients.
 
 
 public:
@@ -344,19 +344,8 @@ public:
 	 *
 	 * @return A list of the knots found by the spline algorithm.
 	 */
-	std::vector<P> knots() {
-		std::vector<P> lst;
-		for(auto& it : m_splines) {
-			SmoothSpline<P>& spline = it.second;
-			if(spline.valid()) {
-				const std::vector<double>& t = spline.knots();
-				std::vector<double> z(t.size());
-				spline.evaluate(t, z, 0);
-				for(size_t i = 0; i < t.size(); ++i)
-					lst.emplace_back(0, t[i], z[i]);
-			}
-		}
-		return lst;
+	const std::vector<P>& knots() const {
+		return m_splines.at(0).pknots();
 	}
 
 	/**
@@ -364,7 +353,7 @@ public:
 	 *
 	 * @return A reference to the SmoothSpline instance owned by this class.
 	 */
-	const std::map<int, uav::math::SmoothSpline<P>>& splines() {
+	const std::map<int, uav::math::RBF<P>>& splines() {
 		return m_splines;
 	}
 
@@ -400,16 +389,12 @@ public:
 	 */
 	bool splineAltitude(std::list<P>& altitude, int count) {
 		using namespace uav::math;
-		if(m_splines.empty())
-			return false;
-		for(int i = 0; i < m_splineIdx; ++i) {
-			SmoothSpline<P>& spline = m_splines.at(i);
-			std::vector<double> y = SmoothSpline<P>::linspace(spline.min(), spline.max(), count);
-			std::vector<double> z0(count);
-			if(spline.evaluate(y, z0, 0)) {
-				for(size_t j = 0; j < y.size(); ++j)
-					altitude.emplace_back(0, y[j], z0[j], 0);
-			}
+		RBF<P>& spline = m_splines.at(0);
+		std::vector<double> y = Util::linspace(spline.min(), spline.max(), count);
+		std::vector<double> z0(count);
+		if(spline.evaluate(y, z0, 0)) {
+			for(size_t j = 0; j < y.size(); ++j)
+				altitude.emplace_back(0, y[j], z0[j], 0);
 		}
 		return true;
 	}
@@ -506,45 +491,16 @@ public:
 	bool generateTrajectory() {
 		using namespace uav::math;
 
-		// First, find the iterators bounding the block's y-range.
-		double dy0 = m_splineY;
-		double dy1 = (m_finalIndex + 1) * m_blockSize;
-		auto first = m_surface.begin();
-		while(first->y() < dy0)
-			++first;
-		auto last = first;
-		while(last->y() < dy1)
-			++last;
+		RBF<P>& spline = m_splines[m_splineIdx];
 
-		// Create a list from the range. If it's too smal, wait til next time.
-		std::list<P> surface(first, last);
-		if(surface.size() < 4)
-			return false;
-
-		// Create a spline for this block if there isn't one.
-		if(m_splines.find(m_splineIdx) == m_splines.end())
-			m_splines.insert(std::make_pair(m_splineIdx, SmoothSpline<P>(3, 1, 2)));
-
-		SmoothSpline<P>& spline = m_splines.at(m_splineIdx);
-
-		// Get the boundary constraints.
-		std::vector<double> cb;
-		std::vector<double> ce;
-		if(m_splineIdx > 0) {
-			SmoothSpline<P>& spline0 = m_splines[m_splineIdx - 1];
-			cb = spline0.derivatives(first->y(), {0, 1});
-		}
-
-		std::cout << first->y() << " - " << last->y() << " -- " << m_surface.size() << "\n";
-		auto next = last;
-		next++;
 		// Try to compute the spline. If it fails, don't update the index or boundary position.
-		if(spline.fit(first, next, m_smooth, cb, ce)) {
-			m_knots.insert(m_knots.end(), spline.knots().begin(), spline.knots().end());
+		if(spline.fit(m_surface.begin(), m_surface.end(), m_smooth)) {
+			std::vector<double> kts = spline.knots();
+			m_knots.insert(m_knots.end(), kts.begin(), kts.end());
 			//m_coeffs.assign(m_spline.coefficients().begin(), m_spline.coefficients().end());
 			//m_spline.derivatives(block.endPos, {0, 1});
-			++m_splineIdx;
-			m_splineY = last->y();
+			//++m_splineIdx;
+			//m_splineY = last->y();
 			return true;
 		}
 		return false;
@@ -576,12 +532,8 @@ public:
 	 * @return The altitude of the trajectory at the given y-coordinate.
 	 */
 	bool getTrajectoryAltitude(double y, double& z) {
-		int idx = (int) (y / m_blockSize);
-		if(m_splines.find(idx) != m_splines.end()) {
-			uav::math::SmoothSpline<P>& spline = m_splines.at(idx);
-			return spline.evaluate(y, z, 0);
-		}
-		return false;
+		uav::math::RBF<P>& spline = m_splines[0];
+		return spline.evaluate(y, z, 0);
 	}
 
 	/**
@@ -602,7 +554,7 @@ public:
 			z.push_back(pt.z());
 		}
 		for(auto& it : m_splines) {
-			uav::math::SmoothSpline<P>& spline = it.second;
+			uav::math::RBF<P>& spline = it.second;
 			if(!spline.evaluate(y, z0, 0))
 				z0.resize(z.size());
 			if(!spline.evaluate(y, z1, 1))
