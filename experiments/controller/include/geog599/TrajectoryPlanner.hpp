@@ -19,7 +19,7 @@
 #include "geog599/PointSource.hpp"
 #include "geog599/PointFilter.hpp"
 #include "ds/Octree.hpp"
-#include "math/RBF.hpp"
+#include "math/Avg.hpp"
 
 namespace uav {
 namespace geog599 {
@@ -248,7 +248,7 @@ private:
 	int m_splineIdx;							///!< The current spline index.
 	double m_blockSize;							///!< The length of trajectory sections that can be finalized. Used to calculate the spline index.
 	int m_finalIndex;							///!< The last finalized index.
-	std::map<int, RBF<P>> m_splines;	///!< Computes and stores the spline coefficients.
+	std::map<int, Avg<P>> m_splines;	///!< Computes and stores the spline coefficients.
 
 
 public:
@@ -353,7 +353,7 @@ public:
 	 *
 	 * @return A reference to the SmoothSpline instance owned by this class.
 	 */
-	const std::map<int, uav::math::RBF<P>>& splines() {
+	const std::map<int, uav::math::Avg<P>>& splines() {
 		return m_splines;
 	}
 
@@ -387,18 +387,35 @@ public:
 	 *
 	 * @param count The number of equally spaced abscissae to compute the altitude on.
 	 */
-	bool splineAltitude(std::list<P>& altitude, int count) {
+	bool splineAltitude(std::list<P>& altitude, double spacing) {
 		using namespace uav::math;
-		RBF<P>& spline = m_splines.at(0);
-		std::vector<double> y = Util::linspace(spline.min(), spline.max(), count);
-		std::vector<double> z0(count);
+		if(m_splines.empty())
+			return false;
+		Avg<P>& spline = m_splines.at(0);
+		std::vector<double> y = Util::linspace(spline.min(), spline.max(), spacing);
+		std::vector<double> z0(y.size());
 		if(spline.evaluate(y, z0, 0)) {
 			for(size_t j = 0; j < y.size(); ++j)
 				altitude.emplace_back(0, y[j], z0[j], 0);
+			return true;
 		}
-		return true;
+		return false;
 	}
 
+	bool splineAltitude(double x, double& y) {
+		using namespace uav::math;
+		if(m_splines.empty())
+			return false;
+		Avg<P>& spline = m_splines.at(0);
+		static std::vector<double> y0(1);
+		static std::vector<double> z0(1);
+		y0[0] = x;
+		if(spline.evaluate(y0, z0, 0)) {
+			y = z0[0];
+			return true;
+		}
+		return false;
+	}
 	/**
 	 * Compute and return the 2nd derivative (acceleration) of the current trajectory,
 	 * and return it as a list of P, where y occurs every step from the start to end
@@ -491,7 +508,7 @@ public:
 	bool generateTrajectory() {
 		using namespace uav::math;
 
-		RBF<P>& spline = m_splines[m_splineIdx];
+		Avg<P>& spline = m_splines[m_splineIdx];
 
 		// Try to compute the spline. If it fails, don't update the index or boundary position.
 		if(spline.fit(m_surface.begin(), m_surface.end(), m_smooth)) {
@@ -532,7 +549,7 @@ public:
 	 * @return The altitude of the trajectory at the given y-coordinate.
 	 */
 	bool getTrajectoryAltitude(double y, double& z) {
-		uav::math::RBF<P>& spline = m_splines[0];
+		uav::math::Avg<P>& spline = m_splines[0];
 		return spline.evaluate(y, z, 0);
 	}
 
@@ -554,7 +571,7 @@ public:
 			z.push_back(pt.z());
 		}
 		for(auto& it : m_splines) {
-			uav::math::RBF<P>& spline = it.second;
+			uav::math::Avg<P>& spline = it.second;
 			if(!spline.evaluate(y, z0, 0))
 				z0.resize(z.size());
 			if(!spline.evaluate(y, z1, 1))

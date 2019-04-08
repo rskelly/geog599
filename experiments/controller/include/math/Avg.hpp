@@ -5,8 +5,8 @@
  *      Author: rob
  */
 
-#ifndef INCLUDE_MATH_RBF_HPP_
-#define INCLUDE_MATH_RBF_HPP_
+#ifndef INCLUDE_MATH_AVG_HPP_
+#define INCLUDE_MATH_AVG_HPP_
 
 #include <vector>
 #include <cmath>
@@ -17,33 +17,26 @@ namespace uav {
 namespace math {
 
 template <class P>
-class RBF {
+class Avg {
 private:
 	std::vector<P> m_output;
-	double m_spacing;
+	double m_radius;
 	double m_xmin;
 	double m_xmax;
 
-	double m_2pi;
-
 public:
 
-	RBF() :
-		m_spacing(1),
-		m_xmin(0), m_xmax(0),
-		m_2pi(std::sqrt(2.0 * M_PI)) {
+	Avg() :
+		m_radius(5),
+		m_xmin(0), m_xmax(0) {
 	}
 
-
-	double fn(double t, double u, double sigma) {
-		return (1.0 / (sigma * m_2pi)) * std::exp(std::pow((t - u) / sigma, 2.0) * -0.5)	;
-	}
 
 	template <class Iter>
-		bool fit(Iter begin, Iter end, double s,
+	bool fit(Iter begin, Iter end, double s,
 				const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
 		std::vector<P> pts(begin, end);
-		fit(pts, s, m_spacing);
+		fit(pts, s);
 	}
 
 	double min() const {
@@ -54,22 +47,37 @@ public:
 		return m_xmax;
 	}
 
-	bool fit(const std::vector<P>& pts, double sigma, double spacing) {
+	bool fit(const std::vector<P>& pts, double spacing) {
+
+		if(pts.empty())
+			return false;
 
 		m_xmin = pts[0].y();
 		m_xmax = pts[pts.size() - 1].y();
-		std::vector<double> x = Util::linspace(m_xmin, m_xmax, (int) std::ceil((m_xmax - m_xmin) / spacing));
+		std::vector<double> x = Util::linspace(m_xmin, m_xmax, spacing);
 		m_output.resize(x.size());
 		for(P& p : m_output)
 			p.z(0);
 
 		for(size_t i = 0; i < x.size(); ++i) {
 			m_output[i].y(x[i]);
+			double s = 0, w = 0;
 			for(size_t j = 0; j < pts.size(); ++j) {
 				const P& pt = pts[j];
-				double f = fn(x[i], pt.y(), sigma);
-				m_output[i].z(m_output[i].z() + f * pt.z());
+				double d = std::abs(pt.y() - x[i]);
+				if(d > m_radius)
+					continue;
+				double w0 = 1.0 - d / m_radius;
+				if(w0 == 1) {
+					s = pt.z();
+					w = 1;
+					break;
+				} else {
+					w += w0;
+					s += pt.z() * w0;
+				}
 			}
+			m_output[i].z(s / w);
 		}
 
 		return true;
@@ -102,10 +110,16 @@ public:
 			std::fill(y.begin(), y.end(), 0);
 			return false;
 		}
+		double minx = m_output[0].y();
+		double maxx = m_output[m_output.size() - 1].y();
 		if(derivative == 0) {
 			size_t j = 0;
 			for(size_t i = 0; i < x.size(); ++i) {
 				double x0 = x[i];
+				if(x0 < minx || x0 > maxx) {
+					y[i] = std::nan("");
+					continue;
+				}
 				while(x0 < m_output[j].y() && j > 0)
 					--j;
 				while(j < m_output.size() - 1 && x0 >= m_output[j + 1].y())
@@ -122,6 +136,10 @@ public:
 			size_t j = 0;
 			for(size_t i = 0; i < x.size(); ++i) {
 				double x0 = x[i];
+				if(x0 < minx || x0 > maxx) {
+					y[i] = std::nan("");
+					continue;
+				}
 				while(x0 < m_output[j].y() && j > 0)
 					--j;
 				while(j < m_output.size() - 1 && x0 >= m_output[j + 1].y())
@@ -187,4 +205,4 @@ public:
 } // uav
 
 
-#endif /* INCLUDE_MATH_RBF_HPP_ */
+#endif /* INCLUDE_MATH_AVG_HPP_ */

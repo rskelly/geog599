@@ -75,39 +75,47 @@ void run(ProfileDialog* dlg) {
 
 	// Some pre-prepared configurations.
 	std::unordered_map<std::string, PipelineConfig> configs;
-	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt", 305, 10, 5, 1, 2, _rad(5.7)));
-	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt", 305, 10, 0.5, 1, 2, _rad(5.7)));
+	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 25, 10, 0.5, 1, 4, _rad(5.7)));
 	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
 	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
 	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 80, 10, 20, 1, 10, _rad(5.7)));
-	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 316, 4, 5, 1, 3, _rad(5.7)));
-	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 316, 4, 2, 1, 3, _rad(5.7)));
+	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 316, 4, 0.5, 1, 3, _rad(5.7)));
+	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 316, 4, 0.25, 1, 3, _rad(5.7)));
 
-	const PipelineConfig& config = configs["bart_2"];
+	const PipelineConfig& config = configs["bart_1"];
 
+	std::cout << "Loading points from " << config.filename << "\n";
 	std::string ptsFile = config.filename;
-
 	ProfilePointSource<Pt> tps(ptsFile);
 	const Octree<Pt>& tree = tps.octree();
 
-	double backStep = 50;
+	double backStepX = 0, backStepY = 0;
+	double viewx0 = 0, viewx1 = 0;
 
 	double startx, endx, starty, endy;
 	if(tree.width() > tree.length()) {
-		startx = tree.minx() - backStep;
+		startx = tree.minx();
 		endx = tree.maxx();
 		starty = tree.midy();
 		endy = tree.midy();
+		backStepX = 50;
+		viewx1 = endx;
+		viewx0 = startx;
 	} else {
 		startx = tree.midx();
 		endx = tree.midx();
-		starty = tree.miny() - backStep;
+		starty = tree.miny();
 		endy = tree.maxy();
+		backStepY = 50;
+		viewx1 = endy;
+		viewx0 = starty;
 	}
+
+	std::cout << "Configuring matrices\n";
 
 	// Offset from trajectory, and vehicle altitude (start altitude + offset)
 	double altitude = config.startAltitude;
-
 
 	// The start/origin and end points. These are determined by the point cloud.
 	Vector3d orig(startx, starty, altitude);
@@ -134,6 +142,8 @@ void run(ProfileDialog* dlg) {
 
 	tps.setNormal(planeNorm);
 	tps.setMaxDist(MAX_DIST);
+
+	std::cout << "Drawing setup\n";
 
 	Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp(5);
@@ -168,20 +178,23 @@ void run(ProfileDialog* dlg) {
 	knots.setLineColor(255, 0, 255);
 
 	ProfileDialog* pd = ProfileDialog::instance();
-	pd->setBounds(0, tree.minz(), (end - start).norm(), tree.maxz());
+	pd->setBounds(viewx0, tree.minz(), viewx1, tree.maxz());
 	pd->addDrawConfig(&allPts);
 	pd->addDrawConfig(&surf);
 	pd->addDrawConfig(&spline);
 	pd->addDrawConfig(&knots);
 	pd->addDrawConfig(&alt);
-	pd->addDrawConfig(&uav);
 	pd->addDrawConfig(&knots);
+	pd->addDrawConfig(&uav);
 
-	double speed = 10.0; // m/s
-	int delay = 1000;	// 1 ms
+	std::cout << "Starting\n";
 
-	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
-	double stepy = (endy - starty) / (speed * delay);
+	double distance = (end - start).norm();
+	double speed = 5.0; // m/s
+	int delay = 100;	// 1 ms
+
+	double stepx = (endx - startx) / distance * (speed / delay); // m/s in milis
+	double stepy = (endy - starty) / distance * (speed / delay);
 
 	Vector3d step(stepx, stepy, 0);
 
@@ -192,23 +205,27 @@ void run(ProfileDialog* dlg) {
 		orig += step;
 
 		// Points prior to this are finalized.
-		double dy = (orig - start).norm() + 20.0;
+		double dy = (orig - start).norm();
 
 		tps.setOrigin(orig);
 
 		if(!tp.compute(Pt(0, dy, 0))) {
-			std::this_thread::yield();
+			usleep(delay);
 			continue;
 		}
 
-		std::this_thread::yield();
-
 		std::list<Pt> salt;
-		tp.splineAltitude(salt, 100);
+		tp.splineAltitude(salt, .5);
 
-		uav.data[0].first = 0;
-		uav.data[0].second = altitude;
-		alt.data.emplace_back(dy, altitude);
+		uav.data[0].first = dy;
+		double dz;
+		if(tp.splineAltitude(dy, dz) && !std::isnan(dz)) {
+			uav.data[0].second = dz + config.altitude;
+			alt.data.emplace_back(dy, dz + config.altitude);
+		} else {
+			uav.data[0].second = config.startAltitude + config.altitude;
+			alt.data.emplace_back(dy, config.startAltitude + config.altitude);
+		}
 
 		{
 			spline.data.clear();
@@ -226,26 +243,30 @@ void run(ProfileDialog* dlg) {
 				surf.data.emplace_back(pt.y(), pt.z());
 		}
 		{
+			/*
 			knots.data.clear();
 			std::vector<Pt> pts = tp.knots();
 			for(const Pt& pt : pts)
 				knots.data.emplace_back(pt.y(), pt.z());
+				*/
 		}
 
 		//std::cout << tp.lastY() - dy << "\n";
 
-		if(!tp.getTrajectoryAltitude(dy, altitude)) {
+		if(!tp.getTrajectoryAltitude(dy, altitude) || std::isnan(altitude)) {
 			//std::cerr << "Couldn't get new altitude.";
 		} else {
-			//std::cout << "Altitude: " << altitude << "\n";
+			std::cout << "Pos: " << dy << ", " << altitude + config.altitude << "\n";
 
 			altitude += config.altitude;
-			//orig[2] = altitude;
-			//start[2] = altitude;
-			//end[2] = altitude;
+			orig[2] = altitude;
+			start[2] = altitude;
+			end[2] = altitude;
 		}
 
 		pd->draw();
+
+		usleep(delay);
 
 	}
 

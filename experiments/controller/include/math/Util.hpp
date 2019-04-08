@@ -40,6 +40,20 @@ public:
 		return lst;
 	}
 
+	static std::vector<double> linspace(double x0, double x1, double spacing) {
+		int count = (int) ((x1 - x0) / spacing);
+		if(count < 2) count = 2;
+		if(count == 2) {
+			return {x0, x1};
+		} else {
+			std::vector<double> result(count);
+			for(int i = 0; i < count - 1; ++i)
+				result[i] = x0 + spacing * i;
+			result[count - 1] = x1;
+			return result;
+		}
+	}
+
 };
 
 } // math
