@@ -58,7 +58,6 @@ public:
 		if(dw > 0 && dh > 0) {
 
 			QPen pen;
-			pen.setWidth(1);
 
 			QSize size = this->size();
 			int w = size.width() - buf * 2;
@@ -74,18 +73,21 @@ public:
 					pts.emplace_back(buf + (it.first - minx) * scale, hh - hh / 2 + dh / 2 * scale - (it.second - miny) * scale);
 				switch(config->drawType) {
 				case DrawType::Line:
+					pen.setWidth(1);
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
 					p.setPen(pen);
 					p.drawPolyline(pts.data(), pts.size());
 					break;
 				case DrawType::Points:
+					pen.setWidth(2);
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
 					p.setPen(pen);
 					p.drawPoints(pts.data(), pts.size());
 					break;
 				case DrawType::Cross:
+					pen.setWidth(1);
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
 					p.setPen(pen);

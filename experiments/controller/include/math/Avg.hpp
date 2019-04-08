@@ -26,17 +26,17 @@ private:
 
 public:
 
-	Avg() :
-		m_radius(5),
+	Avg(double radius = 20) :
+		m_radius(radius),
 		m_xmin(0), m_xmax(0) {
 	}
 
+	void setRadius(double radius) {
+		m_radius = radius;
+	}
 
-	template <class Iter>
-	bool fit(Iter begin, Iter end, double s,
-				const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
-		std::vector<P> pts(begin, end);
-		fit(pts, s);
+	double radius() const {
+		return m_radius;
 	}
 
 	double min() const {
@@ -47,6 +47,13 @@ public:
 		return m_xmax;
 	}
 
+	template <class Iter>
+	bool fit(Iter begin, Iter end, double s,
+				const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+		std::vector<P> pts(begin, end);
+		fit(pts, s);
+	}
+
 	bool fit(const std::vector<P>& pts, double spacing) {
 
 		if(pts.empty())
@@ -54,25 +61,24 @@ public:
 
 		m_xmin = pts[0].y();
 		m_xmax = pts[pts.size() - 1].y();
+
 		std::vector<double> x = Util::linspace(m_xmin, m_xmax, spacing);
 		m_output.resize(x.size());
-		for(P& p : m_output)
-			p.z(0);
 
 		for(size_t i = 0; i < x.size(); ++i) {
 			m_output[i].y(x[i]);
 			double s = 0, w = 0;
 			for(size_t j = 0; j < pts.size(); ++j) {
 				const P& pt = pts[j];
-				double d = std::abs(pt.y() - x[i]);
-				if(d > m_radius)
+				double d = std::pow(pt.y() - x[i], 2.0);
+				if(d > m_radius * m_radius)
 					continue;
-				double w0 = 1.0 - d / m_radius;
-				if(w0 == 1) {
+				if(d == 0) {
 					s = pt.z();
 					w = 1;
 					break;
 				} else {
+					double w0 = 1.0 / d;
 					w += w0;
 					s += pt.z() * w0;
 				}

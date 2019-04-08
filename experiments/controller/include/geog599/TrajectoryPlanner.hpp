@@ -508,6 +508,9 @@ public:
 	bool generateTrajectory() {
 		using namespace uav::math;
 
+		if(m_splines.find(m_splineIdx) == m_splines.end())
+			m_splines.emplace(std::make_pair(m_splineIdx, Avg<P>(m_alpha)));
+
 		Avg<P>& spline = m_splines[m_splineIdx];
 
 		// Try to compute the spline. If it fails, don't update the index or boundary position.
@@ -549,8 +552,11 @@ public:
 	 * @return The altitude of the trajectory at the given y-coordinate.
 	 */
 	bool getTrajectoryAltitude(double y, double& z) {
-		uav::math::Avg<P>& spline = m_splines[0];
-		return spline.evaluate(y, z, 0);
+		if(m_splines.find(m_splineIdx) != m_splines.end()) {
+			uav::math::Avg<P>& spline = m_splines[m_splineIdx];
+			return spline.evaluate(y, z, 0);
+		}
+		return false;
 	}
 
 	/**

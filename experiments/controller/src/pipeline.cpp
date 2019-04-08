@@ -79,9 +79,9 @@ void run(ProfileDialog* dlg) {
 	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 25, 10, 0.5, 1, 4, _rad(5.7)));
 	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
 	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
-	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 80, 10, 20, 1, 10, _rad(5.7)));
-	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 316, 4, 0.5, 1, 3, _rad(5.7)));
-	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 316, 4, 0.25, 1, 3, _rad(5.7)));
+	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 100, 10, 20, 1, 20, _rad(5.7)));
+	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 325, 10, 0.5, 1, 10, _rad(5.7)));
+	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 325, 10, 0.25, 1, 10, _rad(5.7)));
 
 	const PipelineConfig& config = configs["bart_1"];
 
@@ -99,7 +99,7 @@ void run(ProfileDialog* dlg) {
 		endx = tree.maxx();
 		starty = tree.midy();
 		endy = tree.midy();
-		backStepX = 50;
+		backStepX = 100;
 		viewx1 = endx;
 		viewx0 = startx;
 	} else {
@@ -107,7 +107,7 @@ void run(ProfileDialog* dlg) {
 		endx = tree.midx();
 		starty = tree.miny();
 		endy = tree.maxy();
-		backStepY = 50;
+		backStepY = 100;
 		viewx1 = endy;
 		viewx0 = starty;
 	}
@@ -197,6 +197,9 @@ void run(ProfileDialog* dlg) {
 	double stepy = (endy - starty) / distance * (speed / delay);
 
 	Vector3d step(stepx, stepy, 0);
+	Vector3d backstep(-backStepX, -backStepY, 0);
+	orig += backstep;
+	start += backstep;
 
 	uav.data.emplace_back(0, altitude);
 
@@ -205,11 +208,11 @@ void run(ProfileDialog* dlg) {
 		orig += step;
 
 		// Points prior to this are finalized.
-		double dy = (orig - start).norm();
+		double dy = (orig - start).norm() - backStepY;
 
 		tps.setOrigin(orig);
 
-		if(!tp.compute(Pt(0, dy, 0))) {
+		if(!tp.compute(Pt(0, dy + backStepY, 0))) {	// Should be forward distance for finalization.
 			usleep(delay);
 			continue;
 		}
@@ -223,8 +226,8 @@ void run(ProfileDialog* dlg) {
 			uav.data[0].second = dz + config.altitude;
 			alt.data.emplace_back(dy, dz + config.altitude);
 		} else {
-			uav.data[0].second = config.startAltitude + config.altitude;
-			alt.data.emplace_back(dy, config.startAltitude + config.altitude);
+			//uav.data[0].second = config.startAltitude + config.altitude;
+			//alt.data.emplace_back(dy, config.startAltitude + config.altitude);
 		}
 
 		{
@@ -253,11 +256,13 @@ void run(ProfileDialog* dlg) {
 
 		//std::cout << tp.lastY() - dy << "\n";
 
-		if(!tp.getTrajectoryAltitude(dy, altitude) || std::isnan(altitude)) {
+		double newalt;
+		if(!tp.getTrajectoryAltitude(dy, newalt) || std::isnan(newalt)) {
 			//std::cerr << "Couldn't get new altitude.";
 		} else {
 			std::cout << "Pos: " << dy << ", " << altitude + config.altitude << "\n";
 
+			altitude = newalt;
 			altitude += config.altitude;
 			orig[2] = altitude;
 			start[2] = altitude;
