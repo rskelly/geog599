@@ -5,8 +5,6 @@
  *      Author: rob
  */
 
-#include <mutex>
-
 #include "profile.hpp"
 
 ProfileDialog* __inst;
@@ -30,10 +28,7 @@ void ProfileDialog::removeDrawConfig(DrawConfig* config) {
 	//canvas->configs.erase(config);
 }
 
-std::mutex __mtx;
-
 void ProfileDialog::draw() {
-	std::lock_guard<std::mutex> lk(__mtx);
 	canvas->update();
 }
 

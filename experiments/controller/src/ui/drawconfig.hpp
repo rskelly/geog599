@@ -19,13 +19,24 @@ enum DrawType {
 };
 
 class DrawConfig {
+private:
+	std::vector<std::pair<double, double>> _data;
+
 public:
 	Qt::PenStyle lineStyle;
 	QColor lineColor;
 	Qt::BrushStyle fillStyle;
 	QColor fillColor;
 	DrawType drawType;
-	std::vector<std::pair<double, double>> data;
+	std::mutex mtx;
+
+	const std::vector<std::pair<double, double>>& data() const {
+		return _data;
+	}
+
+	std::vector<std::pair<double, double>>& data() {
+		return _data;
+	}
 
 	DrawConfig() {
 		lineStyle = Qt::PenStyle::SolidLine;

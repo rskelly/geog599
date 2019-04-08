@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <mutex>
 
 #include <QtWidgets/QOpenGLWidget>
 #include <QtGui/QPainter>
@@ -21,8 +22,9 @@ private:
 	void calcBounds() {
 		miny = minx = std::numeric_limits<float>::max();
 		maxy = maxx = std::numeric_limits<float>::lowest();
-		for(const DrawConfig* config : configs) {
-			for(const auto& it : config->data) {
+		for(DrawConfig* config : configs) {
+			std::lock_guard<std::mutex> lk(config->mtx);
+			for(const auto& it : config->data()) {
 				if(it.first < minx) minx = it.first;
 				if(it.first > maxx) maxx = it.first;
 				if(it.second < miny) miny = it.second;
@@ -67,10 +69,14 @@ public:
 			float scale = std::min(w / dw, h / dh);
 
 			p.begin(this);
-			for(const DrawConfig* config : configs) {
+			for(DrawConfig* config : configs) {
 				std::vector<QPointF> pts;
-				for(const auto& it : config->data)
-					pts.emplace_back(buf + (it.first - minx) * scale, hh - hh / 2 + dh / 2 * scale - (it.second - miny) * scale);
+				{
+					std::lock_guard<std::mutex> lk(config->mtx);
+					const std::vector<std::pair<double, double>>& data = config->data();
+					for(const auto& it : data)
+						pts.emplace_back(buf + (it.first - minx) * scale, hh - hh / 2 + dh / 2 * scale - (it.second - miny) * scale);
+				}
 				switch(config->drawType) {
 				case DrawType::Line:
 					pen.setWidth(1);

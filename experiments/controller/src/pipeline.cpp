@@ -80,8 +80,8 @@ void run(ProfileDialog* dlg) {
 	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
 	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
 	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 100, 10, 20, 1, 20, _rad(5.7)));
-	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 325, 10, 0.5, 1, 10, _rad(5.7)));
-	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 325, 10, 0.25, 1, 10, _rad(5.7)));
+	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 304, 10, 0.5, 1, 10, _rad(5.7)));
+	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 304, 10, 0.25, 1, 10, _rad(5.7)));
 
 	const PipelineConfig& config = configs["bart_1"];
 
@@ -115,7 +115,7 @@ void run(ProfileDialog* dlg) {
 	std::cout << "Configuring matrices\n";
 
 	// Offset from trajectory, and vehicle altitude (start altitude + offset)
-	double altitude = config.startAltitude;
+	double altitude = config.startAltitude + config.altitude;
 
 	// The start/origin and end points. These are determined by the point cloud.
 	Vector3d orig(startx, starty, altitude);
@@ -201,7 +201,7 @@ void run(ProfileDialog* dlg) {
 	orig += backstep;
 	start += backstep;
 
-	uav.data.emplace_back(0, altitude);
+	uav.data().emplace_back(0, altitude);
 
 	while(!dlg->done) {
 
@@ -220,30 +220,37 @@ void run(ProfileDialog* dlg) {
 		std::list<Pt> salt;
 		tp.splineAltitude(salt, .5);
 
-		uav.data[0].first = dy;
 		double dz;
-		if(tp.splineAltitude(dy, dz) && !std::isnan(dz)) {
-			uav.data[0].second = dz + config.altitude;
-			alt.data.emplace_back(dy, dz + config.altitude);
-		} else {
-			//uav.data[0].second = config.startAltitude + config.altitude;
-			//alt.data.emplace_back(dy, config.startAltitude + config.altitude);
+		if(!tp.splineAltitude(dy, dz) || std::isnan(dz)) {
+			dz = config.startAltitude + config.altitude;
 		}
 
 		{
-			spline.data.clear();
+			std::lock_guard<std::mutex> lk(uav.mtx);
+			uav.data()[0].first = dy;
+			uav.data()[0].second = dz + config.altitude;
+		}
+		{
+			std::lock_guard<std::mutex> lk(alt.mtx);
+			alt.data().emplace_back(dy, dz + config.altitude);
+		}
+		{
+			std::lock_guard<std::mutex> lk(spline.mtx);
+			spline.data().clear();
 			for(const Pt& pt : salt)
-				spline.data.emplace_back(pt.y(), pt.z() + config.altitude);
+				spline.data().emplace_back(pt.y(), pt.z() + config.altitude);
 		}
 		{
-			allPts.data.clear();
+			std::lock_guard<std::mutex> lk(allPts.mtx);
+			allPts.data().clear();
 			for(const Pt& pt : tp.allPoints())
-				allPts.data.emplace_back(pt.y(), pt.z());
+				allPts.data().emplace_back(pt.y(), pt.z());
 		}
 		{
-			surf.data.clear();
+			std::lock_guard<std::mutex> lk(surf.mtx);
+			surf.data().clear();
 			for(const Pt& pt : tp.surface())
-				surf.data.emplace_back(pt.y(), pt.z());
+				surf.data().emplace_back(pt.y(), pt.z());
 		}
 		{
 			/*
