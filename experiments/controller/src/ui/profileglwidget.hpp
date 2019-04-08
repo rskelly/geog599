@@ -49,7 +49,7 @@ public:
 	void paintGL() {
 
 		if(!boundsSet)
-			calcBounds();
+			return;
 
 		int buf = 5;
 		float dw = maxx - minx;
@@ -71,7 +71,7 @@ public:
 			for(const DrawConfig* config : configs) {
 				std::vector<QPointF> pts;
 				for(const auto& it : config->data)
-					pts.emplace_back(buf + (it.first - minx) * scale, hh - buf - (it.second - miny) * scale);
+					pts.emplace_back(buf + (it.first - minx) * scale, hh - hh / 2 + dh / 2 * scale - (it.second - miny) * scale);
 				switch(config->drawType) {
 				case DrawType::Line:
 					pen.setColor(config->lineColor);
