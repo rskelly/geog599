@@ -5,8 +5,8 @@
  *      Author: rob
  */
 
-#ifndef INCLUDE_MATH_RBF_HPP_
-#define INCLUDE_MATH_RBF_HPP_
+#ifndef INCLUDE_MATH_RBFSMOOTHER_HPP_
+#define INCLUDE_MATH_RBFSMOOTHER_HPP_
 
 #include <vector>
 #include <cmath>
@@ -187,4 +187,4 @@ public:
 } // uav
 
 
-#endif /* INCLUDE_MATH_RBF_HPP_ */
+#endif /* INCLUDE_MATH_RBFSMOOTHER_HPP_ */

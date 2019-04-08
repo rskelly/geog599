@@ -8,7 +8,7 @@
 #include <vector>
 #include <iostream>
 
-#include "math/SmoothSpline.hpp"
+#include "../include/math/SplineSmoother.hpp"
 #include "geog599/TrajectoryPlanner.hpp"
 
 using namespace uav::geog599;

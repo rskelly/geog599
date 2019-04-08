@@ -5,30 +5,55 @@
  *      Author: rob
  */
 
-#ifndef INCLUDE_MATH_AVG_HPP_
-#define INCLUDE_MATH_AVG_HPP_
+#ifndef INCLUDE_MATH_IDWSMOOTHER_HPP_
+#define INCLUDE_MATH_IDWSMOOTHER_HPP_
 
 #include <vector>
 #include <cmath>
 
 #include "math/Util.hpp"
+#include "math/Smoother.hpp"
 
 namespace uav {
 namespace math {
 
 template <class P>
-class Avg {
+class IDWSmoother : public Smoother<P> {
 private:
-	std::vector<P> m_output;
-	double m_radius;
-	double m_xmin;
-	double m_xmax;
+	std::vector<P> m_output;	///<! A list of the output values, with abscissa spacing given by spacing.
+	double m_radius;			///<! The radius of the smoothing kernel.
+	double m_xmin;				///<! The minimum abscissa value.
+	double m_xmax;				///<! The maximum abscissa value.
+	double m_exponent;			///<! The weighting exponent.
+	bool m_interpolate;			///<! Interpolate the points, rather than smoothing them (?)
+	double m_spacing;			///<! The spacing between output abscissae.
 
+	std::vector<double> m_knots;
+	std::vector<double> m_coefs;
 public:
 
-	Avg(double radius = 20) :
+	/***
+	 * Build a smoother with the given properties.
+	 *
+	 * @param radius The radius of the kernel.
+	 * @param exponent The exponent of the weight function.
+	 * @param interpolate If true, interpolate the points.
+	 * @param spacing The spacing between output abscissae.
+	 */
+	IDWSmoother(double radius = 20, double exponent = 2, bool interpolate = true, double spacing = 1) :
 		m_radius(radius),
-		m_xmin(0), m_xmax(0) {
+		m_xmin(0), m_xmax(0),
+		m_exponent(exponent),
+		m_interpolate(interpolate),
+		m_spacing(spacing) {
+	}
+
+	void setSpacing(double spacing) {
+		m_spacing = spacing;
+	}
+
+	double spacing() const {
+		return m_spacing;
 	}
 
 	void setRadius(double radius) {
@@ -47,14 +72,11 @@ public:
 		return m_xmax;
 	}
 
-	template <class Iter>
-	bool fit(Iter begin, Iter end, double s,
-				const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
-		std::vector<P> pts(begin, end);
-		fit(pts, s);
+	bool valid() const {
+		return this->m_err == 0 && !m_output.empty();
 	}
 
-	bool fit(const std::vector<P>& pts, double spacing) {
+	bool fit(const std::vector<P>& pts) {
 
 		if(pts.empty())
 			return false;
@@ -62,18 +84,18 @@ public:
 		m_xmin = pts[0].y();
 		m_xmax = pts[pts.size() - 1].y();
 
-		std::vector<double> x = Util::linspace(m_xmin, m_xmax, spacing);
-		m_output.resize(x.size());
+		m_knots = Util::linspace(m_xmin, m_xmax, m_spacing);
+		m_output.resize(m_knots.size());
 
-		for(size_t i = 0; i < x.size(); ++i) {
-			m_output[i].y(x[i]);
+		for(size_t i = 0; i < m_knots.size(); ++i) {
+			m_output[i].y(m_knots[i]);
 			double s = 0, w = 0;
 			for(size_t j = 0; j < pts.size(); ++j) {
 				const P& pt = pts[j];
-				double d = std::pow(pt.y() - x[i], 2.0);
+				double d = std::pow(pt.y() - m_knots[i], m_exponent);
 				if(d > m_radius * m_radius)
 					continue;
-				if(d == 0) {
+				if(m_interpolate && d == 0) {
 					s = pt.z();
 					w = 1;
 					break;
@@ -85,32 +107,22 @@ public:
 			}
 			m_output[i].z(s / w);
 		}
-
+		this->m_err = 0;
 		return true;
 	}
 
-	std::vector<double> knots() const {
-		std::vector<double> k;
-		for(const P& p : m_output)
-			k.push_back(p.y());
-		return k;
+	const std::vector<double>& knots() const {
+		return m_knots;
 	}
 
-	const std::vector<P>& pknots() const {
+	const std::vector<double>& coefficients() const {
+		return m_coefs;
+	}
+
+	const std::vector<P>& output() const {
 		return m_output;
 	}
 
-	bool valid() {
-		return !m_output.empty();
-	}
-
-	/**
-	 * Evaluate the spline at the given positions in x for the given derivative (default 0).
-	 *
-	 * @param x The x-coordinates.
-	 * @param y The y-coordinates (output).
-	 * @param derivative The derivative to evaluate. Defaults to zero, the original function.
-	 */
 	bool evaluate(const std::vector<double>& x, std::vector<double>& y, int derivative = 0) {
 		if(!valid()) {
 			std::fill(y.begin(), y.end(), 0);
@@ -164,12 +176,6 @@ public:
 		return true;
 	}
 
-	/**
-	 * Evaluate the spline at the given position in x for the given derivative (default 0).
-	 * @param x The x-coordinate.
-	 * @param y The y-coordinate (output).
-	 * @param derivative The derivative to evaluate. Defaults to zero, the original function.
-	 */
 	bool evaluate(double x, double& y, int derivative = 0) {
 		if(!valid()) {
 			y = 0;
@@ -184,14 +190,6 @@ public:
 		return false;
 	}
 
-	/**
-	 * Return a list of the derivative values at the given location,
-	 * for the derivative orders in k (starting with zero).
-	 *
-	 * @param at The x-coordinate.
-	 * @param k A vector containing derivative indices.
-	 * @return A vector of derivative values.
-	 */
 	std::vector<double> derivatives(double at, std::vector<int> k) {
 		if(!valid())
 			return {};
@@ -211,4 +209,4 @@ public:
 } // uav
 
 
-#endif /* INCLUDE_MATH_AVG_HPP_ */
+#endif /* INCLUDE_MATH_IDWSMOOTHER_HPP_ */

@@ -14,12 +14,16 @@
 #include <iostream>
 #include <fstream>
 #include <unordered_set>
+#include <map>
 
+#include "math/Smoother.hpp"
+#include "math/SplineSmoother.hpp"
+#include "math/IDWSmoother.hpp"
 #include "geog599/PointSorter.hpp"
 #include "geog599/PointSource.hpp"
 #include "geog599/PointFilter.hpp"
+#include "geog599/ConcaveHull.hpp"
 #include "ds/Octree.hpp"
-#include "math/Avg.hpp"
 
 namespace uav {
 namespace geog599 {
@@ -213,6 +217,7 @@ public:
 };
 
 using namespace uav::math;
+using namespace uav::geog599;
 
 /**
  * The trajectory planner reads a stream of Cartesian points from a real or simulated
@@ -221,8 +226,8 @@ using namespace uav::math;
 template <class P>
 class TrajectoryPlanner {
 private:
-	uav::geog599::PointSource<P>* m_ptSource;			///!< A source for 3D points, either fake or real.
-	uav::geog599::PointSorter<P> m_ptSorter;			///!< A 2D sorter for the point stream.
+	PointSource<P>* m_ptSource;			///!< A source for 3D points, either fake or real.
+	PointSorter<P> m_ptSorter;			///!< A 2D sorter for the point stream.
 
 	std::list<P> m_all;					///!< The entire received pointset.
 	std::list<P> m_points;				///!< The list of current filtered points, including new ones.
@@ -248,7 +253,8 @@ private:
 	int m_splineIdx;							///!< The current spline index.
 	double m_blockSize;							///!< The length of trajectory sections that can be finalized. Used to calculate the spline index.
 	int m_finalIndex;							///!< The last finalized index.
-	std::map<int, Avg<P>> m_splines;	///!< Computes and stores the spline coefficients.
+	bool m_blockWise;							///!< If true, a smoother is constructed for each block.
+	std::map<int, Smoother<P>*> m_smoothers;	///!< Computes and stores the spline coefficients.
 
 
 public:
@@ -267,7 +273,7 @@ public:
 		//m_procComplete(false), m_genComplete(false),
 		m_lastY(0),
 		m_splineY(0), m_splineIdx(0),
-		m_blockSize(blockSize), m_finalIndex(-1) {
+		m_blockSize(blockSize), m_finalIndex(-1), m_blockWise(false) {
 	}
 
 	/**
@@ -345,7 +351,7 @@ public:
 	 * @return A list of the knots found by the spline algorithm.
 	 */
 	const std::vector<P>& knots() const {
-		return m_splines.at(0).pknots();
+		return m_smoothers.at(0).pknots();
 	}
 
 	/**
@@ -353,8 +359,8 @@ public:
 	 *
 	 * @return A reference to the SmoothSpline instance owned by this class.
 	 */
-	const std::map<int, uav::math::Avg<P>>& splines() {
-		return m_splines;
+	const std::map<int, Smoother<P>*>& splines() {
+		return m_smoothers;
 	}
 
 	/**
@@ -389,12 +395,12 @@ public:
 	 */
 	bool splineAltitude(std::list<P>& altitude, double spacing) {
 		using namespace uav::math;
-		if(m_splines.empty())
+		if(m_smoothers.empty())
 			return false;
-		Avg<P>& spline = m_splines.at(0);
-		std::vector<double> y = Util::linspace(spline.min(), spline.max(), spacing);
+		Smoother<P>* spline = m_smoothers.at(0);
+		std::vector<double> y = Util::linspace(spline->min(), spline->max(), spacing);
 		std::vector<double> z0(y.size());
-		if(spline.evaluate(y, z0, 0)) {
+		if(spline->evaluate(y, z0, 0)) {
 			for(size_t j = 0; j < y.size(); ++j)
 				altitude.emplace_back(0, y[j], z0[j], 0);
 			return true;
@@ -404,13 +410,13 @@ public:
 
 	bool splineAltitude(double x, double& y) {
 		using namespace uav::math;
-		if(m_splines.empty())
+		if(m_smoothers.empty())
 			return false;
-		Avg<P>& spline = m_splines.at(0);
+		Smoother<P>* spline = m_smoothers.at(0);
 		static std::vector<double> y0(1);
 		static std::vector<double> z0(1);
 		y0[0] = x;
-		if(spline.evaluate(y0, z0, 0)) {
+		if(spline->evaluate(y0, z0, 0)) {
 			y = z0[0];
 			return true;
 		}
@@ -444,7 +450,7 @@ public:
 	 *
 	 * @param psrc The PointSource.
 	 */
-	void setPointSource(uav::geog599::PointSource<P>* psrc) {
+	void setPointSource(PointSource<P>* psrc) {
 		m_ptSource = psrc;
 	}
 
@@ -467,6 +473,38 @@ public:
 	}
 
 	std::unordered_set<size_t> m_yseen;	///<! To find and pertub duplicate y-values.
+
+	/**
+	 * Build and return a smoother according to the configuration.
+	 */
+	Smoother<P>* buildSmoother() {
+		int smootherType = 2;
+		m_blockWise = false;
+		switch(smootherType) {
+		case 0:
+		{
+			double radius = m_blockSize;
+			double exponent = 2;
+			bool interp = true;
+			double spacing = 1;
+			IDWSmoother<P>* s1 = new IDWSmoother<P>(radius, exponent, interp, spacing);
+			return s1;
+		}
+		case 1:
+		{
+			SplineSmoother<P>* s2 = new SplineSmoother<P>(3, 1, 2);
+			return s2;
+		}
+		case 2:
+		{
+			m_blockWise = true;
+			SplineSmoother<P>* s2 = new SplineSmoother<P>(3, 1, 2);
+			return s2;
+		}
+		default:
+			throw std::runtime_error("No smoother defined.");
+		}
+	}
 
 	/**
 	 * Process points from the PointSource. Apply filters,
@@ -497,7 +535,7 @@ public:
 				m_all.push_back(pt);	// TODO: Only useful for display.
 				m_ptSorter.insert(pt, m_points);
 			}
-			return uav::geog599::ConcaveHull<P>::buildHull(m_points, m_surface, m_alpha);
+			return ConcaveHull<P>::buildHull(m_points, m_surface, m_alpha);
 		}
 		return false;
 	}
@@ -506,21 +544,31 @@ public:
 	 * Generate the trajectory from the filtered point-set.
 	 */
 	bool generateTrajectory() {
-		using namespace uav::math;
 
-		if(m_splines.find(m_splineIdx) == m_splines.end())
-			m_splines.emplace(std::make_pair(m_splineIdx, Avg<P>(m_alpha)));
+		// If a smoother isn't available, build a new one.
+		if(m_smoothers.find(m_splineIdx) == m_smoothers.end())
+			m_smoothers.emplace(std::make_pair(m_splineIdx, buildSmoother()));
 
-		Avg<P>& spline = m_splines[m_splineIdx];
+		Smoother<P>* spline = m_smoothers[m_splineIdx];
+
+		std::list<P> surface;
+		double lastY;
+		if(m_blockWise) {
+
+		} else {
+			surface(m_surface.begin(), m_surface.end());
+		}
 
 		// Try to compute the spline. If it fails, don't update the index or boundary position.
-		if(spline.fit(m_surface.begin(), m_surface.end(), m_smooth)) {
-			std::vector<double> kts = spline.knots();
+		if(spline->fit(surface.begin(), surface.end())) {
+			std::vector<double> kts = spline->knots();
 			m_knots.insert(m_knots.end(), kts.begin(), kts.end());
 			//m_coeffs.assign(m_spline.coefficients().begin(), m_spline.coefficients().end());
 			//m_spline.derivatives(block.endPos, {0, 1});
-			//++m_splineIdx;
-			//m_splineY = last->y();
+			if(m_blockWise) {
+				++m_splineIdx;
+				m_splineY = lastY;
+			}
 			return true;
 		}
 		return false;
@@ -552,9 +600,9 @@ public:
 	 * @return The altitude of the trajectory at the given y-coordinate.
 	 */
 	bool getTrajectoryAltitude(double y, double& z) {
-		if(m_splines.find(m_splineIdx) != m_splines.end()) {
-			uav::math::Avg<P>& spline = m_splines[m_splineIdx];
-			return spline.evaluate(y, z, 0);
+		if(m_smoothers.find(m_splineIdx) != m_smoothers.end()) {
+			Smoother<P>* spline = m_smoothers.at(m_splineIdx);
+			return spline->evaluate(y, z, 0);
 		}
 		return false;
 	}
@@ -576,13 +624,13 @@ public:
 			y.push_back(pt.y());
 			z.push_back(pt.z());
 		}
-		for(auto& it : m_splines) {
-			uav::math::Avg<P>& spline = it.second;
-			if(!spline.evaluate(y, z0, 0))
+		for(auto& it : m_smoothers) {
+			Smoother<P>* spline = it.second;
+			if(!spline->evaluate(y, z0, 0))
 				z0.resize(z.size());
-			if(!spline.evaluate(y, z1, 1))
+			if(!spline->evaluate(y, z1, 1))
 				z1.resize(z.size());
-			if(!spline.evaluate(y, z2, 2))
+			if(!spline->evaluate(y, z2, 2))
 				z2.resize(z.size());
 		}
 		for(size_t i = 0; i < y.size(); ++i) {
