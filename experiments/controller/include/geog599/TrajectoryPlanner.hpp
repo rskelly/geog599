@@ -498,8 +498,8 @@ public:
 		case 2:
 		{
 			m_blockWise = true;
-			SplineSmoother<P>* s2 = new SplineSmoother<P>(3, 1, 2);
-			return s2;
+			SplineSmoother<P>* s3 = new SplineSmoother<P>(3, 1, 2);
+			return s3;
 		}
 		default:
 			throw std::runtime_error("No smoother defined.");
@@ -545,6 +545,9 @@ public:
 	 */
 	bool generateTrajectory() {
 
+		if(m_surface.empty())
+			return false;
+
 		// If a smoother isn't available, build a new one.
 		if(m_smoothers.find(m_splineIdx) == m_smoothers.end())
 			m_smoothers.emplace(std::make_pair(m_splineIdx, buildSmoother()));
@@ -554,9 +557,14 @@ public:
 		std::list<P> surface;
 		double lastY;
 		if(m_blockWise) {
-
+			auto first = m_surface.end();
+			do {
+				--first;
+			} while(m_splineY < first->y() && first != m_surface.begin());
+			surface.assign(first, m_surface.end());
+			lastY = m_surface.back().y();
 		} else {
-			surface(m_surface.begin(), m_surface.end());
+			surface.assign(m_surface.begin(), m_surface.end());
 		}
 
 		// Try to compute the spline. If it fails, don't update the index or boundary position.

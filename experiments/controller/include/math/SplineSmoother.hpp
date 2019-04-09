@@ -219,10 +219,7 @@ private:
 	size_t m_yidx;								///<! Index for getting the y coordinate from the point object.
 
 	int m_k; 									///<! Degree of spline function.
-	int m_ier;									///<! Error result.
 	double m_resid;								///<! The sum of squared residuals.
-
-	std::string m_errStr;						///<! Descriptive message about the most recent error.
 
 	std::vector<double> m_bc;					///<! Constraints for the start of the spline.
 	std::vector<double> m_ec;					///<! Constraints for the end of the spline.
@@ -240,8 +237,9 @@ public:
 		m_min(std::numeric_limits<double>::max()), m_max(std::numeric_limits<double>::lowest()),
 		m_xidx(xidx), m_yidx(yidx),
 		m_k(order),
-		m_ier(NOT_RUN),
-		m_resid(0) {}
+		m_resid(0) {
+		this->m_err = NOT_RUN;
+	}
 
 	/**
 	 * Set the index of the x-coordinate in the point object.
@@ -310,7 +308,7 @@ public:
 	 * Returns true if the most recent call to fit was successful.
 	 */
 	bool valid() const {
-		return m_ier == 0;// && m_ier >= -2;
+		return this->m_err == 0;// && this->m_err >= -2;
 	}
 
 	/**
@@ -398,8 +396,8 @@ public:
 	 */
 	bool fit(const std::vector<P>& pts) {
 
-		m_errStr = "";
-		m_ier = NOT_RUN;
+		this->m_errMsg = "";
+		this->m_err = NOT_RUN;
 
 		if(pts.size() < m_k - std::max((int) m_bc.size() - 1, 0) - std::max((int) m_ec.size() - 1, 0)) {
 			this->setError(-5, "Too few points.");
@@ -482,7 +480,7 @@ public:
 		concur_(&iopt, &idim, &m, u.data(), &mx, x.data(), xx.data(), w.data(),
 				&ib, db.data(), &nb, &ie, de.data(), &ne,
 				&k, &s, &nest, &n, m_t.data(), &nc, m_c.data(),
-				&np, cp.data(), &m_resid, wrk.data(), &lwrk, iwrk.data(), &m_ier);
+				&np, cp.data(), &m_resid, wrk.data(), &lwrk, iwrk.data(), &this->m_err);
 
 		// Trim the coef and knot arrays.
 		if(nc < m_c.size())
@@ -492,48 +490,48 @@ public:
 
 		std::cerr << "Resid: " << m_resid << "\n";
 
-		if(m_ier != 0)
-			std::cerr << "Error: " << m_ier << "\n";
+		if(this->m_err != 0)
+			std::cerr << "Error: " << this->m_err << "\n";
 
-		switch(m_ier) {
+		switch(this->m_err) {
 		case -1:
-			m_errStr = "Interpolating spline.";
+			this->m_errMsg = "Interpolating spline.";
 			break;
 		case -2:
-			m_errStr = "Least squares spline.";
+			this->m_errMsg = "Least squares spline.";
 			break;
 		case 1:
-			m_errStr = "nest is too small.";
+			this->m_errMsg = "nest is too small.";
 			break;
 		case 2:
-			m_errStr = "s is probably too small.";
+			this->m_errMsg = "s is probably too small.";
 			break;
 		case 3:
-			m_errStr = "Maximum number of iterations exceeded. s may be too small";
+			this->m_errMsg = "Maximum number of iterations exceeded. s may be too small";
 			break;
 		case 4:
-			m_errStr = "x values are not strictly increasing.";
+			this->m_errMsg = "x values are not strictly increasing.";
 			break;
 		case 5:
-			m_errStr = "d value must be positive.";
+			this->m_errMsg = "d value must be positive.";
 			break;
 		case 10:
 			if(ib > (m_k + 1) / 2 || ie > (m_k + 1) / 2)
-				m_errStr = "Constraint array is too large.";
+				this->m_errMsg = "Constraint array is too large.";
 			if(iopt < -1 || iopt > 1)
-				m_errStr = "iopt must be in the range -1 - 1.";
+				this->m_errMsg = "iopt must be in the range -1 - 1.";
 			if(m_k < 1 || m_k > 5 || m_k % 2 == 0)
-				m_errStr = "Degree must be odd, in the range 1 - 5.";
+				this->m_errMsg = "Degree must be odd, in the range 1 - 5.";
 			if(m <= m_k)
-				m_errStr = "Number of coordinates must be larger than the degree.";
+				this->m_errMsg = "Number of coordinates must be larger than the degree.";
 			if(nest <= 2 * m_k + 2)
-				m_errStr = "Nest must be larger than 2 * k + 2.";
+				this->m_errMsg = "Nest must be larger than 2 * k + 2.";
 			if(w.size() != pts.size())
-				m_errStr = "Number of weights must equal number of coordinates.";
+				this->m_errMsg = "Number of weights must equal number of coordinates.";
 			if(lwrk < (m_k + 1) * m + nest * (7 + 3 * m_k))
-				m_errStr = "lwrk is too small.";
+				this->m_errMsg = "lwrk is too small.";
 			if(iopt == -1 && ((n < 2 * m_k + 2) || (n > std::min(nest, m + m_k + 1))))
-				m_errStr = "n is out of range.";
+				this->m_errMsg = "n is out of range.";
 			break;
 		}
 
