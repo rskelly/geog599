@@ -478,16 +478,15 @@ public:
 	 * Build and return a smoother according to the configuration.
 	 */
 	Smoother<P>* buildSmoother() {
-		int smootherType = 2;
+		int smootherType = 0;
 		m_blockWise = false;
 		switch(smootherType) {
 		case 0:
 		{
 			double radius = m_blockSize;
-			double exponent = 2;
-			bool interp = true;
-			double spacing = 1;
-			IDWSmoother<P>* s1 = new IDWSmoother<P>(radius, exponent, interp, spacing);
+			double exponent = 1.5;
+			double spacing = 2;
+			IDWSmoother<P>* s1 = new IDWSmoother<P>(radius, exponent, spacing);
 			return s1;
 		}
 		case 1:

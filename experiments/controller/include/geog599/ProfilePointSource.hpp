@@ -106,7 +106,11 @@ public:
 			std::ifstream input(filename);
 			std::string buf;
 			std::getline(input, buf);
+			size_t i = 0;
+			size_t skip = 20;
 			while(std::getline(input, buf)) {
+				if(++i % skip != 0)
+					continue;
 				std::stringstream ss(buf);
 				std::getline(ss, buf, ',');
 				double x = atof(buf.c_str());

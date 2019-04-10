@@ -25,7 +25,6 @@ private:
 	double m_xmin;				///<! The minimum abscissa value.
 	double m_xmax;				///<! The maximum abscissa value.
 	double m_exponent;			///<! The weighting exponent.
-	bool m_interpolate;			///<! Interpolate the points, rather than smoothing them (?)
 	double m_spacing;			///<! The spacing between output abscissae.
 
 	std::vector<double> m_knots;
@@ -37,14 +36,12 @@ public:
 	 *
 	 * @param radius The radius of the kernel.
 	 * @param exponent The exponent of the weight function.
-	 * @param interpolate If true, interpolate the points.
 	 * @param spacing The spacing between output abscissae.
 	 */
-	IDWSmoother(double radius = 20, double exponent = 2, bool interpolate = true, double spacing = 1) :
+	IDWSmoother(double radius = 20, double exponent = 2, double spacing = 1) :
 		m_radius(radius),
 		m_xmin(0), m_xmax(0),
 		m_exponent(exponent),
-		m_interpolate(interpolate),
 		m_spacing(spacing) {
 	}
 
@@ -92,10 +89,10 @@ public:
 			double s = 0, w = 0;
 			for(size_t j = 0; j < pts.size(); ++j) {
 				const P& pt = pts[j];
-				double d = std::pow(pt.y() - m_knots[i], m_exponent);
+				double d = std::pow(std::abs(pt.y() - m_knots[i]), m_exponent);
 				if(d > m_radius * m_radius)
 					continue;
-				if(m_interpolate && d == 0) {
+				if(d == 0) {
 					s = pt.z();
 					w = 1;
 					break;

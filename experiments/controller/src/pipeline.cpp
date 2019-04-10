@@ -191,7 +191,7 @@ void run(ProfileDialog* dlg) {
 
 	double distance = (end - start).norm();
 	double speed = 5.0; // m/s
-	int delay = 100;	// 1 ms
+	int delay = 500;	// 5 ms
 
 	double stepx = (endx - startx) / distance * (speed / delay); // m/s in milis
 	double stepy = (endy - starty) / distance * (speed / delay);
@@ -234,11 +234,14 @@ void run(ProfileDialog* dlg) {
 			std::lock_guard<std::mutex> lk(alt.mtx);
 			alt.data().emplace_back(dy, dz + config.altitude);
 		}
-		{
+		if(true) {
 			std::lock_guard<std::mutex> lk(spline.mtx);
 			spline.data().clear();
-			for(const Pt& pt : salt)
-				spline.data().emplace_back(pt.y(), pt.z() + config.altitude);
+			knots.data().clear();
+			for(const Pt& pt : salt) {
+				spline.data().emplace_back(pt.y(), pt.z());
+				knots.data().emplace_back(pt.y(), pt.z());
+			}
 		}
 		{
 			std::lock_guard<std::mutex> lk(allPts.mtx);
@@ -246,11 +249,14 @@ void run(ProfileDialog* dlg) {
 			for(const Pt& pt : tp.allPoints())
 				allPts.data().emplace_back(pt.y(), pt.z());
 		}
-		{
+		if(false){
 			std::lock_guard<std::mutex> lk(surf.mtx);
 			surf.data().clear();
-			for(const Pt& pt : tp.surface())
+			knots.data().clear();
+			for(const Pt& pt : tp.surface()) {
 				surf.data().emplace_back(pt.y(), pt.z());
+				knots.data().emplace_back(pt.y(), pt.z());
+			}
 		}
 		{
 			/*
@@ -267,7 +273,7 @@ void run(ProfileDialog* dlg) {
 		if(!tp.getTrajectoryAltitude(dy, newalt) || std::isnan(newalt)) {
 			//std::cerr << "Couldn't get new altitude.";
 		} else {
-			std::cout << "Pos: " << dy << ", " << altitude + config.altitude << "\n";
+			//std::cout << "Pos: " << dy << ", " << altitude + config.altitude << "\n";
 
 			altitude = newalt;
 			altitude += config.altitude;
