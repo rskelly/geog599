@@ -100,49 +100,53 @@ int main(int argc, char** argv) {
 					std::cerr << "Range: " << r.range() << ", " << r.timestamp() << "\n";
 				}
 				ranges.clear();
-				Eigen::Vector3d accelBody = orientation.accel();
 
-				if(ot0 == 0) {
-					ot0 = ot1 = orientation.timestamp();
-					Eigen::AngleAxisd roll(accelBody[1], Eigen::Vector3d::UnitY());
-					Eigen::AngleAxisd pitch(accelBody[0], Eigen::Vector3d::UnitX());
-					Eigen::AngleAxisd yaw(accelBody[2], Eigen::Vector3d::UnitZ());
-					Eigen::Quaternion<double> q = roll * yaw * pitch;
-					orientI = q.matrix();
-					//std::cerr << "Initial orientation: " << orientI << "\n";
-				} else {
-					ot1 = orientation.timestamp();
+				if(orientation.hasUpdate()) {
+					Eigen::Vector3d accelBody = orientation.accel();
+
+					if(ot0 == 0) {
+						ot0 = ot1 = orientation.timestamp();
+						Eigen::AngleAxisd roll(accelBody[1], Eigen::Vector3d::UnitY());
+						Eigen::AngleAxisd pitch(accelBody[0], Eigen::Vector3d::UnitX());
+						Eigen::AngleAxisd yaw(accelBody[2], Eigen::Vector3d::UnitZ());
+						Eigen::Quaternion<double> q = roll * yaw * pitch;
+						orientI = q.matrix();
+						//std::cerr << "Initial orientation: " << orientI << "\n";
+					} else {
+						ot1 = orientation.timestamp();
+					}
+					//Eigen::Vector3d accelBody = orientation.accel();
+					Eigen::Vector3d gyroBody = orientation.gyro();
+					std::cerr << "Accel: " << accelBody.norm() << ", " << accelBody[0] << ", " << accelBody[1] << ", " << accelBody[2] << ", " << ot1 << "\n";
+					std::cerr << "Gyro: " << gyroBody.norm() << ", " << gyroBody[0] << ", " << gyroBody[1] << ", " << gyroBody[2] << ", " << ot1 << "\n";
+					Eigen::Vector3d accelInert = accelBody - orientI * g;
+					//std::cerr << "Accel: " << accelInert.norm() << ", " << accelInert[0] << ", " << accelInert[1] << ", " << accelInert[2] << "\n";
+					/*
+					if(ot1 - ot0 > 0) {
+						double ot = (double) (ot1 - ot0) / 1000000.0;
+						vpx += accel[0] * ot;
+						vpy += accel[1] * ot;
+						vpz += accel[2] * ot;
+						vrx += gyro[0] * ot;
+						vry += gyro[1] * ot;
+						vrz += gyro[2] * ot;
+						px += vpx * ot;
+						py += vpy * ot;
+						pz += vpz * ot;
+						rx += vrx * ot;
+						ry += vry * ot;
+						rz += vrz * ot;
+						//std::cerr << "Orient: gyro: " << ot << ", " << o.gyro() << ", accel: " << a << ", " << o.timestamp() << "\n";
+						//std::cerr << "Pos: " << px << ", " << py << ", " << pz << "\n";
+						//std::cerr << "Ori: " << rx << ", " << ry << ", " << rz << "\n";
+						//std::cerr << "a " << accel[0] << ", " << accel[1] << ", " << accel[2] << "\n";
+						//std::cerr << "g " << gyro[0] << ", " << gyro[1] << ", " << gyro[2] << "\n";
+					}
+					*/
+					ot0 = ot1;
 				}
-				//Eigen::Vector3d accelBody = orientation.accel();
-				Eigen::Vector3d gyroBody = orientation.gyro();
-				//std::cerr << "Accel: " << accelBody.norm() << ", " << accelBody[0] << ", " << accelBody[1] << ", " << accelBody[2] << ", " << ot1 << "\n";
-				//std::cerr << "Gyro: " << gyroBody.norm() << ", " << gyroBody[0] << ", " << gyroBody[1] << ", " << gyroBody[2] << ", " << ot1 << "\n";
-				Eigen::Vector3d accelInert = accelBody - orientI * g;
-				//std::cerr << "Accel: " << accelInert.norm() << ", " << accelInert[0] << ", " << accelInert[1] << ", " << accelInert[2] << "\n";
-				/*
-				if(ot1 - ot0 > 0) {
-					double ot = (double) (ot1 - ot0) / 1000000.0;
-					vpx += accel[0] * ot;
-					vpy += accel[1] * ot;
-					vpz += accel[2] * ot;
-					vrx += gyro[0] * ot;
-					vry += gyro[1] * ot;
-					vrz += gyro[2] * ot;
-					px += vpx * ot;
-					py += vpy * ot;
-					pz += vpz * ot;
-					rx += vrx * ot;
-					ry += vry * ot;
-					rz += vrz * ot;
-					//std::cerr << "Orient: gyro: " << ot << ", " << o.gyro() << ", accel: " << a << ", " << o.timestamp() << "\n";
-					//std::cerr << "Pos: " << px << ", " << py << ", " << pz << "\n";
-					//std::cerr << "Ori: " << rx << ", " << ry << ", " << rz << "\n";
-					//std::cerr << "a " << accel[0] << ", " << accel[1] << ", " << accel[2] << "\n";
-					//std::cerr << "g " << gyro[0] << ", " << gyro[1] << ", " << gyro[2] << "\n";
-				}
-				*/
-				ot0 = ot1;
 			}
+
 			std::this_thread::yield();
 		}
 		cont.stop();

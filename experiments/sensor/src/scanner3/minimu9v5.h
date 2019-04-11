@@ -1,3 +1,4 @@
+
 #include <i2c_t3.h>
 
 /**
@@ -184,12 +185,15 @@
 #define AUTO_INC_ON   0b1
 #define AUTO_INC_OFF  0b0
 
+#define I2C_IMU_ADDR_GND 0x6A   // The device address if S0A is connected to ground.
+#define I2C_IMU_ADDR_SUP 0x6B   // The device address if S0A is connected to supply voltage.
+
 class MinIMU9v5 {
 private:
-  byte m_gyroAddr;
-  byte m_magAddr;
-  byte m_gyroConfig;
-  byte m_accelConfig;
+  uint8_t m_gyroAddr;
+  uint8_t m_magAddr;
+  uint8_t m_gyroConfig;
+  uint8_t m_accelConfig;
   float m_gyroFullScale;
   float m_accelFullScale;
 
@@ -200,19 +204,19 @@ private:
   
 public:
 
-  MinIMU9v5(byte gyroAddr = 0x6B, byte magAddr = 0) :
+  MinIMU9v5(byte gyroAddr = I2C_IMU_ADDR_GND, byte magAddr = 0) :
     m_gyroAddr(gyroAddr), m_magAddr(magAddr) {
   }
+  
+  int init() {
 
-  void init() {
-    Wire.begin();
-    Wire.setRate(F_BUS, 400000);
-    Wire.pinConfigure(I2C_PINS_18_19, I2C_PULLUP_INT);
-
+    Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_INT, 400000);
+    return 0;
     // Configure gyroscope
     m_gyroFullScale = 1.0 / (245.0 * 0xffff);
     m_gyroConfig = (GDR_1660Hz << 4) | (GFS_245dps << 2);
     writeByte(m_gyroAddr, CTRL2_G, m_gyroConfig);
+    return 1;
     writeByte(m_gyroAddr, CTRL7_G, 0);
 
     // Configure accelerometr
@@ -222,6 +226,8 @@ public:
 
     // Configure other.
     writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 2));
+
+    return 0;
   }
 
   /**
@@ -278,7 +284,7 @@ public:
     unsigned long t1 = micros();
     while(Wire.available() < len) {
       if(micros() - t1 > 1000000)
-        return 0;
+        return -1;
     }
     int i = 0;
     while(len--)
@@ -286,19 +292,19 @@ public:
     return i;
   }
 
-  void writeByte(byte addr, byte reg, byte val) {
+  int writeByte(byte addr, byte reg, byte val) {
     Wire.beginTransmission(addr);
     Wire.write(reg);
     Wire.write(val);
-    Wire.endTransmission(I2C_STOP);
+    return Wire.endTransmission();
   }
 
-  void writeBytes(byte addr, byte reg, byte* buf, int len) {
+  int writeBytes(byte addr, byte reg, byte* buf, int len) {
     Wire.beginTransmission(addr);
     Wire.write(reg);
     for(int i = 0; i < len; ++i)
       Wire.write(buf[i]);
-    Wire.endTransmission(I2C_STOP);
+    return Wire.endTransmission(I2C_STOP);
   }
   
 };

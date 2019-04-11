@@ -129,12 +129,18 @@ private:
 	MovingAverage<int16_t> m_a2;
 	uint64_t m_timestamp;
 	size_t m_count;
+	bool m_update;
 
 public:
 
 	Orientation() :
 		m_timestamp(0),
-		m_count(0) {
+		m_count(0),
+		m_update(false) {
+	}
+
+	bool hasUpdate() const {
+		return m_update;
 	}
 
 	void update(int16_t g0, int16_t g1, int16_t g2, 
@@ -157,6 +163,7 @@ public:
 			m_a2.setOffset(-m_a2.value());
 		}
 		*/
+		m_update = true;
 	}
 
 	Eigen::Vector3d gyro() const {
