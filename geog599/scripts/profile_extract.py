@@ -25,9 +25,9 @@ def p3angle(p1, p2, p3):
 	'''
 	Return the angle between 3 points. p2 is the middle point.
 	'''
-	_, x1, y1 = p1
-	_, x2, y2 = p2
-	_, x3, y3 = p3
+	x1, y1 = p1
+	x2, y2 = p2
+	x3, y3 = p3
 	ax = x1 - x2
 	ay = y1 - y2
 	bx = x3 - x2
@@ -47,17 +47,18 @@ def plane_filter(coords, dist, v1, v2, ox, oy, oz, ex, ey, ez):
 	nhat = nhat / np.sqrt(np.dot(nhat, nhat))
 	out = []
 	m = math.pi / 2.
-	n = math.pi * 1.5
 	for x, y, z in list(coords):
 		try:
 			ds = abs(nhat[0] * (x - ox) + nhat[1] * (y - oy) + nhat[2] * (z - oz)) / math.sqrt(nhat[0] ** 2. + nhat[1] ** 2. + nhat[2] ** 2.)
-			ro = p3angle((x, y), (ox, oy), (ex, ey))
-			re = p3angle((x, y), (ex, ey), (ox, oy))
-			if ds <= dist and (ro <= m or ro >= n) and (re <= m or re >= n):
-				out.append((x, y, z))
+			if ds < dist:
+				ro = abs(p3angle((x, y), (ox, oy), (ex, ey)))
+				re = abs(p3angle((x, y), (ex, ey), (ox, oy)))
+				if ro <= m and re <= m:
+					out.append((x, y, z))
 		except Exception as e:
 			print(e)
 			print(x, y, z, ox, oy, oz, ex, ey, ez)
+			sys.exit(1)
 	return np.array(out)
 
 def define_plane(start, end):
@@ -91,7 +92,6 @@ def run(lasfile, swath, start, end, outfile):
 	coords = get_points(lasfile)
 	v1, v2 = define_plane(np.array([sx, sy, 0.]), np.array([ex, ey, 0.]))
 	coords = plane_filter(coords, swath / 2., v1, v2, sx, sy, 0. , ex, ey, 0.)
-
 	coords = np.apply_along_axis(point_trans((sx, sy)), 1, coords)
 
 	with open(outfile, 'w') as o:

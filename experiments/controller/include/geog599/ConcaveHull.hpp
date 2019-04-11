@@ -1,12 +1,12 @@
 /*
- * HullPointFilter.hpp
+ * CONCAVEHULL.hpp
  *
  *  Created on: Feb 7, 2019
  *      Author: rob
  */
 
-#ifndef INCLUDE_HULLPOINTFILTER_HPP_
-#define INCLUDE_HULLPOINTFILTER_HPP_
+#ifndef INCLUDE_CONCAVEHULL_HPP_
+#define INCLUDE_CONCAVEHULL_HPP_
 
 #include <cmath>
 #include <vector>
@@ -16,7 +16,6 @@
 
 namespace uav {
 namespace geog599 {
-namespace filter {
 
 namespace hullutils {
 
@@ -24,8 +23,8 @@ namespace hullutils {
 	 * Determine what side of the line joining p0 and p1, p is on.
 	 */
 	template <class P>
-	int cross(const P& p0, const P& p1, const P& p) {
-		int cross = (p0.y() - p.y()) * (p1.z() - p.z()) - (p0.z() - p.z()) * (p1.y() - p.y());
+	double cross(const P& p1, const P& p2, const P& p3) {
+		double cross = (p2.y() - p1.y()) * (p3.z() - p1.z()) - (p2.z() - p1.z()) * (p3.y() - p1.y());
 		return cross;
 	}
 
@@ -58,63 +57,45 @@ namespace hullutils {
  *
  */
 template <class P>
-class HullPointFilter : public uav::geog599::filter::PointFilter<P> {
-private:
-	double m_alpha; ///!< The alpha value.
+class ConcaveHull {
+public:
 
-protected:
-
-	void doFilter(std::list<P>& pts) {
+	static bool buildHull(std::list<P>& pts, std::list<P>& hull, double alpha) {
 
 		if(pts.size() < 3)
-			return;
+			return false;
 
 		using namespace hullutils;
 
-		auto iter = pts.begin();
-		std::vector<P> hull;
-		hull.push_back(*iter);
-		++iter;
-		hull.push_back(*iter);
-		++iter;
+		alpha *= alpha;
 
-		// If there's an alpha do a degenerate hull. It could have been one loop but we save a bit of
-		// time and visual complexity this way.
+		auto iter = pts.begin();
+		std::vector<P> hull0;
+
+		// Compute concave hull.
 		do {
-			while(hull.size() >= 2
-					&& cross(hull[hull.size() - 2], hull[hull.size() - 1], *iter) >= 0
-					&& lengthY(hull[hull.size() - 2], *iter) <= (m_alpha * m_alpha)) {
-				hull.pop_back();
+			while(hull0.size() >= 2
+					&& cross(hull0[hull0.size() - 2], hull0[hull0.size() - 1], *iter) >= 0
+					&& lengthY(hull0[hull0.size() - 2], *iter) <= alpha
+					) {
+				hull0.pop_back();
 			}
-			hull.push_back(*iter);
+			hull0.push_back(*iter);
 		} while(++iter != pts.end());
 
-		// Write the new items into the old list.
-		pts.assign(hull.begin(), hull.end());
-	}
-
-public:
-	/**
-	 * Create a HullPointFilter with optional alpha value.
-	 *
-	 * @param alpha Controls the maximum segment length of the hull. Zero is no limit.
-	 */
-	HullPointFilter(double alpha = 0) :
-		uav::geog599::filter::PointFilter<P>(),
-		m_alpha(alpha) {}
-
-	/**
-	 * Destroy the filter.
-	 */
-	~HullPointFilter() {
+		if(hull0.size() >= 2) {
+			// Write the new items into the old list.
+			hull.assign(hull0.begin(), hull0.end());
+			return true;
+		}
+		return false;
 	}
 
 };
 
-} // filter
 } // geog599
 } // uav
 
 
 
-#endif /* INCLUDE_HULLPOINTFILTER_HPP_ */
+#endif /* INCLUDE_CONCAVEHULL_HPP_ */

@@ -117,9 +117,10 @@ function getHull(pts, alpha) {
   let hull = [pts[0], pts[1]];
   for(let i = 2; i < pts.length; ++i) {
     // The _length call limits the range of the search for a convex point; causes an alpha-like surface.
-    let c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]);
-    let l = _lengthY(hull[hull.length - 2], pts[i]);
-    while(hull.length >= 2 && (c = _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i])) >= 0 && (alpha <= 0 || (l = _lengthY(hull[hull.length - 2], pts[i])) <= alpha))
+    let c, l;
+    while(hull.length >= 2 
+        && _cross(hull[hull.length - 2], hull[hull.length - 1], pts[i]) >= 0 
+        && (alpha <= 0 || _lengthY(hull[hull.length - 2], pts[i])) <= alpha)
       hull.pop();
     hull.push(pts[i]);
   }

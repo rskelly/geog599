@@ -11,23 +11,22 @@
 #include <unordered_map>
 #include <thread>
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+
 
 #include <QtWidgets/QApplication>
 
+#include "../include/geog599/ConcaveHull.hpp"
 #include "geog599/TrajectoryPlanner.hpp"
-#include "geog599/HullPointFilter.hpp"
 #include "geog599/GeomPointFilter.hpp"
 #include "geog599/PlaneFilter.hpp"
 #include "geog599/PointSorter.hpp"
-#include "geog599/LASPointSource.hpp"
+#include "geog599/ProfilePointSource.hpp"
 
 #include "ui/profile.hpp"
 #include "ui/drawconfig.hpp"
 
 #define MAX_RANGE 100 // The maximum laser range
-#define MAX_DIST 1 // The maximum distance between a point and the search plane.
+#define MAX_DIST .1 // The maximum distance between a point and the search plane.
 #define TIME_DELAY 100
 #define SPEED 10
 
@@ -54,20 +53,21 @@ class PipelineConfig {
 public:
 	std::string filename;
 	double startAltitude;
-	double offset;
+	double altitude;
 	double smooth;
 	double weight;
 	double alpha;
 	double laserAngle;
-	double scanAngle;
 
 	PipelineConfig() :
-		PipelineConfig("", 0, 0, 0, 0, 0, 0, 0) {}
+		PipelineConfig("", 0, 0, 0, 0, 0, 0) {}
 
-	PipelineConfig(const std::string& filename, double startAltitude, double offset,
-			double smooth, double weight, double alpha, double laserAngle, double scanAngle) :
-		filename(filename), startAltitude(startAltitude), offset(offset), smooth(smooth),
-		weight(weight), alpha(alpha), laserAngle(laserAngle), scanAngle(scanAngle) {}
+	PipelineConfig(const std::string& filename, double startAltitude, double altitude,
+			double smooth, double weight, double alpha, double laserAngle) :
+		filename(filename),
+		startAltitude(startAltitude), altitude(altitude),
+		smooth(smooth), weight(weight), alpha(alpha),
+		laserAngle(laserAngle) {}
 
 };
 
@@ -75,87 +75,83 @@ void run(ProfileDialog* dlg) {
 
 	// Some pre-prepared configurations.
 	std::unordered_map<std::string, PipelineConfig> configs;
-	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/nrcan_4.las", 305, 10, 15, 1, 15, 5.7, 2. * M_PI / 180.));
-	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/mt_doug_1.las", 80, 10, 5, 1, 15, 5.7, 2. * M_PI / 180.));
+	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt", 305, 10, 0.5, 1, 2, _rad(5.7)));
+	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 25, 10, 0.5, 1, 4, _rad(5.7)));
+	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 100, 10, 20, 1, 20, _rad(5.7)));
+	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 304, 10, 0.5, 1, 10, _rad(5.7)));
+	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 304, 10, 0.25, 1, 10, _rad(5.7)));
 
-	const PipelineConfig& config = configs["nrcan_1"];
+	const PipelineConfig& config = configs["bart_1"];
 
+	std::cout << "Loading points from " << config.filename << "\n";
 	std::string ptsFile = config.filename;
-
-	LASPointSource<Pt> tps(ptsFile);
+	ProfilePointSource<Pt> tps(ptsFile);
 	const Octree<Pt>& tree = tps.octree();
+
+	double backStepX = 0, backStepY = 0;
+	double viewx0 = 0, viewx1 = 0;
 
 	double startx, endx, starty, endy;
 	if(tree.width() > tree.length()) {
-		startx = tree.minx() - 100.0; // Start 100m back to give the laser space to work.
+		startx = tree.minx();
 		endx = tree.maxx();
 		starty = tree.midy();
 		endy = tree.midy();
+		backStepX = 100;
+		viewx1 = endx;
+		viewx0 = startx;
 	} else {
 		startx = tree.midx();
 		endx = tree.midx();
-		starty = tree.miny() - 100.0; // Start 100m back to give the laser space to work.
+		starty = tree.miny();
 		endy = tree.maxy();
+		backStepY = 100;
+		viewx1 = endy;
+		viewx0 = starty;
 	}
 
-	// Offset from trajectory, and vehicle altitude (start altitude + offset)
-	double offset = config.offset;
-	double altitude = config.startAltitude;
+	std::cout << "Configuring matrices\n";
 
+	// Offset from trajectory, and vehicle altitude (start altitude + offset)
+	double altitude = config.startAltitude + config.altitude;
 
 	// The start/origin and end points. These are determined by the point cloud.
 	Vector3d orig(startx, starty, altitude);
 	Vector3d start(startx, starty, altitude);
 	Vector3d end(endx, endy, altitude);
+	Vector3d planeNorm;
 
-	Vector3d direction = (end - start).normalized();
-	Vector3d xaxis(direction[1], -direction[0], direction[2]);
+	{
+		// The direction of the vehicle's travel and the direction of the x-axis (orthogonal).
+		Vector3d direction = (end - start).normalized();
+		Vector3d xaxis(direction[1], -direction[0], direction[2]);
+		//std::cout << direction << ", " << xaxis << "\n";
 
-	Matrix3d laserRot = AngleAxisd(-config.laserAngle, xaxis).matrix();
-	Matrix3d planeRot = AngleAxisd(-config.laserAngle + M_PI / 2.0, xaxis).matrix();
+		// The laser rotation matrix and the plane rotation matrix (orthogonal).
+		Matrix3d laserRot = AngleAxisd(-config.laserAngle, xaxis).matrix();
+		Matrix3d planeRot = AngleAxisd(-config.laserAngle + M_PI / 2.0, xaxis).matrix();
+		//std::cout << laserRot << ", " << planeRot << "\n";
 
-	Vector3d laserDir = laserRot * direction;
-	Vector3d planeNorm = planeRot * laserDir;
+		// The laser direction and the plane normal.
+		Vector3d laserDir = laserRot * direction;
+		planeNorm = planeRot * laserDir;
+		planeNorm.normalize();
+	}
 
-	double planeWidth = config.scanAngle * MAX_RANGE;
-	Eigen::Hyperplane<double, 3> plane(planeNorm, orig);
-	Eigen::ParametrizedLine<double, 3> line(orig, laserDir);
+	tps.setNormal(planeNorm);
+	tps.setMaxDist(MAX_DIST);
 
-	// The concave hull point filter.
-	HullPointFilter<Pt> hpf(config.alpha);
-	GeomPointFilter<Pt> gpf;
-	gpf.setNextFilter(&hpf);
-
-	PlaneFilter<Pt> plf(planeWidth, MAX_DIST);
-	plf.setOctree(&tree);
-	plf.setPlane(&plane);
-	plf.setLine(&line);
-	tps.setFilter(&plf);
+	std::cout << "Drawing setup\n";
 
 	Pt startPt(startx, starty, altitude);
-	TrajectoryPlanner<Pt> tp;
+	TrajectoryPlanner<Pt> tp(5);
 	tp.setSmooth(config.smooth);
 	tp.setWeight(config.weight);
-	tp.setPointFilter(&gpf);
-	tp.setPointSource(&tps);
 	tp.setStartPoint(startPt);
-
-
-	/*
-	std::ofstream ostr;
-	{
-		std::stringstream ss;
-		ss << "pos_" << tp.smooth() << "_" << tp.weight() << ".csv";
-		ostr.open(ss.str());
-	}
-
-	std::ofstream tstr;
-	{
-		std::stringstream ss;
-		ss << "traj_" << tp.smooth() << "_" << tp.weight() << ".csv";
-		tstr.open(ss.str());
-	}
-	*/
+	tp.setAlpha(config.alpha);
+	tp.setPointSource(&tps);
 
 	DrawConfig uav;
 	uav.setType(DrawType::Points);
@@ -182,106 +178,113 @@ void run(ProfileDialog* dlg) {
 	knots.setLineColor(255, 0, 255);
 
 	ProfileDialog* pd = ProfileDialog::instance();
-	pd->setBounds(0, tree.minz(), (end - start).norm(), tree.maxz());
+	pd->setBounds(viewx0, tree.minz(), viewx1, tree.maxz());
 	pd->addDrawConfig(&allPts);
 	pd->addDrawConfig(&surf);
 	pd->addDrawConfig(&spline);
 	pd->addDrawConfig(&knots);
 	pd->addDrawConfig(&alt);
-	pd->addDrawConfig(&uav);
 	pd->addDrawConfig(&knots);
+	pd->addDrawConfig(&uav);
 
-	double speed = 10.0; // m/s
-	int delay = 1000;	// 1 ms
+	std::cout << "Starting\n";
 
-	double stepx = (endx - startx) / (speed * delay); // 10m/s in milis
-	double stepy = (endy - starty) / (speed * delay);
+	double distance = (end - start).norm();
+	double speed = 5.0; // m/s
+	int delay = 500;	// 5 ms
+
+	double stepx = (endx - startx) / distance * (speed / delay); // m/s in milis
+	double stepy = (endy - starty) / distance * (speed / delay);
 
 	Vector3d step(stepx, stepy, 0);
+	Vector3d backstep(-backStepX, -backStepY, 0);
+	orig += backstep;
+	start += backstep;
 
-	uav.data.emplace_back(0, altitude + offset);
+	uav.data().emplace_back(0, altitude);
 
 	while(!dlg->done) {
 
-		plane = Eigen::Hyperplane<double, 3>(planeNorm, orig);
-		line = Eigen::ParametrizedLine<double, 3>(orig, laserDir);
-
-		// To clip off the points in the past.
-		double dy = (orig - start).norm();
-		gpf.setMinY(dy - 100.0);
-
 		orig += step;
 
-		plf.setPlane(&plane);
-		plf.setLine(&line);
+		// Points prior to this are finalized.
+		double dy = (orig - start).norm() - backStepY;
 
-		if(!tp.compute()) {
-			std::this_thread::yield();
+		tps.setOrigin(orig);
+
+		if(!tp.compute(Pt(0, dy + backStepY, 0))) {	// Should be forward distance for finalization.
+			usleep(delay);
 			continue;
 		}
 
 		std::list<Pt> salt;
-		tp.splineAltitude(salt, 200);
+		tp.splineAltitude(salt, .5);
 
-		uav.data[0].first = 0;
-		uav.data[0].second = altitude + offset;
-		alt.data.emplace_back(dy, altitude + offset);
+		double dz;
+		if(!tp.splineAltitude(dy, dz) || std::isnan(dz)) {
+			dz = config.startAltitude + config.altitude;
+		}
 
-		spline.data.clear();
-		for(const Pt& pt : salt)
-			spline.data.emplace_back(pt.y(), pt.z());
-		allPts.data.clear();
-		for(const Pt& pt : tp.allPoints())
-			allPts.data.emplace_back(pt.y(), pt.z());
-		surf.data.clear();
-		for(const Pt& pt : tp.surface())
-			surf.data.emplace_back(pt.y(), pt.z());
-		knots.data.clear();
-		for(const Pt& pt : tp.knots())
-			knots.data.emplace_back(pt.y(), pt.z());
+		{
+			std::lock_guard<std::mutex> lk(uav.mtx);
+			uav.data()[0].first = dy;
+			uav.data()[0].second = dz + config.altitude;
+		}
+		{
+			std::lock_guard<std::mutex> lk(alt.mtx);
+			alt.data().emplace_back(dy, dz + config.altitude);
+		}
+		if(true) {
+			std::lock_guard<std::mutex> lk(spline.mtx);
+			spline.data().clear();
+			knots.data().clear();
+			for(const Pt& pt : salt) {
+				spline.data().emplace_back(pt.y(), pt.z());
+				knots.data().emplace_back(pt.y(), pt.z());
+			}
+		}
+		{
+			std::lock_guard<std::mutex> lk(allPts.mtx);
+			allPts.data().clear();
+			for(const Pt& pt : tp.allPoints())
+				allPts.data().emplace_back(pt.y(), pt.z());
+		}
+		if(false){
+			std::lock_guard<std::mutex> lk(surf.mtx);
+			surf.data().clear();
+			knots.data().clear();
+			for(const Pt& pt : tp.surface()) {
+				surf.data().emplace_back(pt.y(), pt.z());
+				knots.data().emplace_back(pt.y(), pt.z());
+			}
+		}
+		{
+			/*
+			knots.data.clear();
+			std::vector<Pt> pts = tp.knots();
+			for(const Pt& pt : pts)
+				knots.data.emplace_back(pt.y(), pt.z());
+				*/
+		}
 
-		std::cout << tp.lastY() - dy << "\n";
+		//std::cout << tp.lastY() - dy << "\n";
 
-		if(!tp.getTrajectoryAltitude(dy, altitude)) {
+		double newalt;
+		if(!tp.getTrajectoryAltitude(dy, newalt) || std::isnan(newalt)) {
 			//std::cerr << "Couldn't get new altitude.";
 		} else {
-			//std::cout << "Altitude: " << altitude << "\n";
+			//std::cout << "Pos: " << dy << ", " << altitude + config.altitude << "\n";
 
-
-			/*
-			ostr << dy << "," << altitude << "," << (altitude + offset) << "\n";
-
-			std::list<Pt> alt;
-			std::list<Pt> vel;
-			std::list<Pt> accel;
-			if(tp.splineAltitude(alt)) {
-				if(tp.splineVelocity(vel)) {
-					if(tp.splineAcceleration(accel)) {
-						tstr << "y,";
-						for(const Pt& p : alt)
-							tstr << p.y() << ",";
-						tstr << "\nalt,";
-						for(const Pt& p : alt)
-							tstr << p.z() << ",";
-						tstr << "\nacc,";
-						for(const Pt& p : accel)
-							tstr << p.z() << ",";
-						tstr << "\nvel,";
-						for(const Pt& p : vel)
-							tstr << p.z() << ",";
-						tstr << "\n";
-					}
-				}
-			}
-			*/
-
-			altitude += offset;
+			altitude = newalt;
+			altitude += config.altitude;
 			orig[2] = altitude;
 			start[2] = altitude;
 			end[2] = altitude;
 		}
 
 		pd->draw();
+
+		usleep(delay);
 
 	}
 
