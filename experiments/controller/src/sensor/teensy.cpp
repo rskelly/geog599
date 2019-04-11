@@ -64,7 +64,7 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 	static int mode = 0;
 	static size_t need = 3;
 
-	size_t nRanges;
+	size_t nRanges, nErrors, nIMU;
 	char headChar;
 	uint64_t time;
 	uint16_t range;
@@ -108,6 +108,17 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 			while(bufIdx < bufEnd) {
 				headChar = (char) buf[bufIdx % BUFFER_SIZE];		++bufIdx;
 				switch(headChar) {
+				case 'E':
+					if(bufEnd - bufIdx < 1)
+						goto need_more;
+					nErrors = (size_t) buf[bufIdx % BUFFER_SIZE];	++bufIdx;
+					if(bufEnd - bufIdx < nErrors * 2)
+						goto need_more;
+					for(size_t i = 0; i < nErrors; ++i) {
+						int error = __readShort(buf, bufIdx);		bufIdx += 2;
+						std::cerr << "Error " << i << ": " << error << "\n";
+					}
+					break;
 				case 'R':
 					if(bufEnd - bufIdx < 1)
 						goto need_more;
@@ -123,14 +134,19 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 				case 'I':
 					if(bufEnd - bufIdx < 20)
 						goto need_more;
-					g0 = __readShort(buf, bufIdx);		bufIdx += 2;
-					g1 = __readShort(buf, bufIdx);		bufIdx += 2;
-					g2 = __readShort(buf, bufIdx);		bufIdx += 2;
-					a0 = __readShort(buf, bufIdx);		bufIdx += 2;
-					a1 = __readShort(buf, bufIdx);		bufIdx += 2;
-					a2 = __readShort(buf, bufIdx);		bufIdx += 2;
-					time = __readULong(buf, bufIdx);   	bufIdx += 8;
-					orientation.update(g0, g1, g2, a0, a1, a2, time);
+					nIMU = (size_t) buf[bufIdx % BUFFER_SIZE];	++bufIdx;
+					if(bufEnd - bufIdx < nIMU * 20)
+						goto need_more;
+					for(size_t i = 0; i < nIMU; ++i) {
+						g0 = __readShort(buf, bufIdx);		bufIdx += 2;
+						g1 = __readShort(buf, bufIdx);		bufIdx += 2;
+						g2 = __readShort(buf, bufIdx);		bufIdx += 2;
+						a0 = __readShort(buf, bufIdx);		bufIdx += 2;
+						a1 = __readShort(buf, bufIdx);		bufIdx += 2;
+						a2 = __readShort(buf, bufIdx);		bufIdx += 2;
+						time = __readULong(buf, bufIdx);   	bufIdx += 8;
+						orientation.update(g0, g1, g2, a0, a1, a2, time);
+					}
 					break;
 				need_more:
 					std::cerr << "need more\n";

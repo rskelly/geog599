@@ -99,11 +99,11 @@ target_link_libraries (uav_teensy uav_serial)
 #add_library (uav_encoder SHARED src/sensor/ads1115.cpp)
 #target_link_libraries (uav_encoder uav_i2c)
  
-#add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
-#target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
+add_executable (controller src/controller.cpp src/platform/djiplatform.cpp)
+target_link_libraries (controller uav_teensy djiosdk-core) # uav_imu uav_teensy uav_encoder)
 
-add_executable(pipeline src/pipeline.cpp src/ui/profile.cpp)
-target_link_libraries (pipeline las deboor_smooth fitpack_mod  Qt5::Gui Qt5::Core Qt5::Widgets)
+#add_executable(pipeline src/pipeline.cpp src/ui/profile.cpp)
+#target_link_libraries (pipeline las deboor_smooth fitpack_mod  Qt5::Gui Qt5::Core Qt5::Widgets)
 
 #add_executable (curve src/curve.cpp)
 #target_link_libraries (curve fitpack_mod)
