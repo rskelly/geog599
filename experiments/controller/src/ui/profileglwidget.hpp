@@ -38,7 +38,8 @@ public:
 
 	ProfileGLWidget(QWidget* parent) :
 		QOpenGLWidget(parent),
-		minx(0), miny(0), maxx(0), maxy(0), boundsSet(false) {}
+		minx(0), miny(0), maxx(0), maxy(0), boundsSet(false) {
+	}
 
 	void setBounds(double minx, double miny, double maxx, double maxy) {
 		this->minx = minx;
@@ -53,6 +54,8 @@ public:
 		if(!boundsSet)
 			return;
 
+		QBrush bg(QColor::fromRgb(255, 255, 255, 255));
+
 		int buf = 5;
 		float dw = maxx - minx;
 		float dh = maxy - miny;
@@ -66,9 +69,12 @@ public:
 			int hh = size.height();
 			int h = hh - buf * 2;
 
-			float scale = std::min(w / dw, h / dh);
+			float zoom = 3;
+			float scale = std::min(w / dw, h / dh) * zoom;
 
 			p.begin(this);
+			p.fillRect(0, 0, w, hh, bg);
+
 			for(DrawConfig* config : configs) {
 				std::vector<QPointF> pts;
 				{
