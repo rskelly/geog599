@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 
 from scipy.interpolate import UnivariateSpline
+from scipy.optimize import fmin
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
@@ -114,6 +115,34 @@ def plot_profile(outfile, smooth, weight, alpha, coords, hull, x, alt, vel, acc)
 
 	return (weight, smooth, outfile)
 
+def plot_slope_weights(outfile):
+
+	fig = plt.figure(figsize=(6, 4))
+	ax1 = fig.add_subplot(111)
+
+	a = np.linspace(0, math.pi / 2., 100)
+	x = a / (math.pi / 2.)
+	y025 = 1. -x ** .25
+	y05 = 1. - x ** .5
+	y1 = 1. - x
+	y2 = 1. - x ** 2.
+	y4 = 1. - x ** 4.
+	
+	l_y025, = ax1.plot(a, y025, '-c', lw=1)
+	l_y05, = ax1.plot(a, y05, '-y', lw=1)
+	l_y1, = ax1.plot(a, y1, '-r', lw=1)
+	l_y2, = ax1.plot(a, y2, '-g', lw=1)
+	l_y4, = ax1.plot(a, y4, '-b', lw=1)
+
+	ax1.set_ylabel('Weight')
+	ax1.set_xlabel('Angle (r)')
+	ax1.set_title('Slope-Derived Weights')
+
+	plt.legend([l_y025, l_y05, l_y1, l_y2, l_y4], ['$y^{0.25}$', '$y^{0.5}$', '$y^1$', '$y^2$', '$y^4$'])
+	plt.savefig(outfile, bbox_inches='tight', format='png', dpi=300)
+	#plt.show()
+	plt.close()
+
 
 def p3angle(p1, p2, p3):
 	'''
@@ -130,9 +159,11 @@ def p3angle(p1, p2, p3):
 	if b < 0.:
 		b += math.pi * 2.
 	a = b - a if b > a else a - b
+	if a > math.pi:
+		a -= math.pi
 	return a
 
-def weights(pts, exp = 0):
+def angle_weights(pts, exp = 0):
 	'''
 	Compute weights for the pointset based on the angle between
 	triples of points. An acute angle has a high weight. A flat gets a low weight.
@@ -140,22 +171,97 @@ def weights(pts, exp = 0):
 	# Get the std deviation of the points (assumes 3d).
 	std = np.std(pts[...,1])
 	
-	w = [1. / std]
+	w = [std]
 	for i in range(1, len(pts) - 1):
 		a = p3angle(pts[i - 1], pts[i], pts[i + 1])
-		w.append(math.pow(a / math.pi, exp) * std)
-	w.append(1. / std)
+		p = 1. - (a / math.pi)
+		if p == 0.:
+			p += 0.000000001
+		w.append(math.pow(p, exp) * std)
+	w.append(std)
 	w = np.array(w)
 	return w
 
+def slope(p1, p2):
+	_, x1, y1 = p1
+	_, x2, y2 = p2
+	a = math.atan2(y1 - y2, x1 - x2)
+	if a < 0.:
+		a += math.pi * 2.
+	if a > math.pi / 2.:
+		a = abs(a - math.pi)
+	return a
+	
+
+def slope_weights(pts, exp = 0):
+	'''
+	Compute weights for the pointset based on the angle between
+	triples of points. An acute angle has a high weight. A flat gets a low weight.
+	'''
+	# Get the std deviation of the points (assumes 3d).
+	std = np.std(pts[...,1])
+	
+	w = [std]
+	for i in range(1, len(pts) - 1):
+		s1 = slope(pts[i - 1], pts[i])
+		s2 = slope(pts[i], pts[i + 1])
+		w.append(math.pow(1. - max(s1, s2) / (math.pi / 2.), exp) * std)
+	w.append(std)
+	w = np.array(w)
+	return w
+
+def minimize_residual(filename):
+	'''
+	'''
+
+	# Load coordinates from point file.
+	coords = load_points(filename)
+	
+	hull_clip = 5
+	x_clip = 5
+	
+	def fn(x, *args):
+		s, a = x
+		if s <= 0. or a <= 0.:
+			return math.inf
+		chull = hull(args[0], a, hull_clip)
+		weights = [1.] * len(chull)
 		
+		spline = trajectory(chull, s, weights)
+		
+		weights = weights[x_clip:-(x_clip + 1)]
+		x = chull[...,1][x_clip:-(x_clip + 1)]
+		y = chull[...,2][x_clip:-(x_clip + 1)]
+		
+		y0 = spline(x)
+		y1 = spline(x, nu=1)
+		y2 = spline(x, nu=2)
+		resid = np.sum((weights * (y - y0)) ** 2)
+		
+		# Look at points above the spline.
+		acoords = coords[coords[...,1] >= x[0]]
+		acoords = acoords[acoords[...,1] <= x[-1]]
+		az1 = spline(acoords[...,1], ext = 2)
+		az2 = acoords[...,2]
+		aboveidx = az1 < az2
+		az1 = az1[aboveidx]
+		az2 = az2[aboveidx]
+		above = az2 - az1
+		above_max = np.max(above)
+		
+		d = np.linalg.norm((np.max(y1), np.max(y2), resid, above_max))
+		print(s, a, d, np.max(y1), np.max(y2), resid, above_max)
+		return d
+					
+	fmin(fn, (1., 10.), args=(coords,))
+
 def run(filename, outdir):
 	'''
 	Run the profile with angle-based weights.
 	'''
 
-	smooth_mult = [.25, .5, 1., 2., 4.]
-	weight_exp = [0., 1., 2., 4.]
+	smooth_mult = [4., 8., 16.]
+	weight_exp = [.25, .5, 1., 2., 4.]
 	alpha = [2., 5., 10., 25., 50.]
 	hull_clip = 5
 	x_clip = 5
@@ -165,6 +271,8 @@ def run(filename, outdir):
 		os.makedirs(outdir)
 	except: pass
 
+	plot_slope_weights(os.path.join(outdir, 'slope_weights.png'))
+	
 	# Remove files from output.
 	for f in [x for x in os.listdir(outdir) if x.endswith('.png')]:
 		os.unlink(os.path.join(outdir, f))
@@ -182,14 +290,14 @@ def run(filename, outdir):
 		for a in alpha:
 			
 			chull = hull(coords, a, hull_clip)
-			minx = chull[0,1]
-			maxx = chull[-1,1]
-			x = np.linspace(minx, maxx, 1000)[x_clip:-(x_clip + 1)]	# Regular x-coords (actually, y)
+			x = np.linspace(chull[0,1], chull[-1,1], 1000)[x_clip:-(x_clip + 1)]	# Regular x-coords (actually, y)
+			minx = x[0]
+			maxx = x[-1]
 			aa = str(a).replace('.', '_')
 	
 			for w in weight_exp:
 				
-				wts = weights(chull, w)
+				wts = slope_weights(chull, w)
 				ww = str(w).replace('.', '_')
 	
 				for s in smooth_mult:
@@ -210,10 +318,18 @@ def run(filename, outdir):
 					# Look at points above the spline.
 					acoords = coords[coords[...,1] >= minx]
 					acoords = acoords[acoords[...,1] <= maxx]
-					above = spline(acoords[...,1], ext = 2)
-	
-					above = acoords[above < acoords[...,2]]
-					above_max = np.max(above)
+					acoords = acoords[x_clip:-(x_clip + 1)]
+					az1 = spline(acoords[...,1], ext = 2)
+					az2 = acoords[...,2]
+					
+					aboveidx = az1 < az2
+					az1 = az1[aboveidx]
+					az2 = az2[aboveidx]
+					above = az2 - az1
+					try:
+						above_max = np.max(above)
+					except Exception as e:
+						print(e)
 					above_n = len(above)
 					
 					vel = spline(acoords[...,1], nu = 1, ext = 2)
