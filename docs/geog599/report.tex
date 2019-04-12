@@ -17,6 +17,7 @@
 \usepackage{graphicx}	% for graphics
 \usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
 \usepackage{listings}
+\usepackage{minted}
 
 \lstset{language = Python, basicstyle = \small\ttfamily, tabsize = 4}
 
@@ -42,7 +43,7 @@
 \title{Proposed Method for Using Cubic Splines for the Control of Remote-Sensing Unmanned Aerial Vehicles}
 \author{Rob Skelly}
 \affiliation{University of Victoria}
-\note{Geography 590, Spring 2019}
+\note{Geography 599, Spring 2019}
 
 %\abstract{}
 
@@ -79,26 +80,26 @@ Traditional aerial surveys have the advantage that, at typical survey altitudes 
 
 \subsection{Data Quality}
 
-The quality of remotely-sensed data can be quantified in a number of ways. The average posting distance, or point density, of a LiDAR point cloud contributes to the power of any statistical derivatives; spectral imagery can be affected by variations in atmospheric attenuation, scale distortions and signal-to-noise fluctuations; and the degree of overlap between swaths can vary. These are attributable to variations in the platform velocity, altitude and attitude which, as the instruments are fixed to the airframe, must be carefully maintained by the flight controller. In general, the lower the nominal altitude, for a given site, the larger the effect of surface height variation on data quality.
+The quality of remotely-sensed data can be quantified in a number of ways. Variation in the average posting distance, or point density, of a LiDAR point cloud affects the power of any statistical derivatives and fluctuations in atmospheric attenuation, path radiance, scale and signal-to-noise ratio affect the quality of spectrometry. These are attributable to the platform velocity, altitude and attitude which, as the instruments are fixed to the airframe, must be carefully maintained by the flight controller. In general, the lower the nominal altitude, for a given site, the larger the effect of surface height variation on data quality. For examle, at $\SI{10}\m$ nominal flight altitude, a variation of $\pm\SI{2}\m$ induces a variation in image scale of $\%40$.  
 
-A final important aspect of data quality is time-of-collection. A spectral survey is ideally conducted as near as possible to solar noon under stable atmospheric conditions. A researcher must be opportunistic and maximise productivity during ideal conditions. Repeating a survey to produce a DEM or terrain following, or interrupting one to change batteries, may delay the completion of the survey or limit the size of the study site, and splitting the survey over multiple days risks not only a change in the weather, but a change to to the advance of whatever phenomenon is under observation. Maximising the power efficiency of a survey, while minimizing its duration, are imperative, as is eliminating the need to repeat a survey to produce a DEM for terrain avoidance.
+A final important aspect of data quality is time-of-collection. A spectral survey is ideally conducted as near as possible to solar noon under stable atmospheric conditions. A researcher must be opportunistic and maximise productivity during this time. In general, remote sensing surveys using UAVs cannot be conducted in high winds, outside of dailight hours or during precipitation events. Repeating a survey to produce a DEM or terrain following, or interrupting one to change batteries, may delay the completion of the survey or limit the size of the study site, and splitting the survey over multiple days risks not only a change in the weather, but a an advance in the state of whatever phenomenon is under observation. 
 
 
 \subsection{Surface Following}
 
-The foregoing quality and efficiency concerns can be resolved, at least in part, by a surface-following system that accurately maintains the altitude of the aircraft above the surface while minimising disturbances to its attitude and velocity. 
+The foregoing quality and efficiency concerns can be resolved, at least in part, by a real-time surface-following system that accurately maintains the altitude of the aircraft above the surface while minimising disturbances to its attitude and velocity. 
 
-Reactive, real-time systems using nadir-aligned rangefinders, cannot anticipate variations surface height and so have no way of forecasting a trajectory that protects data quality while repsecting the physical limitations of the aircraft.
+Reactive systems using nadir-aligned rangefinders, cannot anticipate variations surface height and so have no way of forecasting a trajectory that protects data quality while repsecting the dynamic limitations of the aircraft.
 
 Mission planning packages that allow the selection or production of a digital elevation model (DEM) \parencite[e.g.,][]{PrecisionHawk2018,UgCS2018,MapsMadeEasy2018}, are either tied to coarse, publicly-available datasets, such as the Shuttle Radar Topography Mission (SRTM), or require a pre-flight and subsequent photogrammetric or LiDAR processing to produce a DEM. 
 
 Publicly-available DEMs may be out of date, poorly-documented, incompatible with the working coordinate system and datum or of doubtful provenance. The SRTM mission in particular used C- and X-band radar, which penetrates a vegetative canopy to a variable degree depending on the type of vegetaion, density, gap structure, senescence, wetness and other factors \parencite{Miliaresis2009}, significantly underestimating their height \parencite{Sexton2009}. As well, the SRTM represents the surface of the Earth, at the time of writing, 19 years in the past. 
 
-If a DEM must be produced in the field, a preliminary survey is required, meaning that at least two full surveys must be conducted, plus the processing time required to produce the model. Since the model must be produced first, the researcher has no way of knowing if conditions will still be suitable by the time the second survey is begun. 
+If a DEM must be produced in the field, a preliminary survey is required, meaning that at least two full surveys must be conducted, plus the processing time required to produce the model. Since the model must be produced first, the researcher has no way of knowing if conditions will still be suitable by the time the second survey begins. In any case, such a strategy essentially doubles the total amount of work, cost and risk of any survey. 
 
-A real-time, predictive surface-following system obviates the need for these additional flights, allowing the researcher to conduct surveys during ideal conditions as they arise, and to adapt the flight plan in real-time to accomodate the prevailing conditions.
+A real-time, predictive surface-following system obviates the need for these additional flights, allowing the researcher to conduct surveys during ideal conditions as they arise, and to adapt the flight plan in the field as necessary.
 
-Any surface-following system must be able to accomodate the different surface charactistics and mission objectives that a researcher may encounter. For example, a vineyard's rows (figure \ref{fig:photo_culmina_rows}) are spaced approximately $\SI{2}\m$ apart, creating a depression between rows. It would be undesireable for the aircraft to descend into the spaces between rows; rather, its trajectory should carry it smoothly over a surface implied by the tops of the rows while it follows the low-frequency variations in the surface (fgure \ref{fig:photo_culmina_rows_slope}). (On the other hand, if the researcher were interested in imaging the sides of each vine as well as the tops, following this high-frequency surface variation would be desirable.) In this sense, a surface-following system is a low-pass filter with configurable sensitivity. 
+Any surface-following system must be able to accomodate the different surface charactistics and mission objectives that a researcher may encounter. For example, a vineyard's rows (figure \ref{fig:photo_culmina_rows}) are spaced approximately $\SI{2}\m$ apart, leaving a depression between the rows. It would be undesireable for the aircraft to descend into each depression; rather, its trajectory should carry it smoothly over a surface implied by the tops of the rows while it follows the low-frequency variations in the terrain (fgure \ref{fig:photo_culmina_rows_slope}). (On the other hand, if the researcher were interested in imaging the sides of each vine as well as the tops, following this high-frequency surface variation would be desirable.) In this sense, a surface-following system is a low-pass filter with configurable sensitivity. 
 
 \begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
 \includegraphics[width=1.0\linewidth]{tmp/photo_culmina_rows.pdf} 
@@ -115,6 +116,8 @@ Any surface-following system must be able to accomodate the different surface ch
 
 \subsection{Splines}
 
+If it is desireable to quantify the constraints on a trajectory -- to minimize power consumption and deviation of the trajectory with respect to the imaged surface -- then it is desireable to produce a trajectory that is representable as a smooth, differentiable function. First, because the physical body of the aircraft must obey certain dynamic laws which are easily representable by the derivatives of such a function; second, because the fidelity of the function can be measured at any location. The cubic spline is a promising candidate.
+
 \begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
 \includegraphics[width=1.0\linewidth]{tmp/draftspline.pdf} 
 \caption{A draftsman's spline and ``ducks.'' \parencite{DeBoor2006}}
@@ -123,7 +126,7 @@ Any surface-following system must be able to accomodate the different surface ch
 
 The word ``spline'' originates in drafting, where long, flexible wooden or plastic beams, called splines (figure \ref{fig:spline}), were used to model curves. A spline would be placed on the drawing, held down by two or more lead weights called ``ducks,'' and would seek a shape which minimized the energy stored in the beam. The spline could thus be considered an optimal interpolator \parencite{Wegman2016}. 
 
-In mathematics, the spline is consists of a set of piecewise (usually cubic) polynomials, one each between each pair of ducks, or ``knots.'' At each knot, the first, and possibly higher, derivatives of the adjoining polynomials are held equal, resulting an a curve that is smooth and differentiable along its entire length. The minimum-energy constraint is modelled by minimizing mean square curvature of the polynomial \parencite{Wegman2016}.
+In mathematics, the spline is consists of a set of piecewise (usually cubic) polynomials, one each between each pair of ducks, or ``knots.'' At each knot, the zeroth, first, and possibly higher, derivatives of the adjoining polynomials are held equal, resulting an a curve that is smooth and differentiable along its entire length. The minimum-energy constraint is modelled by minimizing mean square curvature of the polynomial \parencite{Wegman2016}.
 
 In this instance, the spline function is used to model the behaviour of a physical body in space, with velocity and acceleration given by the first and second derivatives, respectively. The second derivative is of particular interest because it is constrained by the aircraft's dynamic properties given by Newton's second law,
 
@@ -131,16 +134,16 @@ In this instance, the spline function is used to model the behaviour of a physic
 F = ma,
 \end{equation} 
 
-where $F$ is force, in Newtons, $m$ is the mass of the vehicle in kg, and $a$ is the acceleration in $m/s$. Forces on the airframe are generated by the propulsion system, gravity and aerodynamic drag. When the second derivative is positive, its magnitude can be no greater than the acceleration provided by the net of these forces (climbing under maximum thrust). When negative, its magnitude can be no greater than net of these forces with thrust set to near zero (freefall). These constraints may be derived from the aircraft's thrust, as documented by the manufacturer, and its mass and air resistance, which must be measured. 
+where $F$ is force, in Newtons, $m$ is the mass of the vehicle in kg, and $a$ is the acceleration in $m/s$. Forces on the airframe are generated by the propulsion system, gravity and aerodynamic drag. When the second derivative is positive, its magnitude can be no greater than the acceleration provided by the net of these forces (climbing under maximum thrust). When negative, its magnitude can be no greater than net of these forces with thrust set to near zero (freefall). These constraints may be derived from the aircraft's thrust, as documented by the manufacturer, and its mass and air resistance, which must be measured. The maximum vertical velocity -- the second derivative -- of most UAVs is documented by the manufacturer and limited by the flight controller. Whether the vehicle can acheive the velocity limit depends on its mass (including cargo) and the force supplied by its propulsion system.
 
 Though cubic splines are smooth and twice differentiable, it will be observed that the second derivative (acceleration) is not smooth, having cusps at the knots (figure \ref{fig:cubic_derivatives}.) For any polynomial, for some value of $m > 0$, the $m$th derivative will be linear; for cubic splines, this occurs at $m = 2$. This is not a concern, so long as the change of thrust by the aircraft's flight controller is assumed to occur instantaneously. It does not, of course, as it takes time to supply the motors with power, and for their rotational velocity to change. Here, the maximum thrust, or some multiple less than $1$ will be used as an estimate of the limit.
 
-The mechanical spline and its mathematical equivalent are interpolators and pass through each of the knots. A variation on the interpolating spline, the weighted spline, allows the calculation of a weight, applied at each knot, which can suppress the tendency for overshoots \parencite{lancaster1986curve}. However this breaks the continuity of the second derivative, which in turn breaks the physical model.
+The mechanical spline and its mathematical equivalent are interpolators and pass through each of the knots. If the knots of the spline are close together, or form a steep gradient, un-resolvable loops or overshoots could form in the spline, resulting in a physically-impossible trajectory. A variation on the interpolating spline, the weighted spline, allows the calculation of a weight, applied at each knot, which can suppress the tendency for overshoots \parencite{lancaster1986curve}. However this breaks the continuity of the second derivative, which in turn breaks the physical model.
 
 
 \subsection{Smoothing Splines}
 
-An alternative construction -- the smoothing or approximating spline -- allows the spline preserve the overall shape of the data distribution without passing through each knot exactly
+An alternative construction -- the smoothing or approximating spline -- allows the spline preserve the overall shape of the data distribution -- that is, the measured surface -- without passing through each knot exactly.
 
 A smoothing spline has two conflicting objectives \cite{lancaster1986curve, Drakos2002, Boor2001, Reinsch1967}:
 \begin{enumerate}
@@ -154,17 +157,19 @@ This leads to de Boor's formulation,
 S(x) = p \sum_{i=1}^{n} \left( {(Y_i - \hat{f}(x_i))^2 \over {\sigma_i}^2} \right) + (1 - p) \int{ \left( \hat{f}^{(m)}(x) \right)^2 } dx,
 \end{equation}
 
-where the first operand is essentialy a Chi-square measure of the function and the second a measure of its curvature, both weighted by $p \in{[0-1]}$ or its negation. Here, $Y$ is the ordinate, $\hat{f}$ is the spline estimate and $\sigma$ represents the variance of the data. $p$ has the effect of controlling the number of knots: as $p$ approaches $1$, the first term is emphasised, forcing a closer fit to the data, while as $p$ approaces $0$, the integral is emphasized, forcing a straighter (smoother) curve. 
+where the first term is essentialy a Chi-square measure of the function and the second a measure of its curvature, both weighted by $p \in{[0-1]}$ or its negation. Here, $Y$ is the ordinate, $\hat{f}$ is the spline estimate and $\sigma$ represents the variance of the ordinate set. $p$ has the effect of controlling the number of knots: as $p$ approaches $1$, the first term is emphasized, forcing a closer fit to the data, while as $p$ approaces $0$, the integral is emphasized, forcing a straighter (smoother) curve. 
 
 The system is constrained, such that,
 
 \begin{equation}
-S(x_{i-1}) = S(x_i),
-S'(x_{i-1}) = S'(x_i), and 
-S''(x_{i-1}) = S''(x_i).
+\begin{split}
+S(x_{i-1}) &= S(x_i), \\
+S'(x_{i-1}) &= S'(x_i), and \\ 
+S''(x_{i-1}) &= S''(x_i).
+\end{split}
 \end{equation}
 
-That is, at each knot, the ends of adjoining splines have not only the same value, but the same first (slope) and second (curvature) derivatives. (In this usage, the function value is the vehicle altitude with the first and second derivatives representing velocity and acceleration, respectively.) To find the spline function, it is possible by indefinite integration to find the original function, beginning with the slopes at the end of the segment and two knots. In the case of the so-called ``natural spline'', the second derivatives at the first and last knots are held to zero. 
+At each knot, the ends of adjoining splines have not only the same value, but the same first (slope) and second (curvature) derivatives. In this usage, the function value is the vehicle altitude with the first and second derivatives representing velocity and acceleration, respectively. To find the spline function, it is possible by indefinite integration to find the original function, beginning with the slopes at the end of the segment and two knots. In the case of the so-called ``natural spline'', the second derivatives at the first and last knots are held to zero. 
 
 Figure \ref{fig:cubic_derivatives} shows a preliminary study of the cubic smoothing spline and derivatives computed on a real-world LiDAR point cloud, using the concave hull ($\alpha = 10m$) for surface-point extraction.
 
@@ -181,7 +186,7 @@ What remains is to develop a methodology for selecting weight and smoothness par
 
 \section{Methods}
 
-The input to the process described in this study is a sorted (in the y-dimension) two-dimensional (planar) point cloud, oriented in the y-z axis of the aircaft, that is, vertical and fore-aft. This point cloud is generated by a forward-facing scanning laser rangefinder, and the x-dimension collapsed. For this study, the point cloud is simulated by selecting points within a selected distance of a hyperplane. 
+The input to the process described in this study is a sorted (in the y-dimension) two-dimensional (planar) point cloud, oriented in the y-z axis of the aircaft, that is, vertical and fore-aft. This point cloud is generated by a forward-facing scanning laser rangefinder, and the x-dimension collapsed. For this study, the point cloud is simulated by selecting points within a selected distance of a hyperplane with the aircraft position as its origin and the normal in the x-axis. 
 
 The output is a set of parameterized splines that the vehicle will use to set its altitude as it flies.
 
@@ -192,77 +197,102 @@ As this issue remains unresolved, this paper focuses on the development and anal
 
 \subsection{Surface Reconstruction}
 
-Some representation of the imaged ``surface'' must be extracted from the point cloud. If this were not done, points from the interior of the vegetative canopy or the terrain would bias the spline downward, degrading the data quality and possibly precipitating a crash. The point subset must contain enough points to provide some surface detail and few enough for efficient computability. 
+Some representation of the imaged ``surface'' must be extracted from the point cloud. If this were not done, points from the interior of the vegetative canopy or the terrain would bias the spline downward, degrading the data quality and possibly precipitating a crash. The point subset must contain enough points to provide some surface detail and few enough to obscure high-frequency variation and ensure efficient computability. 
 
-However, the definition of a ``surface'' is problematic. The points represent measurements of real objects but provide no information about what exists between those objects. One conception of the surface is that one's  certainty about its height is perfect at the location of a point, A, and degrades with distance from that point. As this distance increases the distance to a neighbouring point, B, decreases, and one's certainty about the height of the surface relative to B increases. The point cloud thus implies probabilistic, interpolating surface. 
+However, the definition of a ``surface'' is problematic. The points represent measurements of real objects but provide no information about what exists between those objects. One conception of the surface is that one's  certainty about its height is perfect at the location of a point, A, and degrades with distance from that point. As this distance increases the distance to a neighbouring point, B, decreases, and one's certainty about the height of the surface relative to B increases. (This premise, Tobler's law \parencite{Tobler1970a}, is fundamental to quantitative geography.) The point cloud thus implies probabilistic, interpolating surface. 
 
-A simple, efficient way of extracting a surface from a 2-dimensional point cloud is to compute the convex hull. Unfortunately, on surfaces that have anything other than a convex, or domed, shape, all of the surface detail is lost. Alternatively, a \emph{concave} hull would allow for indents in the surface. Unlike the convex hull -- the unique minimum polygon containing the all constituent hulls of the point-set -- there is no single definition of a concave hull. Alpha shapes \cite{Edelsbrunner1994} are a well-defined candidate, but require the triangulation (via Delaunay) of the entire pointset. Another alternative is to modify an existing fast convex hull algorithm to limit the maximum segment length.
+A simple, efficient way of extracting a surface from a 2-dimensional point cloud is to compute the convex hull. Unfortunately, on surfaces that have anything other than a convex, or domed, shape, most of the surface detail is lost. Alternatively, a \emph{concave} hull would allow for indents in the surface. Unlike the convex hull -- the unique minimum polygon containing the all constituent hulls of the point-set -- there is no single definition of a concave hull. Alpha shapes \parencite{Edelsbrunner1994} are a well-defined candidate, but require the triangulation (via Delaunay) of the entire pointset. Another alternative is to modify an existing fast convex hull algorithm to limit the maximum segment length.
 
-The Mototone Chain convex hull algorithm (\cite{Andrew1979}) runs in linear time, in constant space, on a sorted pointset, which is the expected state of the input. By modifying the main loop of the algorithm to limit the length of any given segment and running it only on the upper surface of the input, it becomes a configurable surface-extraction tool. However, though the maximum segment length can be enforced, there can be no minimum. This leads to possible clustering of vertices near highly curved sections of the surface. A Python implementation of the concave hull algorithm is given in listing \ref{concave_hull}.
+The Mototone Chain convex hull algorithm \parencite{Andrew1979} runs in linear ($O(n)$) time, in constant space, on a sorted point set, which is the expected state of the input. By modifying the main loop of the algorithm to limit the length of any given segment (via a parameter, $\alpha$) and running it only on the upper surface of the input, it becomes a configurable surface-extraction tool. 
 
-\begin{lstlisting}[
-	caption = {Modified Monotone Chain algorithm for constructing a convex hull. The \lstinline{cross} function determines which side of a segment a given point is on; \lstinline{lengthY} gives the distance between points in $y$. The \lstinline{pts} array is a list of points, sorted on $y$; alpha is the maximum segment length.}, 
-	label = concave_hull]
+However, though the maximum segment length can be enforced, there can be no minimum. This leads to possible clustering of vertices near highly curved sections of the surface. The method is also asymmetrical: the result in one direction will differ from the result in the opposite direction. In concrete terms, this means that, when a depression is encountered, a maximum-length segment will reach across the depression to the opposite side, then a cluster of vertices will occur as the algorithm ``climbs'' the convex slope of the far side.
+
+A Python implementation of the concave hull algorithm is given in Listing \ref{lst:concave_hull}.
+
+\begin{listing}
+\begin{minted}{python}
 
 def hull(pts, alpha):
 
-	# Add the first two points to the hull.
 	hull = pts[:2]
 
-	# Iterate over the remaining points.
 	for i in range(2, len(pts)):
 	
-		# As long as the hull has more than two elements, 
 		while len(hull) >= 2 
 				and cross(hull[-2], hull[-1], pts[i]) >= 0 
-				and lengthY(hull[-2], pts[i]) <= (alpha * alpha):
+				and lengthY(hull[-2], pts[i]) <= alpha ** 2:
+
 			hull.pop()
+
 		hull.append(pts[i])
 
 	return hull
 
-\end{lstlisting}
+\end{minted}
+\caption{Modified Monotone Chain algorithm for constructing a convex hull. The \lstinline{cross} function determines whether the segment makes a clockwise or counterclockwise turn; \lstinline{lengthY} gives the distance between points in $y$. The \lstinline{pts} array is a list of points, sorted on $y$; \lstinline{alpha} is the maximum segment length.}
+\label{lst:concave_hull}
+\end{listing}
 
 The vertices of the concave hull form the point-set upon which the trajectory is computed.
 
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/concave_1.pdf} 
+\includegraphics[width=1.0\linewidth]{tmp/concave_4.pdf} 
+\includegraphics[width=1.0\linewidth]{tmp/concave_10.pdf} 
+\caption{Concave hull surface extraction using three $\alpha$ values: $\SI{1}\m$, $\SI{4}\m$ and $\SI{10}\m$. Grey points represent the original point cloud, the cyan line is the hull and fuscha crosses represent vertices. The tradeoff between point count and surface detail is evident.}
+\label{fig:concave}
+\end{figure}
+
 \subsection{Spline Computation}
 
-Most real-world uses of the smoothing spline call one of several Fortran libraries written by de Boor \cite{deBoor1980} and Dierkx \cite{Dierckx:1993:CSF:151103}. All accept a smoothing parameter and a list of weights for each ordinate. This study was performed using SciPy's UnivariateSpline class, which calls into the Dierkx's Fitpack.
+Most real-world uses of the smoothing spline call one of the Fortran libraries written by de Boor \parencite{deBoor1980} and Dierkx \parencite{Dierckx:1993:CSF:151103}. All accept a smoothing parameter and a list of weights for each ordinate. This study was performed using SciPy's \lstinline{UnivariateSpline} class, which calls into Dierkx's Fitpack library. The command-line tool is linked directly into Fitpack from C++ code.
 
-The UnivariateSpline class accepts list of ordinates ($y$), abscissae ($x$) and weights, along with a smoothing parameter and returns a functor, which is used to compute the derivative values for any given value of $x$. 
+The Fitpack library documentation provided in inline comments suggesting a method for selecting the smoothing parameter and a suggestion for calculating per-ordinate weights. The former should be in the range,
+
+\begin{equation}
+m - \sqrt{2m} \leq s \leq m + \sqrt{2m},
+\end{equation}
+
+where $s$ is the smoothing factor and $m$ is the number of input points. This range is predicated on the assumption that the weights are given as,
+
+\begin{equation}
+\frac{1}{\sigma},
+\end{equation}
+
+where $\sigma$ is the standard deviation of the elevation values. Throughout the documentation for libraries by both de Boor and Dierkx, it is recommended that the implementor assess their results graphically, as parameter selection is an inexact science. 
+
+A single weight value may be selected for all ordinates, or a unique weight for each. This provides the opportunity to reduce the weight of outliers or points that would induce sharp bends in the spline. A naive strategy for computing weights is to compute the angle described by three adjacent points and ascribe a lower weight to acute angles.
+
+Thus there are three parameters to the smoothing spline: the point count (via the concave hull's $\alpha$ parameter), the smoothing value and the weights. 
+
+To characterize the interactions between these parameters, a simulator was developed using Python and the \lstinline{UnivariatSpline} class to build trajectories on a selection of real-world point couds. For each trial, several characteristics were measured:
+
+\begin{itemize}
+\item The residual (provided by the library);
+\item The number of input points above the resulting spline;
+\item The maximum distance to a point above the spline;
+\item The maximum slope (vertical velocity) of the spline; and,
+\item The maximum curvature (acceleration) of the spline.
+\end{itemize}
+
+As the smoothing parameter is determined by $\alpha$, trials were performed on multiples of the parameter at $\alpha/4$, $\alpha/2$, $\alpha$, $2\alpha$ and $4\alpha$. Weights were applied as $1/\sigma$, and as a function of the angle at each point, given by,
+
+\begin{equation}
+w_i = \left( \frac{ 
+			|\arctan(y_{i-1}-y_{i}, x_{i-1}-x_{i}) - \arctan(y_{i+1}-y_{i},x_{i+1}-x_{i})|
+		}{
+			\pi
+		}
+	\right)^n,
+\end{equation}
+
+where $n$ is an exponent; $1$, $2$ and $4$ were tried.
 
 
-\section{Proposal}
 
-To show that the smoothing spline is an appropriate mechanism for computing trajectories for remote-sensing UAVs, it will be necessary implement a computational pipeline to determine the spline coefficients from a stream of measurements. The steps in this pipeline entail, in part,
 
-\begin{enumerate}
-\item calculating each 2-dimensional Cartesian coordinate based on the measured range, the position and  orientation of the UAV's body frame relative to the intertial frame, and the position and orientation of the laser relative to the body frame;
-\item filtering the point cloud to only include relevant points (e.g., by excluding points to the rear of the vehicle);
-\item implementing an online concave hull algorithm with the segment-length modification;
-\item configuring and computing the spline using the vertices of the concave hull.
-\end{enumerate}
 
-These steps will be performed using existing LiDAR point cloud extracts produced by the Hyperspectral-LiDAR Research Group at the University of Victoria, using a DJI Matrice 600 hexacopter and a Velodyne VLP-16 LiDAR. The point cloud will be modified to mimic the output of the scanning laser rangefinder by extracting a swath from the point cloud, measuring the Cartesian distance from an origin to each point (the y-coordinate) and keeping the z-coordinate.
 
-It will then be necessary to quantify the suitability of the spline coefficients by calculating, for example,
-
-\begin{enumerate}
-\item the error between the altitude of the trajectory and the elevation of actual terrain (as modeled using standard GIS techniques), at a suitable interval;
-\item the error between the altitude of the vehicle and the the trajectory at any point, given its dynamic properties, including whether the vehicle can navigate a trajectory at all.
-\end{enumerate}
-
-The first error is important, as the altitude error is a proxy for the variability of data quality. The second determines whether or not the vehicle will crash, but also gives some sense of how much power it must use, and whether it must exceed its nominal capabilities.
-
-The deliverables from this effort will include,
-
-\begin{enumerate}
-\item a command-line program to execute the simulation pipeline in approximately real-time using an excisting point cloud and;
-\item scripts required for calculating the above errors and any other relevant metrics that come to light;
-\item a final report.
-\end{enumerate}
-
-Hopefully, products of this activity will provide the first steps towards a field-configurable surface-following UAV flight control system.
 
 \newpage
 
