@@ -60,10 +60,8 @@ void loop() {
   
   } else {
 
-    int d = digitalRead(A4);
-    addError(d, errors, errIdx);
-    //collectIMU(buf, idx, errors, errIdx);
-    //collectRanges(buf, idx, errors, errIdx);
+    collectIMU(buf, idx, errors, errIdx);
+    collectRanges(buf, idx, errors, errIdx);
   
   }
   
@@ -103,12 +101,11 @@ void collectIMU(byte* buf, size_t& idx, unsigned short* errors, size_t& errIdx) 
   
   if((err = imu.getState(gyro, accel))) {
 
-    addError(err, errors, errIdx);
+    if(err != -1) // -1 indicates that a reading wasn't ready.
+      addError(err, errors, errIdx);
     
   } else {
 
-    addError(33, errors, errIdx);
-    return;
     imuTime1 = micros();
 
     if(idx < SERIAL_SIZE - 2) {
@@ -130,6 +127,7 @@ void collectIMU(byte* buf, size_t& idx, unsigned short* errors, size_t& errIdx) 
     }
   }  
 }
+
 void collectRanges(byte* buf, size_t& idx, unsigned short* errors, size_t& errIdx) {
 
   // If there are ranges, collect them.

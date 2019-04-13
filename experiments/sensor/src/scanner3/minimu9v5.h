@@ -204,28 +204,33 @@ private:
   
 public:
 
-  MinIMU9v5(byte gyroAddr = I2C_IMU_ADDR_GND, byte magAddr = 0) :
+  MinIMU9v5(byte gyroAddr = I2C_IMU_ADDR_SUP, byte magAddr = 0) :
     m_gyroAddr(gyroAddr), m_magAddr(magAddr) {
   }
   
   int init() {
 
     Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_INT, 400000);
-    return 0;
+    
+    int err;
+    
     // Configure gyroscope
     m_gyroFullScale = 1.0 / (245.0 * 0xffff);
-    m_gyroConfig = (GDR_1660Hz << 4) | (GFS_245dps << 2);
-    writeByte(m_gyroAddr, CTRL2_G, m_gyroConfig);
-    return 1;
-    writeByte(m_gyroAddr, CTRL7_G, 0);
+    m_gyroConfig = (GDR_26Hz << 4) | (GFS_245dps << 2);
+    if((err = writeByte(m_gyroAddr, CTRL2_G, m_gyroConfig)))
+      return err;
+    if((err = writeByte(m_gyroAddr, CTRL7_G, 0)))
+      return err;
 
     // Configure accelerometr
     m_accelFullScale = 1.0 / (2.0 * 0xffff);
-    m_accelConfig = (ADR_1660Hz << 4) | (AFS_2g << 2) | AAFB_400Hz;
-    writeByte(m_gyroAddr, CTRL1_XL, m_accelConfig);
+    m_accelConfig = (ADR_26Hz << 4) | (AFS_2g << 2) | AAFB_400Hz;
+    if((err = writeByte(m_gyroAddr, CTRL1_XL, m_accelConfig)))
+      return err;
 
     // Configure other.
-    writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 2));
+    if((err = writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 2))))
+      return err;
 
     return 0;
   }
@@ -236,14 +241,19 @@ public:
    * values are available to be read, false otherwise or if something
    * goes wrong.
    */
-  bool getState(int16_t* gyro, int16_t* accel) {
+  int getState(int16_t* gyro, int16_t* accel) {
     static byte buf[12] = {0};
-    int pos;
+    int pos, err = 0;
     
-    byte stat = readByte(m_gyroAddr, STATUS_REG);
+    byte stat = readByte(m_gyroAddr, STATUS_REG, err);
+    if(err)
+      return err;
     if(stat & 0b11) {
       // Gyro and accel.
-      int r = readBytes(m_gyroAddr, OUTX_L_G, buf, 12);
+      err = 0;
+      int r = readBytes(m_gyroAddr, OUTX_L_G, buf, 12, err);
+      if(err)
+        return err;
       if(r >= 12) {
         pos = 0;
         gyro[0] = readShort(buf, pos);  pos += 2;
@@ -252,10 +262,10 @@ public:
         accel[0] = readShort(buf, pos);  pos += 2;
         accel[1] = readShort(buf, pos);  pos += 2;
         accel[2] = readShort(buf, pos);  pos += 2;
-        return true;
+        return 0;
       }
     }
-    return false;
+    return -1;
   }
 
   bool convertState(int16_t* gyro, int16_t* accel, float* gyrof, float* accelf) {
@@ -268,23 +278,35 @@ public:
     return false;
   }
 
-  byte readByte(byte addr, byte reg) {
+  byte readByte(byte addr, byte reg, int& err) {
+    err = 0;
     Wire.beginTransmission(addr);
     Wire.write(reg);
-    Wire.endTransmission(I2C_NOSTOP, 0);
-    Wire.requestFrom(addr, (byte) 1);
+    if((err = Wire.endTransmission(I2C_NOSTOP, 0)))
+      return 0;
+    if(!Wire.requestFrom(addr, (byte) 1)) {
+      err = 123;
+      return 0;
+    }
     return Wire.read();
   }
 
-  int readBytes(byte addr, byte reg, byte* buf, int len) {
+  int readBytes(byte addr, byte reg, byte* buf, int len, int& err) {
+    err = 0;
     Wire.beginTransmission(addr);
     Wire.write(reg);
-    Wire.endTransmission(I2C_NOSTOP, 0);
-    Wire.requestFrom(addr, (byte) len);
+    if((err = Wire.endTransmission(I2C_NOSTOP, 0)))
+      return 0;
+    if(Wire.requestFrom(addr, (byte) len) < len) {
+      err = 124;
+      return 0;
+    }
     unsigned long t1 = micros();
     while(Wire.available() < len) {
-      if(micros() - t1 > 1000000)
-        return -1;
+      if(micros() - t1 > 1000000) {
+        err = 125;
+        return 0;
+      }
     }
     int i = 0;
     while(len--)
@@ -294,17 +316,28 @@ public:
 
   int writeByte(byte addr, byte reg, byte val) {
     Wire.beginTransmission(addr);
-    Wire.write(reg);
-    Wire.write(val);
-    return Wire.endTransmission();
+    if(!Wire.write(reg))
+      return 126;
+    if(!Wire.write(val))
+      return 127;
+    int err;
+    if((err = Wire.endTransmission(I2C_STOP)))
+      return err + 127;
+    return 0;
   }
 
   int writeBytes(byte addr, byte reg, byte* buf, int len) {
     Wire.beginTransmission(addr);
-    Wire.write(reg);
-    for(int i = 0; i < len; ++i)
-      Wire.write(buf[i]);
-    return Wire.endTransmission(I2C_STOP);
+    if(!Wire.write(reg))
+      return 132;
+    for(int i = 0; i < len; ++i) {
+      if(!Wire.write(buf[i]))
+        return 133;
+    }
+    int err;
+    if((err = Wire.endTransmission(I2C_STOP)))
+      return 133 + err;
+    return 0;
   }
   
 };
