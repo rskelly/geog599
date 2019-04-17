@@ -108,8 +108,9 @@ def plot_profile(outfile, smooth, weight, alpha, coords, hull, x, alt, vel, acc,
 	    tl.set_color('b')
 	ymax = max(map(abs, ax3.get_ylim()))
 	ax3.set_ylim((-ymax, ymax))
+	ax3.tick_params(pad=30)
 
-	plt.legend([l_spl, l_vel, l_acc, l_hull], ['Altitude (m)', 'Velocity (m/s)', 'Acceleration ($m/s^2$)', 'Hull Vertex Weights'])
+	plt.legend([l_spl, l_vel, l_acc, l_hull], ['Altitude (m)', 'Velocity (m/s)', 'Acceleration ($m/s^2$)', 'Concave Hull Vertex'])
 	plt.savefig(outfile, bbox_inches='tight', format='png', dpi=300)
 	#plt.show()
 	plt.close()
@@ -255,14 +256,20 @@ def minimize_residual(filename):
 					
 	fmin(fn, (1., 10.), args=(coords,))
 
-def run(filename, outdir, stats, doplot = False):
+def run(filename, outdir, stats, doplot = False, params = None):
 	'''
 	Run the profile with angle-based weights.
 	'''
+	if params:
+		smooth = [params['smooth_mult']]
+		weight_exp = [params['weight_exp']]
+		alpha = [params['alpha']]
+	else:
+		smooth = None
+		smooth_mult = np.geomspace(.000001, 100, 20)
+		weight_exp = [0., 1., 2., 4.]
+		alpha = [1., 2., 5., 10., 25., 50.]
 
-	smooth_mult = np.geomspace(.000001, 100, 20)
-	weight_exp = [0., 1., 2., 4.]
-	alpha = [1., 2., 5., 10., 25., 50.]
 	hull_clip = 5
 	x_clip = 5
 	
@@ -296,65 +303,129 @@ def run(filename, outdir, stats, doplot = False):
 				stats.write('{f},{e}\n'.format(f = filename, e = e.__str__()))
 				continue
 
-			for sn in [m - math.sqrt(2 * m), m, m + math.sqrt(2 * m)]:
-				
-				for sm in smooth_mult:
-	
-					print(sn, sm, sn*sm)
-					try:
-						s = sm * sn
-						ss = '{s:.6f}'.format(s = s).replace('.', '_')
-		
-						spline = trajectory(chull, s, wts)
-						
-						alt = spline(x, 0)								# Altitude
-						vel = spline(x, 1)								# Velocity
-						acc = spline(x, 2)								# Acceleration
-		
-						if doplot:
-							plotfile = os.path.join(outdir, ptpl.format(s = ss, a = aa, w = ww))
-			
-							plot_profile(plotfile, s, w, a, coords, chull, x, alt, vel, acc, wts) # Clip the ends -- they tend to have outliers.
-	
-						# Look at points above the spline.
-						acoords = coords[coords[...,1] >= minx]
-						acoords = acoords[acoords[...,1] <= maxx]
-						acoords = acoords[x_clip:-(x_clip + 1)]
-						az1 = spline(acoords[...,1], ext = 2)
-						az2 = acoords[...,2]
-						
-						aboveidx = az1 < az2
-						az1 = az1[aboveidx]
-						az2 = az2[aboveidx]
-						above = az2 - az1
-						try:
-							above_max = np.max(above)
-						except Exception as e:
-							print(e)
-						above_n = len(above)
-						
-						vel = spline(acoords[...,1], nu = 1, ext = 2)
-						vel_max = np.max(vel)
-						vel_min = np.min(vel)
-						
-						acc = spline(acoords[...,1], nu = 2, ext = 2)
-						acc_max = np.max(acc)
-						acc_min = np.min(acc)
-						
-						residual = spline.get_residual()
-						
-						coord_n = len(coords)
-						hull_n = len(chull)
-						
-						stats.write(','.join(list(map(str, [filename, '', a, s, w, coord_n, hull_n, above_n, above_max, vel_max, vel_min, acc_max, acc_min, residual]))) + '\n')
+			# Either use the give smooth parameter(s) or compute using the suggested range and multiplers.
+			smooth = smooth if smooth else [x * y for y in smooth_mult for x in [m - math.sqrt(2 * m), m, m + math.sqrt(2 * m)]]
 
+			for s in smooth:
+				
+				try:
+					ss = '{s:.6f}'.format(s = s).replace('.', '_')
+	
+					spline = trajectory(chull, s, wts)
+					
+					alt = spline(x, 0)								# Altitude
+					vel = spline(x, 1)								# Velocity
+					acc = spline(x, 2)								# Acceleration
+	
+					if doplot:
+						plotfile = os.path.join(outdir, ptpl.format(s = ss, a = aa, w = ww))
+		
+						plot_profile(plotfile, s, w, a, coords, chull, x, alt, vel, acc, wts) # Clip the ends -- they tend to have outliers.
+
+					# Look at points above the spline.
+					acoords = coords[coords[...,1] >= minx]
+					acoords = acoords[acoords[...,1] <= maxx]
+					acoords = acoords[x_clip:-(x_clip + 1)]
+					az1 = spline(acoords[...,1], ext = 2)
+					az2 = acoords[...,2]
+					
+					aboveidx = az1 < az2
+					az1 = az1[aboveidx]
+					az2 = az2[aboveidx]
+					above = az2 - az1
+					try:
+						above_max = np.max(above)
 					except Exception as e:
 						print(e)
-						stats.write('{f},{e}\n'.format(f = filename, e = e.__str__()))
+					above_n = len(above)
+					
+					vel = spline(acoords[...,1], nu = 1, ext = 2)
+					vel_max = np.max(vel)
+					vel_min = np.min(vel)
+					
+					acc = spline(acoords[...,1], nu = 2, ext = 2)
+					acc_max = np.max(acc)
+					acc_min = np.min(acc)
+					
+					residual = spline.get_residual()
+					
+					coord_n = len(coords)
+					hull_n = len(chull)
+					
+					if stats:
+						stats.write(','.join(list(map(str, [filename, '', a, s, w, coord_n, hull_n, above_n, above_max, vel_max, vel_min, acc_max, acc_min, residual]))) + '\n')
 
+				except Exception as e:
+					print(e)
+					stats.write('{f},{e}\n'.format(f = filename, e = e.__str__()))
+
+
+def density(filename):
+
+	miny = 99999.
+	maxy = -99999.
+	minz = 99999.
+	maxz = -99999.
+	count = 0
+	with open(filename, 'r') as f:
+		f.readline()
+		for line in f.read().split():
+			try:
+				x, y, z = list(map(float, line.split(',')))
+				if y < miny:
+					miny = y
+				if y > maxy:
+					maxy = y
+				if z < minz:
+					minz = z
+				if z > maxz:
+					maxz = z
+				count += 1
+			except Exception as e:
+				continue
+
+	print(filename, count / (maxy - miny))
 
 def run_profiles(outdir):
 	
+	params = {
+		'/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt': {
+			'smooth_mult': 0.003220259068882,
+			'weight_exp': 0.,
+			'alpha': 10.
+		},
+		'/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt': {
+			'smooth_mult':  0.011467576706331,
+			'weight_exp': 0.,
+			'alpha': 10.
+		},
+		'/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt': {
+			'smooth_mult': 0.002412535572338,
+			'weight_exp': 0.,
+			'alpha': 1.
+		},
+		'/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt': {
+			'smooth_mult': 0.002315,
+			'weight_exp': 0.,
+			'alpha': 10.,
+		},
+		'/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt': {
+			'smooth_mult': 0.004712245808863,
+			'weight_exp': 1.,
+			'alpha': 5.,
+		},
+		'/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt': {
+			'smooth_mult': 0.002609890637721,
+			'weight_exp': 0.,
+			'alpha': 5.,
+		},
+		# '/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt': {
+		# 	'smooth_mult': 7.56583359358737e-05,
+		# 	'weight_exp': 1.,
+		# 	'alpha': 5.,
+		# }
+	}
+
 	# Try to create the output directory.
 	try:
 		os.makedirs(outdir)
@@ -363,23 +434,40 @@ def run_profiles(outdir):
 	#plot_slope_weights(os.path.join(outdir, 'slope_weights.png'))
 	
 	# Remove files from output.
-	for f in [x for x in os.listdir(outdir) if x.endswith('.png')]:
-		os.unlink(os.path.join(outdir, f))
+	#for f in [x for x in os.listdir(outdir) if x.endswith('.png')]:
+	#	os.unlink(os.path.join(outdir, f))
 
 	# Open a stats file. This will contain stats for all runs.
 	stats = open(os.path.join(outdir, 'stats.csv'), 'w');
 	stats.write('filename,error,alpha,smooth,weight,coord_n,hull_n,above_n,above_max,vel_max,vel_min,acc_max,acc_min,residual\n')
 
-	with open('profiles.csv', 'r') as f:
-		db = csv.reader(f)
-		next(db)
-		for line in db:
-			if line[0] == '1':
-				print(line[7])
-				run(line[7], outdir, stats)
-				#break
+	mode = 'density' # plots, stats
 
-	stats.close()
+	if mode == 'plots':
+		with open('profiles.csv', 'r') as f:
+			db = csv.reader(f)
+			next(db)
+			for line in db:
+				if line[0] == '1':
+					print(line[7])
+					run(line[7], outdir, stats, False, None)
+					#break
+
+		stats.close()
+
+	if mode == 'stats':
+		for k, v in params.items():
+			run(k, outdir, None, True, v)
+
+	if mode == 'density':
+
+		with open('profiles.csv', 'r') as f:
+			db = csv.reader(f)
+			next(db)
+			for line in db:
+				if line[0] == '1':
+					print(line[7])
+					density(line[7])
 
 if __name__ == '__main__':
 

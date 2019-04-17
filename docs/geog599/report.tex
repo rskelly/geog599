@@ -19,6 +19,7 @@
 \usepackage{listings}
 \usepackage{minted}
 \usepackage{subcaption}
+\usepackage{wrapfig}
 
 \lstset{language = Python, basicstyle = \small\ttfamily, tabsize = 4}
 
@@ -204,7 +205,15 @@ However, the definition of a ``surface'' is problematic. The points represent me
 
 One conception of the surface is that one's  certainty about its height is perfect at the location of a point, A, and degrades with distance from that point. As this distance increases the distance to a neighbouring point, B, decreases, and one's certainty about the height of the surface relative to B increases. (This premise, Tobler's law \parencite{Tobler1970a}, is fundamental to quantitative geography.) The point cloud thus implies probabilistic, interpolating surface. 
 
-A simple, efficient way of extracting a surface from a 2-dimensional point cloud is to compute the convex hull. Unfortunately, on surfaces that have anything other than a convex, or domed, shape, most of the surface detail is lost. Alternatively, a \emph{concave} hull would allow for indents in the surface. Unlike the convex hull -- the unique minimum polygon containing the all constituent hulls of the point-set -- there is no single definition of a concave hull. Alpha shapes \parencite{Edelsbrunner1994} are a well-defined candidate, but require the triangulation (via Delaunay) of the entire point set. Another alternative is to modify an existing fast convex hull algorithm to limit the maximum segment length.
+A simple, efficient way of extracting an interpolating surface from a 2-dimensional point cloud is to compute the convex hull. Unfortunately, on surfaces that have anything other than a convex, or domed, shape, most of the surface detail is lost. Alternatively, a \emph{concave} hull would allow for indents in the surface. Unlike the convex hull -- the unique minimum polygon containing the all constituent hulls of the point-set -- there is no single definition of a concave hull. Alpha shapes \parencite{Edelsbrunner1994} are a well-defined candidate, but require the triangulation (via Delaunay) of the entire point set. Another alternative is to modify an existing fast convex hull algorithm to limit the maximum segment length.
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/concave_1.pdf} 
+\includegraphics[width=1.0\linewidth]{tmp/concave_4.pdf} 
+\includegraphics[width=1.0\linewidth]{tmp/concave_10.pdf} 
+\caption{Concave hull surface extraction using three $\alpha$ values: $\SI{1}\m$, $\SI{4}\m$ and $\SI{10}\m$. Grey points represent the original point cloud, the cyan line is the hull and fuscha crosses represent vertices. The tradeoff between point count and surface detail is evident.}
+\label{fig:concave}
+\end{figure}
 
 The Mototone Chain convex hull algorithm \parencite{Andrew1979} runs in linear ($O(n)$) time, in constant space, on a sorted point set, which is the expected state of the input. By modifying the main loop of the algorithm to limit the length of any given segment (via a parameter, $\alpha$) and running it only on the upper surface of the input, it becomes a configurable surface-extraction tool. 
 
@@ -236,14 +245,16 @@ def hull(pts, alpha):
 \label{lst:concave_hull}
 \end{listing}
 
+\begin{wrapfigure}{r}{0.5\textwidth} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\begin{center}
+\includegraphics[width=0.45\textwidth]{tmp/hull_vs_bin.pdf} 
+\end{center}
+\caption{Comparison of concave hull (green) and binning (purple) surface extraction.}
+\label{fig:bin_vs_hull}
+\end{wrapfigure}
 
-\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
-\includegraphics[width=1.0\linewidth]{tmp/concave_1.pdf} 
-\includegraphics[width=1.0\linewidth]{tmp/concave_4.pdf} 
-\includegraphics[width=1.0\linewidth]{tmp/concave_10.pdf} 
-\caption{Concave hull surface extraction using three $\alpha$ values: $\SI{1}\m$, $\SI{4}\m$ and $\SI{10}\m$. Grey points represent the original point cloud, the cyan line is the hull and fuscha crosses represent vertices. The tradeoff between point count and surface detail is evident.}
-\label{fig:concave}
-\end{figure}
+An alternative efficient strategy for extracting a surface is to bin the point cloud horizontally and select, for each bin, the point with the maximum elevation. Optionally, a new point can be created in the center of the bin to produce an evenly distributed point set. Figure \ref{fig:bin_vs_hull} shows the result -- the binning strategy does not follow the surface exactly, which could lead to undesireable bias. As efficient as the binning algorithm would be, the quality cost of this strategy would outweigh the efficiency cost of the concave hull.
+
 
 \subsection{Spline Computation}
 
@@ -251,7 +262,7 @@ Most real-world uses of the smoothing spline call one of the Fortran libraries w
 
 The Fitpack library documentation, provided in inline comments, suggests a method for selecting the smoothing parameter and calculating per-ordinate weights. The former should be in the range,
 
-\begin{equation}
+\begin{equation} \label{eq:s_range}
 m - \sqrt{2m} \leq s \leq m + \sqrt{2m},
 \end{equation}
 
@@ -327,7 +338,7 @@ This area (figure \ref{fig:thompson_map}) was surveyed by HLRG in August 2017 us
 
 \subsubsection{Bartier Brothers Winery, Okanagan, British Columbia}
 
-This area (figure \ref{fig:bartier_map}) was surveyed by HLRG in August 2017 using a UAV and Velodyne VLP-16 LiDAR instrument. The terrain is covered with grape vines spaced at approximately $\SI{2}\m$. The average point density is $4999.73points/m^2$ with a maximum of $13612.00points/m^2$ and standard deviation of $2289.77points/m^2$. The northerly profile passes over a wind generator approximately $\SI{5}\m$ in height.
+This area (figure \ref{fig:bartier_map}) was surveyed by HLRG in August 2017 using a UAV and Velodyne VLP-16 LiDAR instrument. The terrain is covered with grape vines spaced at approximately $\SI{2}\m$. The average point density is $4999.73points/m^2$ with a maximum of $13612.00points/m^2$ and standard deviation of $2289.77points/m^2$. The profile passes over a wind generator approximately $\SI{5}\m$ in height.
 
 \begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
 \includegraphics[width=1.0\linewidth]{tmp/bartier_map.pdf} 
@@ -338,7 +349,7 @@ This area (figure \ref{fig:bartier_map}) was surveyed by HLRG in August 2017 usi
 
 \subsubsection{Mount Douglas and Blenkinsop Lake, Victoria, British Columbia}
 
-This area was surveyed by HLRG using a manned aircraft and LiDAR instrument. In the Mount Douglas sector (figure \ref{fig:mt_doug_map}, northeast) the terrain is steep, covered with a mix of bare rock, mature second-growth Douglas fir and Garry Oak forests. In the Blenkinsop Lake area (figure \ref{fig:mt_doug_map}, center), there are fields of grass, second-growth Douglas fir and a small lake. Christmas Hill (figure \ref{fig:mt_doug_map}, southwest) is similar to Mount Douglas but smaller and surrounded by houses. The average point density is $5.62points/m^2$ with a maximum of $53.00points/m^2$ and standard deviation of $3.36points/m^2$. .
+This area was surveyed by HLRG using a manned aircraft and LiDAR instrument. In the Mount Douglas sector (figure \ref{fig:mt_doug_map}, northeast) the terrain is steep, covered with a mix of bare rock, mature second-growth Douglas fir and Garry Oak forests. In the Blenkinsop Lake area (figure \ref{fig:mt_doug_map}, center), there are fields of grass, second-growth Douglas fir and a small lake. Christmas Hill (figure \ref{fig:mt_doug_map}, southwest) is similar to Mount Douglas but smaller and surrounded by houses. The average point density is $5.62points/m^2$ with a maximum of $53.00points/m^2$ and standard deviation of $3.36points/m^2$.
 
 \begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
 \includegraphics[width=1.0\linewidth]{tmp/mt_doug_map.pdf} 
@@ -356,6 +367,9 @@ This area was surveyed by HLRG using a manned aircraft and LiDAR instrument. In 
 \includegraphics[width=1.0\linewidth]{tmp/mt_doug_2_profile.pdf} 
 \caption{Mt. Douglas 2} \label{subfig:mt_doug_2}
 \end{subfigure}
+\end{figure}
+
+\begin{figure}\ContinuedFloat
 \begin{subfigure}[b]{\linewidth}
 \includegraphics[width=1.0\linewidth]{tmp/swan_1_profile.pdf} 
 \caption{Christmas Hill} \label{subfig:swan_1}
@@ -364,6 +378,9 @@ This area was surveyed by HLRG using a manned aircraft and LiDAR instrument. In 
 \includegraphics[width=1.0\linewidth]{tmp/swan_2_profile.pdf} 
 \caption{Blenkinsop Lake} \label{subfig:swan_2}
 \end{subfigure}
+\end{figure}
+
+\begin{figure}\ContinuedFloat
 \begin{subfigure}[b]{\linewidth}
 \includegraphics[width=1.0\linewidth]{tmp/thompson_profile.pdf} 
 \caption{Black Canyon} \label{subfig:thompson}
@@ -372,18 +389,30 @@ This area was surveyed by HLRG using a manned aircraft and LiDAR instrument. In 
 \includegraphics[width=1.0\linewidth]{tmp/bartier_1_profile.pdf} 
 \caption{Bartier 1} \label{subfig:bartier_1}
 \end{subfigure}
-\begin{subfigure}[b]{\linewidth}
-\includegraphics[width=1.0\linewidth]{tmp/bartier_2_profile.pdf} 
-\caption{Bartier 2} \label{subfig:bartier_2}
-\end{subfigure}
 ~
 \caption{Point cloud sections. Note the difference in scale for each. The wind generator is clearly visible in (\ref{subfig:bartier_1}).}
 \label{fig:profiles}
 \end{figure}
 
-A scanning laser will ultimately be used for building the point cloud. At its maximum range of $\SI{100}\m$, and a scan angle of $\SI{5.7}\deg$, the swath is approximately $\SI{2}\m$. Therefore, a vertical hyperplane was intersected with the point cloud and the start and end points of each line, and any point which formed an acute angle with the start and end points was preserved. The $x$-coordinate of each point was set to $0$, and the $y$-coordinate set to the Cartesian distance between it and the start point. The $z$-coordinates were unchanged. The resulting point clouds are shown in figure \ref{fig:profiles}.
+\begin{table}
+\caption{Point densities for each point cloud.}
+\label{table:pt_density}
+\begin{tabular}{l || r} 
+Profile & Pts. / $m^2$ \\
+\hline
+Mt. Douglas 1  & 8.60 \\
+Mt. Douglas 2  & 10.83 \\
+Thompson       & 246.68 \\
+Bartier 1      & 3724.11 \\
+Christmas Hill & 7.99 \\
+Blenkinsop Lk. & 6.69 \\
+\end{tabular}
+\end{table}
 
-Each profile was subjected to the concave hull and spline algorithms above, using a variety of inputs for the smoothing parameter $s$, the segment length $\alpha$, and an exponential weight for the vertex-weighting scheme. For each trial, several statistics were collected:
+
+A scanning laser will ultimately be used for building the point cloud. At its maximum range of $\SI{100}\m$, and a scan angle of $\SI{5.7}\deg$, the swath is approximately $\SI{2}\m$. Therefore, a vertical hyperplane was intersected with each point cloud and the start and end points of each line, and any point which formed an acute angle with the start and end points was preserved. (The hyperplane's length is infinite; this strategy preserves only the points that lie between the endpoints.) The $x$-coordinate of each point was set to $0$, and the $y$-coordinate set to the Cartesian distance between it and the start point. The $z$-coordinates were unchanged. The resulting point clouds are shown in figure \ref{fig:profiles}. The point density of each profile is given in table \ref{table:pt_density}.
+
+Each profile was subjected to the concave hull and spline algorithms in listing \ref{lst:concave_hull}, using a variety of inputs for the smoothing parameter $s$, the segment length $\alpha$, and an exponential weight for the vertex-weighting scheme. For each trial, several statistics were collected:
 
 \begin{itemize}
 \item The number of source points found above the spline.
@@ -399,12 +428,186 @@ The minimum and maximum vertical velocity and acceleration serve to indicate whe
 
 The residual gives some indication of how well the trajectory fits the point cloud, though this is to an extent determined by the number of points, and thus upon $\alpha$.
 
+\subsection{Aircraft}
+
+The dynamic limits used for this study are those of the DJI Matrice 600 hexacopter. Some specifications for the vehicle are given in table \ref{table:djispecs}.
+
+\begin{table}
+\begin{center}
+\begin{tabular}{ l r }
+\hline
+Vehicle weight (TB47S batteries) & $\SI{9.1}\kg$ \\ 
+Vehicle weight (TB48S batteries) & $\SI{9.6}\kg$ \\
+Maximum vehicle weight & $\SI{15.1}\kg$ \\
+Maximum pitch angle & $\ang{25}$ \\
+Maximum pitch velocity & $\SI{300}{\degree\per\second}$ \\
+Maximum yaw velocity & $\SI{150}{\degree\per\second}$ \\
+Maximum ascent velocity & $\SI{5}{\metre\per\second}$ \\
+Maximum descent velocity & $\SI{3}{\metre\per\second}$ \\
+Maximum horizontal velocity & $\SI{18}{\metre\per\second}$ \\
+Maximum wind velocity & $\SI{8}{\metre\per\second}$ \\
+Maximum thrust (per rotor) & $\SI{5100}{\g}$ \\
+\hline
+\end{tabular}
+\end{center}
+\caption{DJI Matrice 600 Specifications \cite{DJI2017}.}
+\label{table:djispecs}
+\end{table}
+
+These constraints may not correspond to the absolute physical limits on vehicle performance, but they do provide a useful guide to the limits that may be imposed by the flight control API, and from these quantities, the dynamic limits of the platform (e.g., maximum thrust) may be inferred.
+
+The nominal maximum thrust, $T_n$, generated by the DJI6100/DJI2170 motor/propeller combination is given as $\SI{5100}\g$ of pulling force per rotor \parencite{DJI2017}. The propulsive forces of the six rotors cannot be summed directly because their axes are not aligned. However, it is a simple matter to decompose the thrust vector of each into its $T_x$ and $T_z$, components ($T_z$ is vertical; $T_y$ is not required) and sum the $T_z$ components. The $T_x$ components can be ignored because, being radially opposed, they cancel out. Note that this is a gross oversimplification; there are other forces at play, such as torque and wind, but the object is to provide some guidence as to limits, not to produce an accurate dynamic model.
+
+Measured from CAD drawings supplied by DJI \parencite{DJI2017}, each arm of the hexacopter is inclined upwards from horizontal by $8\deg$, or $0.139643114$ radians. The $T_z$ component is then,
+
+\begin{equation}
+\begin{split}
+T_z &= sin(\theta) * T_n \\
+T_z &= sin(0.139643114) * 5.1 \\
+T_z &= 0.990265734 * 5.1 \\
+T_z &\approx \SI{5.050}{\kg} % 5.050355244.
+\end{split}
+\end{equation}
+
+This gives a total maximum thrust $T_{max}$ of,
+
+\begin{equation}
+\begin{split}
+T_{max} &= 6 * T_z \\
+T_{max} &\approx \SI{30.302}{\kg}.
+\end{split}
+\end{equation} 
+
+We wish to represent the maximum available thrust as a force, $F_t$, in Newtons. Assuming a vertical orientation of the thrust vector and the acceleration of gravity as $g$, 
+
+\begin{equation}
+\begin{split}
+F_t &= T_{max} * g \\
+F_t &= T_{max} * 9.08665 \\
+F_t &\approx \SI{297.162}{\N}
+\end{split}
+\end{equation}
+
+At the maximum vehicle mass of $M_v = \SI{15.1}{\kg}$, this gives a maximum vertical linear acceleration of,
+
+\begin{equation}
+\begin{split}
+a &= (F_t - F_g - F_d) / M_v \\
+a &= (297.162397521 - (9.80665 * 15.1) - 0) / 15.1 \\
+a &\approx \SI{9.873}{\m\s^{-2}}, %9.872978975
+\end{split}
+\end{equation}
+
+where $F_g$ is the force of gravity and $F_d$ is the force of drag, which is zero, under the assumption that vertical accelerations begin during level flight.
+
+
 
 \section{Results}
 
+Because it was unknown how the smoothing spline would behave for each of the point cloud inputs, given the variety of point densities and relief variances, a brute-force strategy was applied to compute splines using a range of values for each parameter.
+
+The alpha parameter was sampled from the set, $(1, 2, 5, 10, 25, 50)$. The smoothing parameter $s$ was calculated according to the documented suggestion (see equation \ref{eq:s_range}) and subjected to a multiplier: The minimum, maximum and median values from the range of $s$ were multiplied by a value sampled from a geometric sequence in the range $0.000001$ to $100$. For high-relief profiles, with a large variance in terrain elevations, a small smoothing parameter was required so as not to overwhelm the small weight values. For flatter surfaces, larger smoothing values would suffice. 
+
+Weights were applied using the slope-weighting scheme and scaled using an exponent from the set $(0, 1, 2, 4)$. In the zero-exponent case, the weight would be a constant -- the inverse of the standard deviation in $z$.
+
+There were 8640 individual trials on 6 datasets. The smoothing spline converges to a straight line when $s=0$ and an optimal  least-squares fit at some ``large'' value of $s$ (the algorithm performs a limited number of iterations, but generally converges with reasonable parameters). These conditions can be detected by duplicate output values for minimum and maximum acceleration and velocity, and the residual. The duplicates were filtered out, as were results which exceed the dynamic limits of the aircraft or which contain points too far above the trajectory, given a nominal altitude of $\SI{10}\m$. 
+
+\begin{equation} \label{eq:filter_limits}
+\begin{split}
+v_{max} &< 5.0 \\
+v_{min} &> -5.0 \\
+a_{max} &< 9.873 \\
+a_{min} &> -9.087 \\
+p_{max} &< 10.0
+\end{split}
+\end{equation}
+
+With the limits in (\ref{eq:filter_limits}), where $v$ is velocity, $a$ is acceleration, and $p$ is the height of points above the spline, the trial outputs were filtered using the query in listing \ref{lst:result_sql}, leaving 678 valid results (table \ref{table:arg_results}.)
+
+\begin{listing}
+\begin{minted}{sql}
+with t as (
+	select *, concat(vel_max, vel_min, acc_max, acc_min, residual) as key 
+		from trials 
+		where vel_max < 5 and vel_min > -5 and acc_max < 9.873 
+			and acc_min > -9.807 and above_max < 10 
+		order by filename, above_max, vel_max, 
+			abs(vel_min), acc_max, abs(a308 & 50 & 1 & 4 & 0 & 0.848464 & 0.000872cc_max), residual
+), u as (
+	select filename, key, count(*) as ct 
+		from t 
+		group by key, filename
+)
+select t.filename, count(*) as results, max(alpha) as max_alpha, 
+		min(alpha) as min_alpha, max(weight) as max_weight, 
+		min(weight) as min_weight, max(smooth) as max_smooth, 
+		min(smooth) as min_smooth 
+	from t, u 
+	where t.key=u.key and ct <= 1 
+	group by t.filename;
+
+
+\end{minted}
+\caption{SQL query used for filtering trial results within predetermined limits and excluding converged results.}
+\label{lst:result_sql}
+\end{listing}
 
 
 
+\begin{table}
+\caption{Valid parameter ranges for smoothing spline trials.}
+\label{table:arg_results}
+\begin{tabular}{l | r || r | r | r | r | r | r} 
+Profile & Count & Max. $\alpha$ & Min. $\alpha$ & Max. $w$ & Min. $w$ & Max. $s$ & Min. $s$ \\
+\hline
+Mt. Douglas 1  & 25  & 50 & 2 & 1 & 0 & 0.057574 & 0.003062 \\
+Mt. Douglas 2  & 24  & 10 & 2 & 2 & 0 & 0.210198 & 0.001650 \\
+Thompson       & 308 & 50 & 1 & 4 & 0 & 0.848464 & 0.000872 \\
+Bartier 1      & 99  & 25 & 1 & 4 & 0 & 0.126134 & 0.000323 \\
+Christmas Hill & 20  & 25 & 2 & 0 & 0 & 0.043681 & 0.002247 \\
+Blenkinsop Lk. & 202 & 50 & 1 & 4 & 0 & 0.227740 & 0.000606\\
+\end{tabular}
+\end{table}
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/mt_doug_1_2m_0_003220_10_00_0_000.pdf} 
+\caption{Mt. Douglas 1} \label{subfig:mt_doug_1}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/mt_doug_2_2m_0_011468_10_00_0_000.pdf} 
+\caption{Mt. Douglas 2} \label{subfig:mt_doug_2}
+\end{subfigure}
+\end{figure}
+
+\begin{figure}\ContinuedFloat
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/swan_lk_1_2m_0_002315_10_00_0_000.pdf} 
+\caption{Christmas Hill} \label{subfig:swan_1}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/swan_lk_2_2m_0_004712_5_00_1_000.pdf} 
+\caption{Blenkinsop Lake} \label{subfig:swan_2}
+\end{subfigure}
+\end{figure}
+
+\begin{figure}\ContinuedFloat
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/nrcan_4_2m_0_002413_1_00_0_000.pdf} 
+\caption{Black Canyon} \label{subfig:thompson}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/VITI_D168_BART_sess12_v1_1_2m_0_002610_5_00_0_000.pdf} 
+\caption{Bartier 1} \label{subfig:bartier_1}
+\end{subfigure}
+~
+\caption{Trajectory, velocity and acceleration curves for each profile.}
+\label{fig:profiles}
+\end{figure}
+
+Figure \ref{fig:profiles} shows a selection of smooth spline trajectories that obey the dynamic constraints of the aircraft and provide some reasonable fidelity to the imaged surface. It is apparent that there is a great deal of variability in terms of the length of a trajectory, the characteristics of the terrain relief, the high-frequency variation in the height of the surface, and the intentions of the surveyor. This project has demonstrated that it is possible to extract a trajectory from a point cloud, using cubic splines, which provides a means of quantifying the suitability of the trajectory for research and safety objectives.
+
+However, there are some fatal flaws with the strategy. As the vehicle progresses along its trajectory, added data to the point cloud and re-computing the spline at intervals, the height of the spline is adjusted along its \emph{entire} length, including the section currently being navigated by the aircraft. This induces instantaneous ``jumps'' in the trajectory, which are not only deleterious in terms of data quality (and unquantifiable) but physically impossible for the aircraft to negotiate. 
 
 \newpage
 
