@@ -18,6 +18,7 @@
 \usepackage[left=1in,right=1in,top=1in,bottom=1in]{geometry}
 \usepackage{listings}
 \usepackage{minted}
+\usepackage{subcaption}
 
 \lstset{language = Python, basicstyle = \small\ttfamily, tabsize = 4}
 
@@ -143,9 +144,9 @@ The mechanical spline and its mathematical equivalent are interpolators and pass
 
 \subsection{Smoothing Splines}
 
-An alternative construction -- the smoothing or approximating spline -- allows the spline preserve the overall shape of the data distribution -- that is, the measured surface -- without passing through each knot exactly.
+An alternative construction -- the smoothing or approximating spline -- allows the spline to preserve the overall shape of the data distribution -- that is, the measured surface -- without passing through each knot exactly.
 
-A smoothing spline has two conflicting objectives \cite{lancaster1986curve, Drakos2002, Boor2001, Reinsch1967}:
+A smoothing spline has two conflicting objectives \parencite{lancaster1986curve, Drakos2002, Boor2001, Reinsch1967}:
 \begin{enumerate}
 \item To minimize the sum of squared distances between the function estimate and the ordinates;
 \item To minimize the curvature of the function.
@@ -157,7 +158,7 @@ This leads to de Boor's formulation,
 S(x) = p \sum_{i=1}^{n} \left( {(Y_i - \hat{f}(x_i))^2 \over {\sigma_i}^2} \right) + (1 - p) \int{ \left( \hat{f}^{(m)}(x) \right)^2 } dx,
 \end{equation}
 
-where the first term is essentialy a Chi-square measure of the function and the second a measure of its curvature, both weighted by $p \in{[0-1]}$ or its negation. Here, $Y$ is the ordinate, $\hat{f}$ is the spline estimate and $\sigma$ represents the variance of the ordinate set. $p$ has the effect of controlling the number of knots: as $p$ approaches $1$, the first term is emphasized, forcing a closer fit to the data, while as $p$ approaces $0$, the integral is emphasized, forcing a straighter (smoother) curve. 
+where the first term is essentialy a Chi-square measure of the data distribution and the second a measure of its curvature, both weighted by $p \in{[0-1]}$ or its negation. Here, $Y$ is the ordinate, $\hat{f}$ is the spline estimate and $\sigma$ represents the variance of the ordinate set. $p$ has the effect of controlling the number of knots: as $p$ approaches $1$, the first term is emphasized, forcing a closer fit to the data, while as $p$ approaces $0$, the integral is emphasized, forcing a straighter (smoother) curve. As the fit improves, the number of knots and their positions approach those of the oridinates; as smoothness increases, a straight line emerges with two knots at the ends.
 
 The system is constrained, such that,
 
@@ -199,15 +200,17 @@ As this issue remains unresolved, this paper focuses on the development and anal
 
 Some representation of the imaged ``surface'' must be extracted from the point cloud. If this were not done, points from the interior of the vegetative canopy or the terrain would bias the spline downward, degrading the data quality and possibly precipitating a crash. The point subset must contain enough points to provide some surface detail and few enough to obscure high-frequency variation and ensure efficient computability. 
 
-However, the definition of a ``surface'' is problematic. The points represent measurements of real objects but provide no information about what exists between those objects. One conception of the surface is that one's  certainty about its height is perfect at the location of a point, A, and degrades with distance from that point. As this distance increases the distance to a neighbouring point, B, decreases, and one's certainty about the height of the surface relative to B increases. (This premise, Tobler's law \parencite{Tobler1970a}, is fundamental to quantitative geography.) The point cloud thus implies probabilistic, interpolating surface. 
+However, the definition of a ``surface'' is problematic. The points represent measurements of real objects but provide no information about what exists between those objects. The surface is fractal \parencite{Mandelbrot1967}.
 
-A simple, efficient way of extracting a surface from a 2-dimensional point cloud is to compute the convex hull. Unfortunately, on surfaces that have anything other than a convex, or domed, shape, most of the surface detail is lost. Alternatively, a \emph{concave} hull would allow for indents in the surface. Unlike the convex hull -- the unique minimum polygon containing the all constituent hulls of the point-set -- there is no single definition of a concave hull. Alpha shapes \parencite{Edelsbrunner1994} are a well-defined candidate, but require the triangulation (via Delaunay) of the entire pointset. Another alternative is to modify an existing fast convex hull algorithm to limit the maximum segment length.
+One conception of the surface is that one's  certainty about its height is perfect at the location of a point, A, and degrades with distance from that point. As this distance increases the distance to a neighbouring point, B, decreases, and one's certainty about the height of the surface relative to B increases. (This premise, Tobler's law \parencite{Tobler1970a}, is fundamental to quantitative geography.) The point cloud thus implies probabilistic, interpolating surface. 
+
+A simple, efficient way of extracting a surface from a 2-dimensional point cloud is to compute the convex hull. Unfortunately, on surfaces that have anything other than a convex, or domed, shape, most of the surface detail is lost. Alternatively, a \emph{concave} hull would allow for indents in the surface. Unlike the convex hull -- the unique minimum polygon containing the all constituent hulls of the point-set -- there is no single definition of a concave hull. Alpha shapes \parencite{Edelsbrunner1994} are a well-defined candidate, but require the triangulation (via Delaunay) of the entire point set. Another alternative is to modify an existing fast convex hull algorithm to limit the maximum segment length.
 
 The Mototone Chain convex hull algorithm \parencite{Andrew1979} runs in linear ($O(n)$) time, in constant space, on a sorted point set, which is the expected state of the input. By modifying the main loop of the algorithm to limit the length of any given segment (via a parameter, $\alpha$) and running it only on the upper surface of the input, it becomes a configurable surface-extraction tool. 
 
 However, though the maximum segment length can be enforced, there can be no minimum. This leads to possible clustering of vertices near highly curved sections of the surface. The method is also asymmetrical: the result in one direction will differ from the result in the opposite direction. In concrete terms, this means that, when a depression is encountered, a maximum-length segment will reach across the depression to the opposite side, then a cluster of vertices will occur as the algorithm ``climbs'' the convex slope of the far side.
 
-A Python implementation of the concave hull algorithm is given in Listing \ref{lst:concave_hull}.
+The vertices of the concave hull form the point-set upon which the trajectory is computed. In general, a larger $\alpha$ value results in a larger number of vertices. A Python implementation of the concave hull algorithm is given in Listing \ref{lst:concave_hull}. 
 
 \begin{listing}
 \begin{minted}{python}
@@ -233,7 +236,6 @@ def hull(pts, alpha):
 \label{lst:concave_hull}
 \end{listing}
 
-The vertices of the concave hull form the point-set upon which the trajectory is computed.
 
 \begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
 \includegraphics[width=1.0\linewidth]{tmp/concave_1.pdf} 
@@ -245,9 +247,9 @@ The vertices of the concave hull form the point-set upon which the trajectory is
 
 \subsection{Spline Computation}
 
-Most real-world uses of the smoothing spline call one of the Fortran libraries written by de Boor \parencite{deBoor1980} and Dierkx \parencite{Dierckx:1993:CSF:151103}. All accept a smoothing parameter and a list of weights for each ordinate. This study was performed using SciPy's \lstinline{UnivariateSpline} class, which calls into Dierkx's Fitpack library. The command-line tool is linked directly into Fitpack from C++ code.
+Most real-world uses of the smoothing spline call one of the Fortran libraries written by de Boor \parencite{deBoor1980} and Dierkx \parencite{Dierckx:1993:CSF:151103}. All accept a smoothing parameter and a list of weights for each ordinate. This study was performed using SciPy's \lstinline{UnivariateSpline}{} class, which calls into Dierkx's Fitpack library. 
 
-The Fitpack library documentation provided in inline comments suggesting a method for selecting the smoothing parameter and a suggestion for calculating per-ordinate weights. The former should be in the range,
+The Fitpack library documentation, provided in inline comments, suggests a method for selecting the smoothing parameter and calculating per-ordinate weights. The former should be in the range,
 
 \begin{equation}
 m - \sqrt{2m} \leq s \leq m + \sqrt{2m},
@@ -259,23 +261,25 @@ where $s$ is the smoothing factor and $m$ is the number of input points. This ra
 \frac{1}{\sigma},
 \end{equation}
 
-where $\sigma$ is the standard deviation of the elevation values. Throughout the documentation for libraries by both de Boor and Dierkx, it is recommended that the implementor assess their results graphically, as parameter selection is an inexact science. 
+where $\sigma$ is the standard deviation of the elevation values. Throughout the documentation for libraries by both de Boor and Dierkx, it is recommended that the user assess the results graphically, as parameter selection is an inexact science. 
 
-A single weight value may be selected for all ordinates, or a unique weight for each. This provides the opportunity to reduce the weight of outliers or points that would induce sharp bends in the spline. A naive strategy for computing weights is to compute the angle described by three adjacent points and ascribe a lower weight to acute angles.
+A single weight value may be selected for all ordinates, or a unique weight for each. This provides the opportunity to reduce the weight of outliers or points that would induce sharp bends in the spline. A naive strategy for computing weights is to compute the angle described by three adjacent points and ascribe a lower weight to acute angles. Or, the gradient between pairs of points can be calculated, with each point's weight depending on the maximum slope of its two adjoining segments.
 
 Thus there are three parameters to the smoothing spline: the point count (via the concave hull's $\alpha$ parameter), the smoothing value and the weights. 
 
-To characterize the interactions between these parameters, a simulator was developed using Python and the \lstinline{UnivariatSpline} class to build trajectories on a selection of real-world point couds. For each trial, several characteristics were measured:
+To characterize the interactions between these parameters, a simulator was developed using Python and the \lstinline{UnivariatSpline}{} class to build trajectories on a selection of real-world point couds. For each trial, several characteristics were measured:
 
 \begin{itemize}
 \item The residual (provided by the library);
 \item The number of input points above the resulting spline;
 \item The maximum distance to a point above the spline;
 \item The maximum slope (vertical velocity) of the spline; and,
-\item The maximum curvature (acceleration) of the spline.
+\item The maximum curvature (vertical acceleration) of the spline.
 \end{itemize}
 
-As the smoothing parameter is determined by $\alpha$, trials were performed on multiples of the parameter at $\alpha/4$, $\alpha/2$, $\alpha$, $2\alpha$ and $4\alpha$. Weights were applied as $1/\sigma$, and as a function of the angle at each point, given by,
+The residual gives some measure of the spline's closeness of fit to the surface and the slope and curvature determine whether the dynamic limits of the aircraft can accomodate the trajectory. The points above the spline represent obstacles which project above the trajectory; if the flight altitude is less than the maximum point-above-spline height, there will be a collision. The original point set is used to calcuate the latter metric.
+
+As the smoothing parameter is determined in part by $\alpha$, trials were performed on multiples of $\sigma$ in a variety of ranges which turned out to be dependent on the point density and elevation range of each point set. Weights were applied as $1/\sigma$, and as a function of the angle at each point, given by,
 
 \begin{equation}
 w_i = \left( \frac{ 
@@ -286,9 +290,117 @@ w_i = \left( \frac{
 	\right)^n,
 \end{equation}
 
-where $n$ is an exponent; $1$, $2$ and $4$ were tried.
+where $n$ is an exponent; $1$, $2$ and $4$ were tried (see figure \ref{fig:slope_weight}.) The maximum slope was also ued as an input for weight calculation:
+
+\begin{equation}
+w_i = \left(
+	\frac{
+		1.0 - max(slope(c_{i-1}, c_i), slope(c_i, c_{i+1}))
+	}
+	{\pi/4}
+	\right)^n,
+\end{equation}
+
+where $c$ is the 2-dimensional coordinate and $slope()$ returns the gradient between two points as an angle between $0$ and $\pi/4$ radians.
 
 
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/slope_weights.pdf} 
+\caption{Effect of the exponent on the slope- or angle-weight multiplier.}
+\label{fig:slope_weight}
+\end{figure}
+
+\subsection{Point Clouds}
+
+The point clouds were extracted from raw 3-dimensional LiDAR point clouds produced through the activities of the Hyperspectral-LiDAR Research group at the University of Victoria. Several sites were selected:
+
+\subsubsection{Black Canyon, Thompson River, British Columbia}
+
+This area (figure \ref{fig:thompson_map}) was surveyed by HLRG in August 2017 using a UAV and Velodyne VLP-16 LiDAR instrument. The terrain is mostly bare, except for the presence of small shrubs and trees. The average point density is $234.50points/m^2$ with a maximum of $759.00points/m^2$ and standard deviation of $110.32points/m^2$.
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/thompson_map.pdf} 
+\caption{Map of Thompson Canyon survey area showing extracted profile.}
+\label{fig:thompson_map}
+\end{figure}
+
+
+\subsubsection{Bartier Brothers Winery, Okanagan, British Columbia}
+
+This area (figure \ref{fig:bartier_map}) was surveyed by HLRG in August 2017 using a UAV and Velodyne VLP-16 LiDAR instrument. The terrain is covered with grape vines spaced at approximately $\SI{2}\m$. The average point density is $4999.73points/m^2$ with a maximum of $13612.00points/m^2$ and standard deviation of $2289.77points/m^2$. The northerly profile passes over a wind generator approximately $\SI{5}\m$ in height.
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/bartier_map.pdf} 
+\caption{Map of Bartier Brothers Winery survey area showing extracted profiles.}
+\label{fig:bartier_map}
+\end{figure}
+
+
+\subsubsection{Mount Douglas and Blenkinsop Lake, Victoria, British Columbia}
+
+This area was surveyed by HLRG using a manned aircraft and LiDAR instrument. In the Mount Douglas sector (figure \ref{fig:mt_doug_map}, northeast) the terrain is steep, covered with a mix of bare rock, mature second-growth Douglas fir and Garry Oak forests. In the Blenkinsop Lake area (figure \ref{fig:mt_doug_map}, center), there are fields of grass, second-growth Douglas fir and a small lake. Christmas Hill (figure \ref{fig:mt_doug_map}, southwest) is similar to Mount Douglas but smaller and surrounded by houses. The average point density is $5.62points/m^2$ with a maximum of $53.00points/m^2$ and standard deviation of $3.36points/m^2$. .
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\includegraphics[width=1.0\linewidth]{tmp/mt_doug_map.pdf} 
+\caption{Map of Mount Douglas, Blenkinsop Lake and Christmas Hill survey areas showing extracted profiles.}
+\label{fig:mt_doug_map}
+\end{figure}
+
+
+\begin{figure} %[htbp] % htbp stand for "here", "top", "bottom", "page"
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/mt_doug_1_profile.pdf} 
+\caption{Mt. Douglas 1} \label{subfig:mt_doug_1}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/mt_doug_2_profile.pdf} 
+\caption{Mt. Douglas 2} \label{subfig:mt_doug_2}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/swan_1_profile.pdf} 
+\caption{Christmas Hill} \label{subfig:swan_1}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/swan_2_profile.pdf} 
+\caption{Blenkinsop Lake} \label{subfig:swan_2}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/thompson_profile.pdf} 
+\caption{Black Canyon} \label{subfig:thompson}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/bartier_1_profile.pdf} 
+\caption{Bartier 1} \label{subfig:bartier_1}
+\end{subfigure}
+\begin{subfigure}[b]{\linewidth}
+\includegraphics[width=1.0\linewidth]{tmp/bartier_2_profile.pdf} 
+\caption{Bartier 2} \label{subfig:bartier_2}
+\end{subfigure}
+~
+\caption{Point cloud sections. Note the difference in scale for each. The wind generator is clearly visible in (\ref{subfig:bartier_1}).}
+\label{fig:profiles}
+\end{figure}
+
+A scanning laser will ultimately be used for building the point cloud. At its maximum range of $\SI{100}\m$, and a scan angle of $\SI{5.7}\deg$, the swath is approximately $\SI{2}\m$. Therefore, a vertical hyperplane was intersected with the point cloud and the start and end points of each line, and any point which formed an acute angle with the start and end points was preserved. The $x$-coordinate of each point was set to $0$, and the $y$-coordinate set to the Cartesian distance between it and the start point. The $z$-coordinates were unchanged. The resulting point clouds are shown in figure \ref{fig:profiles}.
+
+Each profile was subjected to the concave hull and spline algorithms above, using a variety of inputs for the smoothing parameter $s$, the segment length $\alpha$, and an exponential weight for the vertex-weighting scheme. For each trial, several statistics were collected:
+
+\begin{itemize}
+\item The number of source points found above the spline.
+\item The maximum distance from the spline to a point above it.
+\item The minimum and maximum vertical velocity.
+\item The minimum and maximum vertical acceleration.
+\item The residual.
+\end{itemize}
+
+The points above the spline are used to determine whether the fit of the spline allows surface objects to project above the aircraft's trajectory, and by how much. If this distance is too large, the fit of the spline must be improved, or the flight altitude increased.
+
+The minimum and maximum vertical velocity and acceleration serve to indicate whether the aircraft's propulsion system can produce enough force to ascend, and whether gravity is sufficient to descend, quickly enough to accomodate the trajectory. The velocity must also be within the flight controller's pre-set constraint.
+
+The residual gives some indication of how well the trajectory fits the point cloud, though this is to an extent determined by the number of points, and thus upon $\alpha$.
+
+
+\section{Results}
 
 
 
