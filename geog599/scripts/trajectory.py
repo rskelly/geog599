@@ -73,22 +73,23 @@ def trajectory(coords, smooth, weight):
 	'''
 	x = coords[:,1]
 	y = coords[:,2]
-	return UnivariateSpline(x, y, w = weight, k = 3, s = smooth)
+	spline = UnivariateSpline(x, y, w = weight, k = 3, s = smooth)
+	return spline
 
 
 
-def plot_profile(outfile, smooth, weight, alpha, coords, hull, x, alt, vel, acc):
+def plot_profile(outfile, smooth, weight, alpha, coords, hull, x, alt, vel, acc, wts):
 
 	fig = plt.figure(figsize=(12, 4))
 	ax1 = fig.add_subplot(111)
 
-	l_pts, = ax1.plot(coords[...,1], coords[...,2], 'o', color='#cccccc', ms=1)
-	l_hull, = ax1.plot(hull[...,1], hull[...,2], 'ro', ms=1)
-	l_spl, = ax1.plot(x, alt, 'g', lw=1)
+	l_pts = ax1.scatter(coords[...,1], coords[...,2], marker='.', s=1, color='#cccccc', zorder=1)
+	l_hull = ax1.scatter(hull[...,1], hull[...,2], marker='o', s=1, c=wts, zorder=1000)
+	l_spl, = ax1.plot(x, alt, 'g', lw=1, zorder=100)
 
 	ax1.set_ylabel('Elevation (m)')
 	ax1.set_xlabel('Distance (m)')
-	ax1.set_title("Smoothing Cubic Spline (smooth={s:.3f}, weight={w}, alpha={a})".format(s = smooth, w = weight, a = alpha))
+	ax1.set_title("Smoothing Cubic Spline (smooth={s:.6f}, weight={w}, alpha={a})".format(s = smooth, w = weight, a = alpha))
 	for tl in ax1.get_yticklabels():
 	    tl.set_color('g')
 
@@ -108,7 +109,7 @@ def plot_profile(outfile, smooth, weight, alpha, coords, hull, x, alt, vel, acc)
 	ymax = max(map(abs, ax3.get_ylim()))
 	ax3.set_ylim((-ymax, ymax))
 
-	plt.legend([l_spl, l_vel, l_acc], ['Altitude (m)', 'Velocity (m/s)', 'Acceleration (m/s²)'])
+	plt.legend([l_spl, l_vel, l_acc, l_hull], ['Altitude (m)', 'Velocity (m/s)', 'Acceleration ($m/s^2$)', 'Hull Vertex Weights'])
 	plt.savefig(outfile, bbox_inches='tight', format='png', dpi=300)
 	#plt.show()
 	plt.close()
@@ -185,11 +186,9 @@ def angle_weights(pts, exp = 0):
 def slope(p1, p2):
 	_, x1, y1 = p1
 	_, x2, y2 = p2
-	a = math.atan2(y1 - y2, x1 - x2)
-	if a < 0.:
-		a += math.pi * 2.
-	if a > math.pi / 2.:
-		a = abs(a - math.pi)
+	a = abs(math.atan2(y2 - y1, x2 - x1))
+	if a > math.pi / 4.:
+		a = abs(a - math.pi / 2.)
 	return a
 	
 
@@ -201,12 +200,13 @@ def slope_weights(pts, exp = 0):
 	# Get the std deviation of the points (assumes 3d).
 	std = np.std(pts[...,1])
 	
-	w = [std]
+	w = [1. / std]
 	for i in range(1, len(pts) - 1):
 		s1 = slope(pts[i - 1], pts[i])
 		s2 = slope(pts[i], pts[i + 1])
-		w.append(math.pow(1. - max(s1, s2) / (math.pi / 2.), exp) * std)
-	w.append(std)
+		q = math.pow(1. - max(s1, s2) / (math.pi / 4.), exp)
+		w.append(q / std)
+	w.append(1. / std)
 	w = np.array(w)
 	return w
 
@@ -255,114 +255,140 @@ def minimize_residual(filename):
 					
 	fmin(fn, (1., 10.), args=(coords,))
 
-def run(filename, outdir):
+def run(filename, outdir, stats, doplot = False):
 	'''
 	Run the profile with angle-based weights.
 	'''
 
-	smooth_mult = [4., 8., 16.]
-	weight_exp = [.25, .5, 1., 2., 4.]
-	alpha = [2., 5., 10., 25., 50.]
+	smooth_mult = np.geomspace(.000001, 100, 20)
+	weight_exp = [0., 1., 2., 4.]
+	alpha = [1., 2., 5., 10., 25., 50.]
 	hull_clip = 5
 	x_clip = 5
 	
-	# Try to create the output directory.
-	try:
-		os.makedirs(outdir)
-	except: pass
-
-	plot_slope_weights(os.path.join(outdir, 'slope_weights.png'))
-	
-	# Remove files from output.
-	for f in [x for x in os.listdir(outdir) if x.endswith('.png')]:
-		os.unlink(os.path.join(outdir, f))
-
 	# Template for plot output file.
 	ptpl = os.path.splitext(os.path.basename(filename))[0] + '_{s}_{a}_{w}.png'
 
 	# Load coordinates from point file.
 	coords = load_points(filename)
 	
-	# Open a stats file. This will contain stats for all runs.
-	with open(os.path.join(outdir, 'stats.csv'), 'w') as f:
-		f.write('filename,alpha,smooth,weight,coord_n,hull_n,above_n,above_max,vel_max,vel_min,acc_max,acc_min,residual\n')
+	for a in alpha:
 		
-		for a in alpha:
-			
+		try:
 			chull = hull(coords, a, hull_clip)
 			x = np.linspace(chull[0,1], chull[-1,1], 1000)[x_clip:-(x_clip + 1)]	# Regular x-coords (actually, y)
 			minx = x[0]
 			maxx = x[-1]
-			aa = str(a).replace('.', '_')
-	
-			for w in weight_exp:
-				
-				wts = slope_weights(chull, w)
-				ww = str(w).replace('.', '_')
-	
-				for s in smooth_mult:
-	
-					s = math.sqrt(2 * len(chull)) * s
-					ss = '{s:.3f}'.format(s = s).replace('.', '_')
-	
-					spline = trajectory(chull, s, wts)
-					
-					alt = spline(x, 0)								# Altitude
-					vel = spline(x, 1)								# Velocity
-					acc = spline(x, 2)								# Acceleration
-	
-					plotfile = os.path.join(outdir, ptpl.format(s = ss, a = aa, w = ww))
-	
-					plot_profile(plotfile, s, w, a, coords, chull, x, alt, vel, acc) # Clip the ends -- they tend to have outliers.
+			aa = '{a:.2f}'.format(a = a).replace('.', '_')
+		except Exception as e:
+			print(e)
+			stats.write('{f},{e}\n'.format(f = filename, e = e.__str__()))
+			continue
+			
+		for w in weight_exp:
 
-					# Look at points above the spline.
-					acoords = coords[coords[...,1] >= minx]
-					acoords = acoords[acoords[...,1] <= maxx]
-					acoords = acoords[x_clip:-(x_clip + 1)]
-					az1 = spline(acoords[...,1], ext = 2)
-					az2 = acoords[...,2]
-					
-					aboveidx = az1 < az2
-					az1 = az1[aboveidx]
-					az2 = az2[aboveidx]
-					above = az2 - az1
+			try:			
+				wts = slope_weights(chull, w)
+				ww = '{w:.3f}'.format(w = w).replace('.', '_')
+				m = len(chull)
+			except Exception as e:
+				print(e)
+				stats.write('{f},{e}\n'.format(f = filename, e = e.__str__()))
+				continue
+
+			for sn in [m - math.sqrt(2 * m), m, m + math.sqrt(2 * m)]:
+				
+				for sm in smooth_mult:
+	
+					print(sn, sm, sn*sm)
 					try:
-						above_max = np.max(above)
+						s = sm * sn
+						ss = '{s:.6f}'.format(s = s).replace('.', '_')
+		
+						spline = trajectory(chull, s, wts)
+						
+						alt = spline(x, 0)								# Altitude
+						vel = spline(x, 1)								# Velocity
+						acc = spline(x, 2)								# Acceleration
+		
+						if doplot:
+							plotfile = os.path.join(outdir, ptpl.format(s = ss, a = aa, w = ww))
+			
+							plot_profile(plotfile, s, w, a, coords, chull, x, alt, vel, acc, wts) # Clip the ends -- they tend to have outliers.
+	
+						# Look at points above the spline.
+						acoords = coords[coords[...,1] >= minx]
+						acoords = acoords[acoords[...,1] <= maxx]
+						acoords = acoords[x_clip:-(x_clip + 1)]
+						az1 = spline(acoords[...,1], ext = 2)
+						az2 = acoords[...,2]
+						
+						aboveidx = az1 < az2
+						az1 = az1[aboveidx]
+						az2 = az2[aboveidx]
+						above = az2 - az1
+						try:
+							above_max = np.max(above)
+						except Exception as e:
+							print(e)
+						above_n = len(above)
+						
+						vel = spline(acoords[...,1], nu = 1, ext = 2)
+						vel_max = np.max(vel)
+						vel_min = np.min(vel)
+						
+						acc = spline(acoords[...,1], nu = 2, ext = 2)
+						acc_max = np.max(acc)
+						acc_min = np.min(acc)
+						
+						residual = spline.get_residual()
+						
+						coord_n = len(coords)
+						hull_n = len(chull)
+						
+						stats.write(','.join(list(map(str, [filename, '', a, s, w, coord_n, hull_n, above_n, above_max, vel_max, vel_min, acc_max, acc_min, residual]))) + '\n')
+
 					except Exception as e:
 						print(e)
-					above_n = len(above)
-					
-					vel = spline(acoords[...,1], nu = 1, ext = 2)
-					vel_max = np.max(vel)
-					vel_min = np.min(vel)
-					
-					acc = spline(acoords[...,1], nu = 2, ext = 2)
-					acc_max = np.max(acc)
-					acc_min = np.min(acc)
-					
-					residual = spline.get_residual()
-					
-					coord_n = len(coords)
-					hull_n = len(chull)
-					
-					f.write(','.join(list(map(str, [filename, a, s, w, coord_n, hull_n, above_n, above_max, vel_max, vel_min, acc_max, acc_min, residual]))) + '\n')
+						stats.write('{f},{e}\n'.format(f = filename, e = e.__str__()))
 
 
-def run_profiles():
+def run_profiles(outdir):
+	
+	# Try to create the output directory.
+	try:
+		os.makedirs(outdir)
+	except: pass
+
+	#plot_slope_weights(os.path.join(outdir, 'slope_weights.png'))
+	
+	# Remove files from output.
+	for f in [x for x in os.listdir(outdir) if x.endswith('.png')]:
+		os.unlink(os.path.join(outdir, f))
+
+	# Open a stats file. This will contain stats for all runs.
+	stats = open(os.path.join(outdir, 'stats.csv'), 'w');
+	stats.write('filename,error,alpha,smooth,weight,coord_n,hull_n,above_n,above_max,vel_max,vel_min,acc_max,acc_min,residual\n')
+
 	with open('profiles.csv', 'r') as f:
 		db = csv.reader(f)
 		next(db)
 		for line in db:
 			if line[0] == '1':
 				print(line[7])
-				run(line[7], 'plots')
-				break
+				run(line[7], outdir, stats)
+				#break
 
+	stats.close()
 
 if __name__ == '__main__':
 
-	run_profiles()
+	outdir = 'plots'
+	
+	run_profiles(outdir)
 
+	#plot_slope_weights(os.path.join(outdir, 'slope_weights.png'))
+	
 	# p1 = [0, 0, 0]
 	# p2 = [0, 1, 0]
 	# p3 = [0, 1, 1]
