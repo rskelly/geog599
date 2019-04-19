@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <mutex>
 
 #include <QtWidgets/QOpenGLWidget>
 #include <QtGui/QPainter>
@@ -21,8 +22,9 @@ private:
 	void calcBounds() {
 		miny = minx = std::numeric_limits<float>::max();
 		maxy = maxx = std::numeric_limits<float>::lowest();
-		for(const DrawConfig* config : configs) {
-			for(const auto& it : config->data) {
+		for(DrawConfig* config : configs) {
+			std::lock_guard<std::mutex> lk(config->mtx);
+			for(const auto& it : config->data()) {
 				if(it.first < minx) minx = it.first;
 				if(it.first > maxx) maxx = it.first;
 				if(it.second < miny) miny = it.second;
@@ -36,7 +38,8 @@ public:
 
 	ProfileGLWidget(QWidget* parent) :
 		QOpenGLWidget(parent),
-		minx(0), miny(0), maxx(0), maxy(0), boundsSet(false) {}
+		minx(0), miny(0), maxx(0), maxy(0), boundsSet(false) {
+	}
 
 	void setBounds(double minx, double miny, double maxx, double maxy) {
 		this->minx = minx;
@@ -49,7 +52,9 @@ public:
 	void paintGL() {
 
 		if(!boundsSet)
-			calcBounds();
+			return;
+
+		QBrush bg(QColor::fromRgb(255, 255, 255, 255));
 
 		int buf = 5;
 		float dw = maxx - minx;
@@ -58,34 +63,43 @@ public:
 		if(dw > 0 && dh > 0) {
 
 			QPen pen;
-			pen.setWidth(1);
 
 			QSize size = this->size();
 			int w = size.width() - buf * 2;
 			int hh = size.height();
 			int h = hh - buf * 2;
 
-			float scale = std::min(w / dw, h / dh);
+			float zoom = 3;
+			float scale = std::min(w / dw, h / dh) * zoom;
 
 			p.begin(this);
-			for(const DrawConfig* config : configs) {
+			p.fillRect(0, 0, w, hh, bg);
+
+			for(DrawConfig* config : configs) {
 				std::vector<QPointF> pts;
-				for(const auto& it : config->data)
-					pts.emplace_back(buf + (it.first - minx) * scale, hh - buf - (it.second - miny) * scale);
+				{
+					std::lock_guard<std::mutex> lk(config->mtx);
+					const std::vector<std::pair<double, double>>& data = config->data();
+					for(const auto& it : data)
+						pts.emplace_back(buf + (it.first - minx) * scale, hh - hh / 2 + dh / 2 * scale - (it.second - miny) * scale);
+				}
 				switch(config->drawType) {
 				case DrawType::Line:
+					pen.setWidth(1);
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
 					p.setPen(pen);
 					p.drawPolyline(pts.data(), pts.size());
 					break;
 				case DrawType::Points:
+					pen.setWidth(2);
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
 					p.setPen(pen);
 					p.drawPoints(pts.data(), pts.size());
 					break;
 				case DrawType::Cross:
+					pen.setWidth(1);
 					pen.setColor(config->lineColor);
 					pen.setStyle(config->lineStyle);
 					p.setPen(pen);

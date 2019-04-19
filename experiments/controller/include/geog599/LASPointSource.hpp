@@ -27,12 +27,14 @@ namespace geog599 {
 template <class P>
 class LASPointSource : public uav::geog599::PointSource<P> {
 private:
-	liblas::Reader* m_reader;
-	std::ifstream m_stream;
-	uav::ds::Octree<P> m_tree;
-	std::list<P> m_filtered;
-	std::string m_filename;
-	bool m_loaded;
+	std::string m_filename;			///<! The filename of the las file.
+	std::ifstream m_stream;			///<! The input stream for the las file.
+	liblas::Reader* m_reader;		///<! The liblas point reader.
+	uav::ds::Octree<P> m_tree;		///<! An Octree to store the points.
+	std::list<P> m_filtered;		///<! A filtered list of points used for output.
+	bool m_loaded;					///<! True if a las file is currently loaded.
+
+	std::unordered_set<size_t> m_seen; ///<! Map to prevent duplicates. TODO: Hack.
 
 public:
 
@@ -59,6 +61,7 @@ public:
 	 * @param filename A LAS file.
 	 */
 	void load(const std::string& filename) {
+		m_seen.clear();
 		m_loaded = false;
 		m_filename = filename;
 		m_tree.reset();
@@ -105,8 +108,6 @@ public:
 		return m_tree;
 	}
 
-	std::unordered_set<size_t> _seen; // TODO: Hack to prevent duplicates.
-
 	bool next(P& pt) {
 		if(m_filtered.empty()) {
 			if(!this->m_filter)
@@ -116,8 +117,8 @@ public:
 		while(!m_filtered.empty()) {
 			pt = m_filtered.front();
 			m_filtered.pop_front();
-			if(_seen.find(pt.time()) == _seen.end()) {
-				_seen.insert(pt.time());
+			if(m_seen.find(pt.time()) == m_seen.end()) {
+				m_seen.insert(pt.time());
 				return true;
 			}
 		}

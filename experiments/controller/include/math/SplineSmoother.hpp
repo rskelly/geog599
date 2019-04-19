@@ -5,13 +5,16 @@
  *      Author: rob
  */
 
-#ifndef INCLUDE_MATH_SMOOTHSPLINE_HPP_
-#define INCLUDE_MATH_SMOOTHSPLINE_HPP_
+#ifndef INCLUDE_MATH_SPLINESMOOTHER_HPP_
+#define INCLUDE_MATH_SPLINESMOOTHER_HPP_
 
 #include <vector>
 #include <cmath>
 
-#define NOT_RUN 1000
+#include "math/Util.hpp"
+#include "math/Smoother.hpp"
+
+#define NOT_RUN 1000 // Just an error value to show that a spline hasn't been computed yet.
 
 extern "C" {
 
@@ -201,35 +204,25 @@ namespace uav {
 namespace math {
 
 /**
- * Cubic smoothing spline: S(x)
- * - 2N (6) degrees of freedom.
- * - We require that
- * 	- S(x1) = S(x2),
- * 	- S'(x1) = S'(x2) and
- * 	- S''(x1) = S'(x2).
- * - 2 criteria:
- * 	- Passes as near to ordinates as possible.
- * 	- As smooth as possible.
- * 	- S(x) = p * sum((f(x) -
- *
- *
- *
+ * Cubic smoothing spline with end constraints.
  */
 template <class P>
-class SmoothSpline {
+class SplineSmoother : public Smoother<P> {
 private:
 
-	std::vector<double> m_t;					// Knots
-	std::vector<double> m_c;					// Coefficients
+	std::vector<double> m_t;					///<! Knots
+	std::vector<double> m_c;					///<! Coefficients
+	double m_min;								///<! The minimum abscissa.
+	double m_max;								///<! The maximum abscissa.
 
-	size_t m_xidx;								// Indices for getting coordinates from the P object.
-	size_t m_yidx;
+	size_t m_xidx;								///<! Index for getting the x coordinate from the point object.
+	size_t m_yidx;								///<! Index for getting the y coordinate from the point object.
 
-	int m_k; 									// Degree
-	int m_ier;									// Error result.
-	double m_resid;								// The sum of squared residuals.
+	int m_k; 									///<! Degree of spline function.
+	double m_resid;								///<! The sum of squared residuals.
 
-	std::string m_errStr;
+	std::vector<double> m_bc;					///<! Constraints for the start of the spline.
+	std::vector<double> m_ec;					///<! Constraints for the end of the spline.
 
 public:
 
@@ -240,25 +233,46 @@ public:
 	 * @param xidx The index into each point for the x coordinate (abscissa).
 	 * @param yidx The index into each point for the y coordinate (ordinate).
 	 */
-	SmoothSpline(int order = 3, size_t xidx = 0, size_t yidx = 1) :
-		m_xidx(xidx),
-		m_yidx(yidx),
+	SplineSmoother(int order = 3, size_t xidx = 0, size_t yidx = 1) :
+		m_min(std::numeric_limits<double>::max()), m_max(std::numeric_limits<double>::lowest()),
+		m_xidx(xidx), m_yidx(yidx),
 		m_k(order),
-		m_ier(NOT_RUN),
-		m_resid(0) {}
+		m_resid(0) {
+		this->m_err = NOT_RUN;
+	}
 
+	/**
+	 * Set the index of the x-coordinate in the point object.
+	 *
+	 * @param xidx The index of the x-coordinate in the point object.
+	 */
 	void setXIndex(size_t xidx) {
 		m_xidx = xidx;
 	}
 
+	/**
+	 * Get the index of the x-coordinate in the point object.
+	 *
+	 * @return The index of the x-coordinate in the point object.
+	 */
 	size_t xIndex() const {
 		return m_xidx;
 	}
 
+	/**
+	 * Set the index of the y-coordinate in the point object.
+	 *
+	 * @param yidx The index of the y-coordinate in the point object.
+	 */
 	void setYIndex(size_t yidx) {
 		m_yidx = yidx;
 	}
 
+	/**
+	 * The index of the y-coordinate in the point object.
+	 *
+	 * @return The index of the y-coordinate in the point object.
+	 */
 	size_t yIndex() const {
 		return m_yidx;
 	}
@@ -291,49 +305,86 @@ public:
 	}
 
 	/**
-	 * Get the error result.
-	 *
-	 * @return The error result.
-	 */
-	int error() const {
-		return m_ier;
-	}
-
-	/**
-	 * Get the error message.
-	 *
-	 * @return The error message.
-	 */
-	const std::string& errorStr() const {
-		return m_errStr;
-	}
-
-	/**
 	 * Returns true if the most recent call to fit was successful.
 	 */
 	bool valid() const {
-		return m_ier <= 0;
+		return this->m_err == 0;// && this->m_err >= -2;
 	}
 
+	/**
+	 * Returns the locations of the knots of the spline.
+	 *
+	 * @return The locations of the knots of the spline.
+	 */
 	const std::vector<double>& knots() const {
 		return m_t;
 	}
 
 	/**
-	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
-	 * @param weight 	A scalar giving the weight for each data point.
-	 * @param s 		The smoothing factor.
-	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
-	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * Returns the coefficients of the spline.
+	 *
+	 * @return The coefficients of the spline.
 	 */
-	bool fit(const std::vector<P>& pts, double weight, double s,
-			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+	const std::vector<double>& coefficients() const {
+		return m_c;
+	}
 
-		std::vector<double> weights(pts.size());
-		for(size_t i = 0; i < weights.size(); ++i)
-			weights[i] = weight;
+	/**
+	 * Return the minimum abscissa value.
+	 *
+	 * @return The minimum abscissa value.
+	 */
+	double min() const {
+		return m_min;
+	}
 
-		return fit(pts, weights, s, bc, ec);
+	/**
+	 * Return the maximum abscissa value.
+	 *
+	 * @return The maximum abscissa value.
+	 */
+	double max() const {
+		return m_max;
+	}
+
+	double angle(const P& p1, const P& p2, const P& p3) {
+		double x1 = p1.y() - p2.y();
+		double y1 = p1.z() - p2.z();
+		double x2 = p3.y() - p2.y();
+		double y2 = p3.z() - p2.z();
+		double a = std::atan2(y1, x1);
+		double b = std::atan2(y2, x2);
+		a = a - b;
+		while(a < 0)
+			a += M_PI * 2;
+		while(a > M_PI * 2)
+			a -= M_PI * 3;
+		return a;
+	}
+
+	void computeWeights(const std::vector<P>& pts, std::vector<double>& weights) {
+		weights.resize(pts.size());
+		double max = 0;
+		double min = 100;
+		for(size_t i = 1; i < pts.size() - 1; ++i) {
+			double a = std::abs(angle(pts[i - 1], pts[i], pts[i + 1]));
+			if(a > max) max = a;
+			if(a < min) min = a;
+			weights[i] = a;
+		}
+		for(size_t i = 1; i < pts.size() - 1; ++i)
+			weights[i] = std::pow(2, (weights[i] - min) / (max - min) * 4);
+		weights[0] = 1;
+		weights[weights.size() - 1] = 1;
+	}
+
+	void computeSmoothing(const std::vector<P>& pts, double& smoothing) {
+		smoothing = 5;
+	}
+
+	void setConstraints(const std::vector<double>& bc, const std::vector<double>& ec) {
+		m_bc = bc;
+		m_ec = ec;
 	}
 
 	/**
@@ -343,19 +394,13 @@ public:
 	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
 	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
 	 */
-	bool fit(const std::vector<P>& pts, const std::vector<double>& weights, double s,
-			const std::vector<double>& bc = {}, const std::vector<double>& ec = {}) {
+	bool fit(const std::vector<P>& pts) {
 
-		m_errStr = "";
-		m_ier = NOT_RUN;
+		this->m_errMsg = "";
+		this->m_err = NOT_RUN;
 
-		if(pts.size() < m_k - std::max((int) bc.size() - 1, 0) - std::max((int) ec.size() - 1, 0)) {
-			m_errStr = "Too few points.";
-			return false;
-		}
-
-		if(weights.size() != pts.size()) {
-			m_errStr = "Weights and coordinates must be the same size.";
+		if(pts.size() < m_k - std::max((int) m_bc.size() - 1, 0) - std::max((int) m_ec.size() - 1, 0)) {
+			this->setError(-5, "Too few points.");
 			return false;
 		}
 
@@ -369,13 +414,15 @@ public:
 		static std::vector<double> wrk;		// Work space.
 		static std::vector<int> iwrk;		// Work space.
 
-		int ib = bc.size();			// The number of derivative constraints at beginning. Max: (k + 1) / 2
-		int ie = ec.size();			// The number of derivative constraints at end. Max: (k + 1) / 2
 		int m = pts.size();			// Number of points.
 
+		double s;					// Smoothing factor.
 		int iopt = 0;				// Smooth spline -- no previous run.
 		int idim = 1;				// Number of dimensions.
 		int k = m_k;				// Degree of spline.
+
+		int ib = std::min((k + 1) / 2, (int) m_bc.size());	// The number of derivative constraints at beginning. Max: (k + 1) / 2
+		int ie = std::min((k + 1) / 2, (int) m_ec.size());	// The number of derivative constraints at end. Max: (k + 1) / 2
 
 		int mx = m * idim;			// Dimension of x array.
 		int nest = m + k + 1;		// Estimate of number of knots for storage allotment.
@@ -390,7 +437,6 @@ public:
 
 		// Initalize the arrays.
 		u.resize(m);
-		w.resize(m);
 		x.resize(mx);
 		xx.resize(mx);
 		wrk.resize(lwrk);
@@ -401,31 +447,40 @@ public:
 		m_t.resize(nest);
 		m_c.resize(nc);
 
+		m_min = std::numeric_limits<double>::max();
+		m_max = std::numeric_limits<double>::lowest();
+
+		computeWeights(pts, w);
+		computeSmoothing(pts, s);
+
 		// Populate the points buffer.
 		for(size_t i = 0; i < pts.size(); ++i) {
-			u[i] = pts[i][m_xidx];
-			x[i] = pts[i][m_yidx];
-			w[i] = weights[i];
+			double x0 = pts[i][m_xidx];
+			double y0 = pts[i][m_yidx];
+			if(x0 < m_min) m_min = x0;
+			if(x0 > m_max) m_max = x0;
+			u[i] = x0;
+			x[i] = y0;
 		}
 
 		// Populate the constraints buffers.
 		if(ib > 0) {
 			for(int l = 0; l < ib; ++l) {
 				for(int j = 0; j < idim; ++j)
-					db[idim * l + j] = bc[l];
+					db[idim * l + j] = m_bc[l];
 			}
 		}
 		if(ie > 0) {
 			for(int l = 0; l < ie; ++l) {
 				for(int j = 0; j < idim; ++j)
-					de[idim * l + j] = ec[l];
+					de[idim * l + j] = m_ec[l];
 			}
 		}
 
 		concur_(&iopt, &idim, &m, u.data(), &mx, x.data(), xx.data(), w.data(),
 				&ib, db.data(), &nb, &ie, de.data(), &ne,
 				&k, &s, &nest, &n, m_t.data(), &nc, m_c.data(),
-				&np, cp.data(), &m_resid, wrk.data(), &lwrk, iwrk.data(), &m_ier);
+				&np, cp.data(), &m_resid, wrk.data(), &lwrk, iwrk.data(), &this->m_err);
 
 		// Trim the coef and knot arrays.
 		if(nc < m_c.size())
@@ -433,70 +488,54 @@ public:
 		if(n < m_t.size())
 			m_t.resize(n);
 
-		if(m_ier != 0)
-			std::cerr << "Error: " << m_ier << "\n";
+		std::cerr << "Resid: " << m_resid << "\n";
 
-		switch(m_ier) {
+		if(this->m_err != 0)
+			std::cerr << "Error: " << this->m_err << "\n";
+
+		switch(this->m_err) {
 		case -1:
-			m_errStr = "Interpolating spline.";
+			this->m_errMsg = "Interpolating spline.";
 			break;
 		case -2:
-			m_errStr = "Least squares spline.";
+			this->m_errMsg = "Least squares spline.";
 			break;
 		case 1:
-			m_errStr = "nest is too small.";
+			this->m_errMsg = "nest is too small.";
 			break;
 		case 2:
-			m_errStr = "s is probably too small.";
+			this->m_errMsg = "s is probably too small.";
 			break;
 		case 3:
-			m_errStr = "Maximum number of iterations exceeded. s may be too small";
+			this->m_errMsg = "Maximum number of iterations exceeded. s may be too small";
 			break;
 		case 4:
-			m_errStr = "x values are not strictly increasing.";
+			this->m_errMsg = "x values are not strictly increasing.";
 			break;
 		case 5:
-			m_errStr = "d value must be positive.";
+			this->m_errMsg = "d value must be positive.";
 			break;
 		case 10:
 			if(ib > (m_k + 1) / 2 || ie > (m_k + 1) / 2)
-				m_errStr = "Constraint array is too large.";
+				this->m_errMsg = "Constraint array is too large.";
 			if(iopt < -1 || iopt > 1)
-				m_errStr = "iopt must be in the range -1 - 1.";
+				this->m_errMsg = "iopt must be in the range -1 - 1.";
 			if(m_k < 1 || m_k > 5 || m_k % 2 == 0)
-				m_errStr = "Degree must be odd, in the range 1 - 5.";
+				this->m_errMsg = "Degree must be odd, in the range 1 - 5.";
 			if(m <= m_k)
-				m_errStr = "Number of coordinates must be larger than the degree.";
+				this->m_errMsg = "Number of coordinates must be larger than the degree.";
 			if(nest <= 2 * m_k + 2)
-				m_errStr = "Nest must be larger than 2 * k + 2.";
-			if(weights.size() != pts.size())
-				m_errStr = "Number of weights must equal number of coordinates.";
+				this->m_errMsg = "Nest must be larger than 2 * k + 2.";
+			if(w.size() != pts.size())
+				this->m_errMsg = "Number of weights must equal number of coordinates.";
 			if(lwrk < (m_k + 1) * m + nest * (7 + 3 * m_k))
-				m_errStr = "lwrk is too small.";
+				this->m_errMsg = "lwrk is too small.";
 			if(iopt == -1 && ((n < 2 * m_k + 2) || (n > std::min(nest, m + m_k + 1))))
-				m_errStr = "n is out of range.";
+				this->m_errMsg = "n is out of range.";
 			break;
 		}
 
-		return m_ier == 0;
-	}
-
-	/**
-	 * Return a list of points representing the knots and their associated
-	 * spline values (0-th derivative).
-	 *
-	 * @param kts A list of points.
-	 * @return True if successful.
-	 */
-	bool knots(std::vector<P>& kts) {
-		std::vector<double> y;
-		if(evaluate(m_t, y, 0)) {
-			kts.clear();
-			for(size_t i = 0; i < m_t.size(); ++i)
-				kts.emplace_back(0, m_t[i], y[i]);
-			return true;
-		}
-		return false;
+		return valid();
 	}
 
 	/**
@@ -513,7 +552,7 @@ public:
 		}
 		 int m = x.size();
 		 int n = m_t.size();
-		 int e = 3; // No extrapolate
+		 int e = 2; // No extrapolate
 		 int ier = NOT_RUN;
 		 y.resize(x.size());
 		 if(derivative == 0) {
@@ -522,6 +561,8 @@ public:
 			 std::vector<double> wrk(n);
 			 splder_(m_t.data(), &n, m_c.data(), &m_k, &derivative, (double*) x.data(), y.data(), &m, &e, wrk.data(), &ier);
 		 }
+		 if(ier != 0)
+			 std::cerr << "Evaluate error: " << ier << "\n";
 		 return ier == 0;
 	}
 
@@ -546,30 +587,31 @@ public:
 	}
 
 	/**
-	 * Populate the vector with regularly spaced doubles, according to count.
+	 * Return a list of the derivative values at the given location,
+	 * for the derivative orders in k (starting with zero).
 	 *
-	 * @param x0 The starting x.
-	 * @param x1 The ending x.
-	 * @param lst The output list of values.
-	 * @param count The number of items.
+	 * @param at The x-coordinate.
+	 * @param k A vector containing derivative indices.
+	 * @return A vector of derivative values.
 	 */
-	void linspace(double x0, double x1, std::vector<double>& lst, int count) {
-		lst.clear();
-		if(count <= 2) {
-			lst.push_back(x0);
-			lst.push_back(x1);
-		} else {
-			count = std::max(2, count);
-			lst.resize(count);
-			double dist = (x1 - x0) / (count - 1);
-			for(size_t i = 0; i < count - 1; ++i)
-				lst[i] = x0 + dist * i;
-			lst[count - 1] = x1;
+	std::vector<double> derivatives(double at, std::vector<int> k) {
+		if(!valid())
+			return {};
+		static std::vector<double> xx(1);
+		static std::vector<double> yy(1);
+		std::vector<double> result(k.size());
+		xx[0] = at;
+		for(size_t i = 0; i < k.size(); ++i) {
+			evaluate(xx, yy, k[i]);
+			result[i] = yy[0];
 		}
-	}};
+		return result;
+	}
+
+};
 
 } // math
 } // uav
 
 
-#endif /* INCLUDE_MATH_SMOOTHSPLINE_HPP_ */
+#endif /* INCLUDE_MATH_SPLINESMOOTHER_HPP_ */

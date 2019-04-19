@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "math/SmoothSpline.hpp"
+#include "../include/math/SplineSmoother.hpp"
 
 class Pt {
 public:
