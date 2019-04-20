@@ -77,13 +77,13 @@ void run(ProfileDialog* dlg) {
 	std::unordered_map<std::string, PipelineConfig> configs;
 	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt", 305, 10, 0.5, 1, 2, _rad(5.7)));
 	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 25, 10, 0.5, 1, 4, _rad(5.7)));
-	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
-	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 80, 10, 5, 1, 15, _rad(5.7)));
+	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 40, 10, 0.002315, 0, 10, _rad(5.7)));
+	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 90, 10, 0.002315, 0, 10, _rad(5.7)));
 	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 100, 10, 20, 1, 20, _rad(5.7)));
-	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 304, 10, 0.5, 1, 1, _rad(5.7)));
-	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 304, 10, 0.25, 1, 10, _rad(5.7)));
+	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 304, 10, 0.002610, 0, 5, _rad(5.7)));
+	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 304, 10, 0.002610, 0, 5, _rad(5.7)));
 
-	const PipelineConfig& config = configs["bart_1"];
+	const PipelineConfig& config = configs["mt_doug_1"];
 
 	std::cout << "Loading points from " << config.filename << "\n";
 	std::string ptsFile = config.filename;
@@ -232,15 +232,15 @@ void run(ProfileDialog* dlg) {
 		}
 		{
 			std::lock_guard<std::mutex> lk(alt.mtx);
-			alt.data().emplace_back(dy, dz + config.altitude);
+			//alt.data().emplace_back(dy, dz);// + config.altitude);
 		}
-		if(false) {
+		if(true) {
 			std::lock_guard<std::mutex> lk(spline.mtx);
 			spline.data().clear();
-			knots.data().clear();
+			//knots.data().clear();
 			for(const Pt& pt : salt) {
 				spline.data().emplace_back(pt.y(), pt.z());
-				knots.data().emplace_back(pt.y(), pt.z());
+				//knots.data().emplace_back(pt.y(), pt.z());
 			}
 		}
 		{
@@ -254,7 +254,7 @@ void run(ProfileDialog* dlg) {
 			surf.data().clear();
 			knots.data().clear();
 			for(const Pt& pt : tp.surface()) {
-				surf.data().emplace_back(pt.y(), pt.z());
+				//surf.data().emplace_back(pt.y(), pt.z());
 				knots.data().emplace_back(pt.y(), pt.z());
 			}
 		}

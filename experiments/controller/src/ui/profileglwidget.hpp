@@ -69,7 +69,7 @@ public:
 			int hh = size.height();
 			int h = hh - buf * 2;
 
-			float zoom = 3;
+			float zoom = 5;
 			float scale = std::min(w / dw, h / dh) * zoom;
 
 			p.begin(this);

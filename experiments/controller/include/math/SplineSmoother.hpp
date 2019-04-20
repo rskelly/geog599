@@ -224,6 +224,9 @@ private:
 	std::vector<double> m_bc;					///<! Constraints for the start of the spline.
 	std::vector<double> m_ec;					///<! Constraints for the end of the spline.
 
+	double m_weightExp;
+	double m_smoothing;
+
 public:
 
 	/**
@@ -237,7 +240,9 @@ public:
 		m_min(std::numeric_limits<double>::max()), m_max(std::numeric_limits<double>::lowest()),
 		m_xidx(xidx), m_yidx(yidx),
 		m_k(order),
-		m_resid(0) {
+		m_resid(0),
+		m_weightExp(1),
+		m_smoothing(0) {
 		this->m_err = NOT_RUN;
 	}
 
@@ -362,24 +367,50 @@ public:
 		return a;
 	}
 
-	void computeWeights(const std::vector<P>& pts, std::vector<double>& weights) {
-		weights.resize(pts.size());
-		double max = 0;
-		double min = 100;
-		for(size_t i = 1; i < pts.size() - 1; ++i) {
-			double a = std::abs(angle(pts[i - 1], pts[i], pts[i + 1]));
-			if(a > max) max = a;
-			if(a < min) min = a;
-			weights[i] = a;
-		}
-		for(size_t i = 1; i < pts.size() - 1; ++i)
-			weights[i] = std::pow(2, (weights[i] - min) / (max - min) * 4);
-		weights[0] = 1;
-		weights[weights.size() - 1] = 1;
+	double slope(const P& p1, const P& p2) {
+		double a = std::abs(std::atan2(p2.z() - p1.z(), p2.y() - p1.y()));
+		if(a > M_PI / 4)
+			a = std::abs(a - M_PI / 2.);
+		return a;
 	}
 
-	void computeSmoothing(const std::vector<P>& pts, double& smoothing) {
-		smoothing = 5;
+	double stdDev(const std::vector<P>& pts) {
+		double s = 0;
+		for(const P& p : pts)
+			s += p.z();
+		s /= pts.size();
+		double t = 0;
+		for(const P& p : pts)
+			t += std::pow(p.z() - s, 2.0);
+		return std::sqrt(t);
+	}
+
+	void setWeightExponent(double exp) {
+		m_weightExp = exp;
+	}
+
+	double weightExponent() const {
+		return m_weightExp;
+	}
+
+	void computeWeights(const std::vector<P>& pts, std::vector<double>& weights) {
+		weights.resize(pts.size());
+		double std = stdDev(pts);
+		for(size_t i = 0; i < pts.size() - 1; ++i) {
+			double s1 = slope(pts[i - 1], pts[i]);
+			double s2 = slope(pts[i], pts[i + 1]);
+			double q = std::pow(1.0 - std::max(s1, s2) / (M_PI / 4.), m_weightExp);
+			weights[i] = q / std;
+		}
+		weights[0] = weights[pts.size() - 1] = 1.0 / std;
+	}
+
+	void setSmoothing(double s) {
+		m_smoothing = s;
+	}
+
+	double smoothing() const {
+		return m_smoothing;
 	}
 
 	void setConstraints(const std::vector<double>& bc, const std::vector<double>& ec) {
@@ -388,11 +419,9 @@ public:
 	}
 
 	/**
-	 * @param pts 		A list of points with an x and y property. X is the abscissa; y is the ordinate.
-	 * @param weights	A list of weights at each data point.
-	 * @param s 		The smoothing factor.
-	 * @param bc		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
-	 * @param ec		A list of constraints, corresponding to the ith derivative at the beginning of the spline. Length between 0-k.
+	 * @param pts 			A list of points with an x and y property. X is the abscissa; y is the ordinate.
+	 * @param weightEx		An exponent to apply to the calculation of slope-based weights. If 0, weights are
+	 * 						the constant inverse of the standard deviation.
 	 */
 	bool fit(const std::vector<P>& pts) {
 
@@ -451,7 +480,7 @@ public:
 		m_max = std::numeric_limits<double>::lowest();
 
 		computeWeights(pts, w);
-		computeSmoothing(pts, s);
+		s = smoothing();
 
 		// Populate the points buffer.
 		for(size_t i = 0; i < pts.size(); ++i) {

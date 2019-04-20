@@ -256,7 +256,6 @@ private:
 	bool m_blockWise;							///!< If true, a smoother is constructed for each block.
 	std::map<int, Smoother<P>*> m_smoothers;	///!< Computes and stores the spline coefficients.
 
-
 public:
 
 	/**
@@ -478,7 +477,7 @@ public:
 	 * Build and return a smoother according to the configuration.
 	 */
 	Smoother<P>* buildSmoother() {
-		int smootherType = 0;
+		int smootherType = 1;
 		m_blockWise = false;
 		switch(smootherType) {
 		case 0:
@@ -492,12 +491,14 @@ public:
 		case 1:
 		{
 			SplineSmoother<P>* s2 = new SplineSmoother<P>(3, 1, 2);
+			s2->setSmoothing(m_smooth);
 			return s2;
 		}
 		case 2:
 		{
 			m_blockWise = true;
 			SplineSmoother<P>* s3 = new SplineSmoother<P>(3, 1, 2);
+			s3->setSmoothing(m_smooth);
 			return s3;
 		}
 		default:

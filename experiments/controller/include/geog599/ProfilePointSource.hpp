@@ -107,7 +107,7 @@ public:
 			std::string buf;
 			std::getline(input, buf);
 			size_t i = 0;
-			size_t skip = 10;
+			size_t skip = 1;
 			while(std::getline(input, buf)) {
 				if(++i % skip != 0)
 					continue;
