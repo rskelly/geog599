@@ -2,6 +2,8 @@
 
 This is a command-line program which demonstrates the use of smoothing or approximating splines for the development of a vertical trajectory for UAVs from a point cloud. This contributes to research into a forward-looking, predictive trajectory extraction program.
 
+![Profile Image](https://dijital.ca/ftp/msc/traj_screenshot.png)
+
 ## Building
 
 The usual cmake process applies:
