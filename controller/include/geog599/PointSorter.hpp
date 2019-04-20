@@ -27,8 +27,8 @@ public:
 	 *
 	 * TODO: Find a way to remember the position between calls?
 	 *
-	 * @param pt A point object. Must have a < operator on y and z.
-	 * @param pts A list of points.
+	 * \param pt A point object. Must have a < operator on y and z.
+	 * \param pts A list of points.
 	 */
 	void insert(const P& pt, std::list<P>& pts) {
 		if(pts.empty() || pt >= pts.back()) {
@@ -36,7 +36,7 @@ public:
 		} else if(pt < pts.front()) {
 			pts.push_front(pt);
 		} else {
-			auto it = pts.end();	// TODO: rbegin doesn't seem to work here.
+			auto it = pts.end();
 			do {
 				--it;
 			} while(pt < *it && it != pts.begin());

@@ -6,6 +6,9 @@
 
 #include "ui/drawconfig.hpp"
 
+/**
+ * The profile dialog window for displaying point cloud, surface and trajectory.
+ */
 class ProfileDialog : public QDialog, public Ui::ProfileDialog {
 
 	Q_OBJECT

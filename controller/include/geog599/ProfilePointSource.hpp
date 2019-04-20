@@ -16,24 +16,25 @@
 #include <Eigen/Geometry>
 
 #include "ds/Octree.hpp"
-#include "geog599/PointSource.hpp"
 
 namespace uav {
 namespace geog599 {
 
 /**
- * Reads a stream of points from a LAS file and provides the PointSource
- * interface.
+ * Reads points from a CSV file into an Octree.
+ * Provides the ability to stream points based on the intersection of a
+ * hyperplane and the point cloud. Moving the origin of the plane advances it through
+ * the cloud.
  */
 template <class P>
-class ProfilePointSource : public uav::geog599::PointSource<P> {
+class ProfilePointSource {
 private:
 	std::string m_filename;			///<! The filename of the txt file.
 	uav::ds::Octree<P> m_tree;		///<! An Octree to store the points.
-	bool m_loaded;					///<! True if a txt file is currently loaded.
-	Eigen::Vector3d m_planeNormal;
-	Eigen::Vector3d m_planeOrigin;
-	double m_maxDist;
+	bool m_loaded;					///<! True if a text file is currently loaded.
+	Eigen::Vector3d m_planeNormal;	///<! The normal of the hyperplane.
+	Eigen::Vector3d m_planeOrigin;	///<! The origin of the hyperplane.
+	double m_maxDist;				///<! The maximum distance between a returned point and the hyperplane.
 
 	std::unordered_set<size_t> m_seen; 	///<! Map to prevent duplicates. TODO: Hack.
 
@@ -42,7 +43,7 @@ public:
 	/**
 	 * Construct the ProfilePointSource using the given LAS file.
 	 *
-	 * @param filename A LAS file.
+	 * \param filename A CSV file.
 	 */
 	ProfilePointSource(const std::string& filename) :
 		ProfilePointSource() {
@@ -50,20 +51,35 @@ public:
 	}
 
 	/**
-	 * Construct and empty ProfilePointSource.
+	 * Construct an empty ProfilePointSource.
 	 */
 	ProfilePointSource() :
 		m_loaded(false),
 		m_maxDist(1) {}
 
+	/**
+	 * Set the maximum distance from a point to the hyperplane.
+	 *
+	 * \param d The maximum distance.
+	 */
 	void setMaxDist(double d) {
 		m_maxDist = d;
 	}
 
+	/**
+	 * Set the origin of the hyperplane.
+	 *
+	 * \param origin The origin of the hyperplane.
+	 */
 	void setOrigin(const Eigen::Vector3d& origin) {
 		m_planeOrigin = origin;
 	}
 
+	/**
+	 * Set the normal of the hyperplane.
+	 *
+	 * \param normal The normal of the hyperplane.
+	 */
 	void setNormal(const Eigen::Vector3d& normal) {
 		m_planeNormal = normal;
 	}
@@ -71,7 +87,7 @@ public:
 	/**
 	 * Load a point source file.
 	 *
-	 * @param filename A LAS file.
+	 * \param filename A CSV point file.
 	 */
 	void load(const std::string& filename) {
 		m_seen.clear();
@@ -118,14 +134,14 @@ public:
 				double y = atof(buf.c_str());
 				std::getline(ss, buf);
 				double z = atof(buf.c_str());
-				m_tree.add(Pt(x, y, z));
+				m_tree.add(P(x, y, z));
 			}
 		}
 		m_loaded = true;
 	}
 
 	/**
-	 * Reload the LAS file.
+	 * Reload the CSV file.
 	 */
 	void reset() {
 		if(m_loaded)
@@ -136,7 +152,7 @@ public:
 	 * Compute the bounds of the point cloud and write to the given six-element
 	 * array (xmin, xmax, ymin, ymax, zmin, zmax).
 	 *
-	 * @param bounds A six-element list to contain the point cloud bounds.
+	 * \param bounds A six-element list to contain the point cloud bounds.
 	 */
 	void computeBounds(double* bounds) {
 		if(!m_loaded)
@@ -147,7 +163,7 @@ public:
 	/**
 	 * Return a reference to the Octree used by this class.
 	 *
-	 * @param The Octree.
+	 * \param The Octree.
 	 */
 	const uav::ds::Octree<P>& octree() const {
 		return m_tree;

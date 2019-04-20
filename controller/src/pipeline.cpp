@@ -15,10 +15,8 @@
 
 #include <QtWidgets/QApplication>
 
-#include "../include/geog599/ConcaveHull.hpp"
+#include "geog599/ConcaveHull.hpp"
 #include "geog599/TrajectoryPlanner.hpp"
-#include "geog599/GeomPointFilter.hpp"
-#include "geog599/PlaneFilter.hpp"
 #include "geog599/PointSorter.hpp"
 #include "geog599/ProfilePointSource.hpp"
 
@@ -32,13 +30,14 @@
 
 using namespace uav::ds;
 using namespace uav::geog599;
-using namespace uav::geog599::filter;
 using namespace Eigen;
 
+/// Convert degrees to radians.
 double _rad(double deg) {
 	return deg * M_PI / 180.0;
 }
 
+/// Create a rotation matrix using the Euler angles.
 Matrix3d rotationMatrix(double rotX, double rotY, double rotZ) {
 	double sx = std::sin(rotX), cx = std::cos(rotX);
 	double sy = std::sin(rotY), cy = std::cos(rotY);
@@ -49,50 +48,47 @@ Matrix3d rotationMatrix(double rotX, double rotY, double rotZ) {
 	return rotz * roty * rotx;
 }
 
-class PipelineConfig {
-public:
-	std::string filename;
-	double startAltitude;
-	double altitude;
-	double smooth;
-	double weight;
-	double alpha;
-	double laserAngle;
+/// Map of pre-prepared configurations.
+std::unordered_map<std::string, PipelineConfig> configs;
 
-	PipelineConfig() :
-		PipelineConfig("", 0, 0, 0, 0, 0, 0) {}
-
-	PipelineConfig(const std::string& filename, double startAltitude, double altitude,
-			double smooth, double weight, double alpha, double laserAngle) :
-		filename(filename),
-		startAltitude(startAltitude), altitude(altitude),
-		smooth(smooth), weight(weight), alpha(alpha),
-		laserAngle(laserAngle) {}
-
-};
-
-void run(ProfileDialog* dlg) {
-
-	// Some pre-prepared configurations.
-	std::unordered_map<std::string, PipelineConfig> configs;
+// Prepared configurations.
+void initConfigs() {
 	configs.emplace("nrcan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/nrcan_4_2m.txt", 305, 10, 0.5, 1, 2, _rad(5.7)));
 	configs.emplace("swan_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_1_2m.txt", 25, 10, 0.5, 1, 4, _rad(5.7)));
 	configs.emplace("swan_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/swan_lk_2_2m.txt", 40, 10, 0.002315, 0, 10, _rad(5.7)));
 	configs.emplace("mt_doug_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_1_2m.txt", 90, 10, 0.002315, 0, 10, _rad(5.7)));
 	configs.emplace("mt_doug_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/mt_doug_2_2m.txt", 100, 10, 20, 1, 20, _rad(5.7)));
 	configs.emplace("bart_1", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_1_2m.txt", 304, 10, 0.002610, 0, 5, _rad(5.7)));
-	configs.emplace("bart_2", PipelineConfig("/home/rob/Documents/msc/data/lidar/2m_swath/VITI_D168_BART_sess12_v1_2_2m.txt", 304, 10, 0.002610, 0, 5, _rad(5.7)));
+}
 
-	const PipelineConfig& config = configs["mt_doug_1"];
+/// Run the application.
+void run(const std::string* configName, ProfileDialog* dlg) {
+
+
+	//
+	// Retrieve the config if extant.
+	//
+
+	if(configs.find(*configName) == configs.end())
+		throw std::runtime_error("No configuration for '" + *configName + "'.");
+
+	const PipelineConfig& config = configs.at(*configName);
+
+	//
+	// Load points and retrieve the Octree.
+	//
 
 	std::cout << "Loading points from " << config.filename << "\n";
 	std::string ptsFile = config.filename;
 	ProfilePointSource<Pt> tps(ptsFile);
 	const Octree<Pt>& tree = tps.octree();
 
+	//
+	// Configure the coordinate bounds and backstep distances based on the octree.
+	//
+
 	double backStepX = 0, backStepY = 0;
 	double viewx0 = 0, viewx1 = 0;
-
 	double startx, endx, starty, endy;
 	if(tree.width() > tree.length()) {
 		startx = tree.minx();
@@ -111,6 +107,11 @@ void run(ProfileDialog* dlg) {
 		viewx1 = endy;
 		viewx0 = starty;
 	}
+
+	//
+	// Configure the matrices and vectors for navigation, point selectin
+	// (via the hyper plane), laser rotation, etc.
+	//
 
 	std::cout << "Configuring matrices\n";
 
@@ -140,10 +141,12 @@ void run(ProfileDialog* dlg) {
 		planeNorm.normalize();
 	}
 
+	//
+	// Configure the various processing objects.
+	//
+
 	tps.setNormal(planeNorm);
 	tps.setMaxDist(MAX_DIST);
-
-	std::cout << "Drawing setup\n";
 
 	Pt startPt(startx, starty, altitude);
 	TrajectoryPlanner<Pt> tp(5);
@@ -152,6 +155,12 @@ void run(ProfileDialog* dlg) {
 	tp.setStartPoint(startPt);
 	tp.setAlpha(config.alpha);
 	tp.setPointSource(&tps);
+
+	//
+	// Configure the drawing objects and dialog window.
+	//
+
+	std::cout << "Drawing setup\n";
 
 	DrawConfig uav;
 	uav.setType(DrawType::Points);
@@ -187,6 +196,10 @@ void run(ProfileDialog* dlg) {
 	pd->addDrawConfig(&knots);
 	pd->addDrawConfig(&uav);
 
+	//
+	// Prepare some variables for controlling forward motion, etc.
+	//
+
 	std::cout << "Starting\n";
 
 	double distance = (end - start).norm();
@@ -201,73 +214,77 @@ void run(ProfileDialog* dlg) {
 	orig += backstep;
 	start += backstep;
 
+	// Set the initial altitude on the UAV's position info.
 	uav.data().emplace_back(0, altitude);
 
+	// Main loop.
 	while(!dlg->done) {
 
+		// Advance the UAV position by the step amount.
 		orig += step;
 
 		// Points prior to this are finalized.
 		double dy = (orig - start).norm() - backStepY;
 
+		// Set the origin of the hyperplane.
 		tps.setOrigin(orig);
 
-		if(!tp.compute(Pt(0, dy + backStepY, 0))) {	// Should be forward distance for finalization.
+		// Compute the current point cloud and trajectory.
+		// If this fails, rest and skip.
+		if(!tp.compute(Pt(0, dy + backStepY, 0))) {
 			usleep(delay);
 			continue;
 		}
 
+		// For tracking the UAV's past altitude.
 		std::list<Pt> salt;
 		tp.splineAltitude(salt, .5);
 
+		// Get the spline's altitude at the current point.
 		double dz;
 		if(!tp.splineAltitude(dy, dz) || std::isnan(dz)) {
 			dz = config.startAltitude + config.altitude;
 		}
 
+		// Set the current altitude on the UAV.
 		{
 			std::lock_guard<std::mutex> lk(uav.mtx);
 			uav.data()[0].first = dy;
 			uav.data()[0].second = dz + config.altitude;
 		}
+
+		// Set the current altitude on the UAV's elevation history (for drawing).
 		{
 			std::lock_guard<std::mutex> lk(alt.mtx);
-			//alt.data().emplace_back(dy, dz);// + config.altitude);
+			alt.data().emplace_back(dy, dz + config.altitude);
 		}
+
+		// Set the altitude of the drawable spline.
 		if(true) {
 			std::lock_guard<std::mutex> lk(spline.mtx);
 			spline.data().clear();
-			//knots.data().clear();
+			knots.data().clear();
 			for(const Pt& pt : salt) {
 				spline.data().emplace_back(pt.y(), pt.z());
-				//knots.data().emplace_back(pt.y(), pt.z());
+				knots.data().emplace_back(pt.y(), pt.z());
 			}
 		}
+
+		// Get the locations of all current and past input points.
 		{
 			std::lock_guard<std::mutex> lk(allPts.mtx);
 			allPts.data().clear();
 			for(const Pt& pt : tp.allPoints())
 				allPts.data().emplace_back(pt.y(), pt.z());
 		}
+
+		// Prepare the concave hull surface.
 		if(true){
 			std::lock_guard<std::mutex> lk(surf.mtx);
 			surf.data().clear();
-			knots.data().clear();
-			for(const Pt& pt : tp.surface()) {
-				//surf.data().emplace_back(pt.y(), pt.z());
-				knots.data().emplace_back(pt.y(), pt.z());
-			}
+			for(const Pt& pt : tp.surface())
+				surf.data().emplace_back(pt.y(), pt.z());
 		}
-		{
-			/*
-			knots.data.clear();
-			std::vector<Pt> pts = tp.knots();
-			for(const Pt& pt : pts)
-				knots.data.emplace_back(pt.y(), pt.z());
-				*/
-		}
-
-		//std::cout << tp.lastY() - dy << "\n";
 
 		double newalt;
 		if(!tp.getTrajectoryAltitude(dy, newalt) || std::isnan(newalt)) {
@@ -293,20 +310,35 @@ void run(ProfileDialog* dlg) {
 	std::cerr << "Done\n";
 }
 
-void runGui(int argc, char** argv) {
+int runGui(int argc, char** argv) {
+
+	initConfigs();
+
+	if(argc < 2) {
+		std::cerr << "Usage: pipeline <config name>\n";
+		std::cerr << "Available configurations:\n";
+		for(const auto& it : configs)
+			std::cerr << " - " << it.first << "\n";
+		return 1;
+	}
+
+	std::string configName = argv[1];
+
 	QApplication app(argc, argv);
 	QDialog w;
 	ProfileDialog p;
 	p.setupUi(&w);
 	w.show();
-	std::thread t(&run, &p);
+	std::thread t(&run, &configName, &p);
 	app.exec();
 	if(t.joinable())
 		t.join();
+
+	return 0;
 }
 
 int main(int argc, char** argv) {
 
-	runGui(argc, argv);
+	return runGui(argc, argv);
 
 }

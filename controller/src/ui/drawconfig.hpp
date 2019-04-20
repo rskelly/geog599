@@ -18,9 +18,12 @@ enum DrawType {
 	Cross
 };
 
+/**
+ * Simple class for configuring the pen for drawing in Qt.
+ */
 class DrawConfig {
 private:
-	std::vector<std::pair<double, double>> _data;
+	std::vector<std::pair<double, double>> _data;	///<! List of data points to be drawn.
 
 public:
 	Qt::PenStyle lineStyle;

@@ -13,6 +13,9 @@
 
 #include "ui/drawconfig.hpp"
 
+/**
+ * GL widget for drawing outputs.
+ */
 class ProfileGLWidget : public QOpenGLWidget {
 private:
 	QPainter p;
@@ -69,7 +72,7 @@ public:
 			int hh = size.height();
 			int h = hh - buf * 2;
 
-			float zoom = 5;
+			float zoom = 1;
 			float scale = std::min(w / dw, h / dh) * zoom;
 
 			p.begin(this);
