@@ -25,35 +25,12 @@
 
 #include "sensor/teensy.hpp"
 
-//constexpr double PI = 3.141592653589793;
-
 class Controller {
 private:
-	//sensor::ADS1115 m_adc;
-	sensor::Teensy m_scanner;
-	//sensor::MinIMU9v5 m_imu;
+	sensor::Teensy m_scanner;		// The microprocessor that controls the scanner/IMU.
 
-public:
-
-	Controller() {}
-
-	bool start() {
-		using namespace sensor;
-
-		if(!m_scanner.open("/dev/ttyACM0", B115200)) {//B921600)) {
-			std::cerr << "Failed to connect to scanner.\n";
-			return false;
-		}
-
-		return true;
-	}
-
-	void stop() {
-		m_scanner.close();
-	}
-
-	std::list<double> __range;
-	std::list<double> __angle;
+	std::list<double> m_ranges;
+	std::list<double> m_angles;
 
 	inline double __avg(std::list<double>& l) {
 		double s = 0;
@@ -66,6 +43,33 @@ public:
 		l.push_back(v);
 		if(l.size() > 5)
 			l.pop_front();
+	}
+
+
+public:
+
+	Controller() {}
+
+	/**
+	 * Start the controller. Initialize connections, etc.
+	 */
+	bool start() {
+		using namespace sensor;
+
+		// Connect to the scanner.
+		if(!m_scanner.open("/dev/ttyACM0", B115200)) {
+			std::cerr << "Failed to connect to scanner.\n";
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Stop the controller. Disconnect.
+	 */
+	void stop() {
+		m_scanner.close();
 	}
 
 	bool step(double t, std::vector<sensor::Range>& ranges, sensor::Orientation& orientation) {
@@ -97,11 +101,17 @@ int main(int argc, char** argv) {
 				break;
 			} else {
 				for(sensor::Range& r : ranges) {
-					std::cerr << "Range: " << r.range() << ", " << r.timestamp() << "\n";
+					//std::cerr << "Range: " << r.range() << ", " << r.timestamp() << "\n";
+					std::cerr << ".";
 				}
 				ranges.clear();
 
 				if(orientation.hasUpdate()) {
+					Eigen::Vector3d displ = orientation.displacement();
+					Eigen::Vector3d orient = orientation.orientation();
+					std::cerr << "Displacement: " << displ(0) << ", " << displ(1) << ", " << displ(2) << "\n";
+					std::cerr << "Orientation: " << orient(0) << ", " << orient(1) << ", " << orient(2) << "\n";
+					/*
 					Eigen::Vector3d accelBody = orientation.accel();
 
 					if(ot0 == 0) {
@@ -121,7 +131,7 @@ int main(int argc, char** argv) {
 					std::cerr << "Gyro: " << gyroBody.norm() << ", " << gyroBody[0] << ", " << gyroBody[1] << ", " << gyroBody[2] << ", " << ot1 << "\n";
 					Eigen::Vector3d accelInert = accelBody - orientI * g;
 					//std::cerr << "Accel: " << accelInert.norm() << ", " << accelInert[0] << ", " << accelInert[1] << ", " << accelInert[2] << "\n";
-					/*
+					/
 					if(ot1 - ot0 > 0) {
 						double ot = (double) (ot1 - ot0) / 1000000.0;
 						vpx += accel[0] * ot;

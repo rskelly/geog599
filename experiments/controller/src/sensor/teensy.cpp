@@ -32,11 +32,13 @@ bool Teensy::open(const std::string& dev, int speed) {
 	return Serial::open(dev, speed);
 }
 
-inline unsigned long __readULong(uint8_t* buf, size_t start) {
+inline uint64_t __readULong(uint8_t* buf, size_t start) {
 	size_t end = start + 8;
-	unsigned long u = 0;
+	uint64_t u = 0;
+	uint8_t b;
 	while(start < end) {
-		u |= (buf[start % BUFFER_SIZE] << ((end - start - 1) * 8));
+		b = buf[start % BUFFER_SIZE];
+		u |= (b << ((end - start - 1) * 8));
 		++start;
 	}
 	return u;
@@ -57,22 +59,23 @@ inline short __readShortR(uint8_t* buf, size_t start) {
 
 
 bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
-	static uint8_t buf[BUFFER_SIZE];
-	static uint8_t readBuf[BUFFER_SIZE];
-	static size_t bufIdx = 0;
-	static size_t bufEnd = 0;
-	static int mode = 0;
-	static size_t need = 3;
+	static uint8_t buf[BUFFER_SIZE];		// The buffer of all read bytes.
+	static uint8_t readBuf[BUFFER_SIZE];	// The buffer for the current read.
+	static size_t bufIdx = 0;				// The buffer pointer.
+	static size_t bufEnd = 0;				// The last index of read bytes.
+	static int mode = 0;					// The current packet read mode.
+	static size_t need = 3;					// The number of bytes required to complete the current packet.
 
-	size_t nRanges, nErrors, nIMU;
-	char headChar;
-	uint64_t time;
-	uint16_t range;
-	int16_t g0, g1, g2;
-	int16_t a0, a1, a2;
+	size_t nRanges, nErrors, nIMU;			// The number of ranges, errors or IMU reads expected.
+	char headChar;							// The current header character (R, E or I).
+	uint64_t time;							// The timestamp of the current packet.
+	uint16_t range;							// the current range value.
+	int16_t g0, g1, g2;						// The current gyro value.
+	int16_t a0, a1, a2;						// The current accel value.
 
 	while(true) {
 
+		// Read the available bytes and write them to the buffer.
 		while(bufEnd < bufIdx || (bufEnd - bufIdx) < need) {
 			std::this_thread::yield();
 			int rd = read((char *) readBuf, BUFFER_SIZE);
@@ -84,6 +87,7 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 			}
 		}
 		
+		// Start mode. Detect the beginning of a packet.
 		if(mode == 0) {
 			while(bufIdx < bufEnd) {
 				char a = buf[bufIdx % BUFFER_SIZE];		++bufIdx;
@@ -104,27 +108,34 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 			continue;
 		}
 
+		// Read the current packet.
 		if(mode == 1) {
 			while(bufIdx < bufEnd) {
 				headChar = (char) buf[bufIdx % BUFFER_SIZE];		++bufIdx;
 				switch(headChar) {
 				case 'E':
+					// Reading an error packet.
 					if(bufEnd - bufIdx < 1)
 						goto need_more;
+					// Get the number of records to read.
 					nErrors = (size_t) buf[bufIdx % BUFFER_SIZE];	++bufIdx;
 					if(bufEnd - bufIdx < nErrors * 2)
 						goto need_more;
+					// Read the errors. Each one is a short.
 					for(size_t i = 0; i < nErrors; ++i) {
 						int error = __readShort(buf, bufIdx);		bufIdx += 2;
 						std::cerr << "Error " << i << ": " << error << "\n";
 					}
 					break;
 				case 'R':
+					// Reading a range packet.
 					if(bufEnd - bufIdx < 1)
 						goto need_more;
+					// Get the number of ranges to read.
 					nRanges = (size_t) buf[bufIdx % BUFFER_SIZE];	++bufIdx;
 					if(bufEnd - bufIdx < nRanges * 10)
 						goto need_more;
+					// Read the ranges. Each one has a ushort range and a ulong time.
 					for(size_t i = 0; i < nRanges; ++i) {
 						range = __readUShort(buf, bufIdx);			bufIdx += 2;
 						time = __readULong(buf, bufIdx); 			bufIdx += 8;
@@ -132,11 +143,14 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 					}
 					break;
 				case 'I':
+					// Reading an IMU packet.
 					if(bufEnd - bufIdx < 20)
 						goto need_more;
+					// Get the number of IMU records.
 					nIMU = (size_t) buf[bufIdx % BUFFER_SIZE];	++bufIdx;
 					if(bufEnd - bufIdx < nIMU * 20)
 						goto need_more;
+					// Each IMU record has 6 short components plus a ulong time.
 					for(size_t i = 0; i < nIMU; ++i) {
 						g0 = __readShort(buf, bufIdx);		bufIdx += 2;
 						g1 = __readShort(buf, bufIdx);		bufIdx += 2;
@@ -149,12 +163,14 @@ bool Teensy::readData(std::vector<Range>& ranges, Orientation& orientation) {
 					}
 					break;
 				need_more:
+					// There's not enough data in the buffer. Read more.
 					std::cerr << "need more\n";
 					--bufIdx;
 					mode = 0;
 					need = 3;
 					return true; // TODO: Is this right?
 				default: 
+					// Nothing happened. Move to the next read.
 					--bufIdx;
 					mode = 0;
 					need = 3;

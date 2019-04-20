@@ -105,7 +105,7 @@
 
 #define CTRL_REG1  0x20 // Temp sensor enable; x and y operative mode; output data rate; fast odr; self-test
 #define CTRL_REG2  0x21 // Full-scale config; reboot memory; config/user reset function
-#define CTRL_REG3  0x22 // Low-powe mode config; spi mode select; operating mode select (continuous single etc.)
+#define CTRL_REG3  0x22 // Low-power mode config; spi mode select; operating mode select (continuous single etc.)
 #define CTRL_REG4  0x23 // z-axis operative mode select; big/little endian select.
 #define CTRL_REG5  0x24 // Fast-read; block-data update (continuous vs. no update until MSB and LSB have been read)
 
@@ -186,7 +186,7 @@
 #define AUTO_INC_OFF  0b0
 
 #define I2C_IMU_ADDR_GND 0x6A   // The device address if S0A is connected to ground.
-#define I2C_IMU_ADDR_SUP 0x6B   // The device address if S0A is connected to supply voltage.
+#define I2C_IMU_ADDR_SUP 0x6B   // The device address if S0A is connected to supply voltage. (Default)
 
 class MinIMU9v5 {
 private:
@@ -198,13 +198,13 @@ private:
   float m_accelFullScale;
 
   // Read the short out of the buffer. The low byte is first.
-  inline int16_t readShort(byte* buf, int pos) {
+  inline int16_t readShort(uint8_t* buf, int pos) {
     return buf[pos] | (buf[pos + 1] << 8);
   }
   
 public:
 
-  MinIMU9v5(byte gyroAddr = I2C_IMU_ADDR_SUP, byte magAddr = 0) :
+  MinIMU9v5(uint8_t gyroAddr = I2C_IMU_ADDR_SUP, uint8_t magAddr = 0) :
     m_gyroAddr(gyroAddr), m_magAddr(magAddr) {
   }
   
@@ -213,10 +213,38 @@ public:
     Wire.begin(I2C_MASTER, 0x00, I2C_PINS_18_19, I2C_PULLUP_INT, 400000);
     
     int err;
+
+    int wai = readByte(m_gyroAddr, G_WHO_AM_I, err);
+    if(wai != 0x69)
+      return wai;
+
+    if((err = writeByte(m_gyroAddr, CTRL4_C, 0)))
+      return err;
+
+    if((err = writeByte(m_gyroAddr, CTRL5_C, 0)))
+      return err;
+    
+    if((err = writeByte(m_gyroAddr, CTRL8_XL, 0)))
+      return err;
+
+    if((err = writeByte(m_gyroAddr, CTRL9_XL, (0b111 << 3))))
+      return err;
+    
+    if((err = writeByte(m_gyroAddr, CTRL10_C, (0b111 << 3))))
+      return err;
+
+    if((err = writeByte(m_gyroAddr, WAKE_UP_SRC, 0)))
+      return err;
+    
+    if((err = writeByte(m_gyroAddr, TAP_SRC, 0)))
+      return err;
+    
+    if((err = writeByte(m_gyroAddr, D6D_SRC, 0)))
+      return err;
     
     // Configure gyroscope
     m_gyroFullScale = 1.0 / (245.0 * 0xffff);
-    m_gyroConfig = (GDR_26Hz << 4) | (GFS_245dps << 2);
+    m_gyroConfig = (GDR_13Hz << 4) | (GFS_245dps << 2);
     if((err = writeByte(m_gyroAddr, CTRL2_G, m_gyroConfig)))
       return err;
     if((err = writeByte(m_gyroAddr, CTRL7_G, 0)))
@@ -224,14 +252,16 @@ public:
 
     // Configure accelerometr
     m_accelFullScale = 1.0 / (2.0 * 0xffff);
-    m_accelConfig = (ADR_26Hz << 4) | (AFS_2g << 2) | AAFB_400Hz;
+    m_accelConfig = (ADR_13Hz << 4) | (AFS_2g << 2) | AAFB_400Hz;
     if((err = writeByte(m_gyroAddr, CTRL1_XL, m_accelConfig)))
+      return err;
+    if((err = writeByte(m_gyroAddr, CTRL6_C, 0)))
       return err;
 
     // Configure other.
     if((err = writeByte(m_gyroAddr, CTRL3_C, (AUTO_INC_ON << 2))))
       return err;
-
+      
     return 0;
   }
 
@@ -242,15 +272,14 @@ public:
    * goes wrong.
    */
   int getState(int16_t* gyro, int16_t* accel) {
-    static byte buf[12] = {0};
+    static uint8_t buf[12] = {0};
     int pos, err = 0;
     
-    byte stat = readByte(m_gyroAddr, STATUS_REG, err);
+    uint8_t stat = readByte(m_gyroAddr, STATUS_REG, err);
     if(err)
       return err;
-    if(stat & 0b11) {
-      // Gyro and accel.
-      err = 0;
+    if(stat & 0b11) { 
+      // Both an accelerometer and gyro reading are ready.
       int r = readBytes(m_gyroAddr, OUTX_L_G, buf, 12, err);
       if(err)
         return err;
@@ -263,9 +292,11 @@ public:
         accel[1] = readShort(buf, pos);  pos += 2;
         accel[2] = readShort(buf, pos);  pos += 2;
         return 0;
+      } else {
+        return -2;
       }
     }
-    return -1;
+    return stat;
   }
 
   bool convertState(int16_t* gyro, int16_t* accel, float* gyrof, float* accelf) {
@@ -278,29 +309,36 @@ public:
     return false;
   }
 
-  byte readByte(byte addr, byte reg, int& err) {
+  uint8_t readByte(uint8_t addr, uint8_t reg, int& err) {
     err = 0;
     Wire.beginTransmission(addr);
-    Wire.write(reg);
+    if(!Wire.write(reg)) {
+      err = 100;
+      return 0;
+    }
     if((err = Wire.endTransmission(I2C_NOSTOP, 0)))
       return 0;
-    if(!Wire.requestFrom(addr, (byte) 1)) {
+    if(!Wire.requestFrom(addr, (uint8_t) 1)) {
       err = 123;
       return 0;
     }
     return Wire.read();
   }
 
-  int readBytes(byte addr, byte reg, byte* buf, int len, int& err) {
+  int readBytes(uint8_t addr, uint8_t reg, uint8_t* buf, int len, int& err) {
     err = 0;
     Wire.beginTransmission(addr);
-    Wire.write(reg);
+    if(!Wire.write(reg)) {
+      err = 101;
+      return 0;
+    }
     if((err = Wire.endTransmission(I2C_NOSTOP, 0)))
       return 0;
-    if(Wire.requestFrom(addr, (byte) len) < len) {
+    if(Wire.requestFrom(addr, (uint8_t) len) < len) {
       err = 124;
       return 0;
     }
+    /*
     unsigned long t1 = micros();
     while(Wire.available() < len) {
       if(micros() - t1 > 1000000) {
@@ -308,13 +346,14 @@ public:
         return 0;
       }
     }
+    */
     int i = 0;
     while(len--)
       buf[i++] = Wire.read();
     return i;
   }
 
-  int writeByte(byte addr, byte reg, byte val) {
+  int writeByte(uint8_t addr, uint8_t reg, uint8_t val) {
     Wire.beginTransmission(addr);
     if(!Wire.write(reg))
       return 126;
@@ -326,7 +365,7 @@ public:
     return 0;
   }
 
-  int writeBytes(byte addr, byte reg, byte* buf, int len) {
+  int writeBytes(uint8_t addr, uint8_t reg, uint8_t* buf, int len) {
     Wire.beginTransmission(addr);
     if(!Wire.write(reg))
       return 132;

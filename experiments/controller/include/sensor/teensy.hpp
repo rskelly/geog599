@@ -130,6 +130,7 @@ private:
 	uint64_t m_timestamp;
 	size_t m_count;
 	bool m_update;
+	Eigen::Vector3d m_displacement;
 
 public:
 
@@ -146,23 +147,33 @@ public:
 	void update(int16_t g0, int16_t g1, int16_t g2, 
 		int16_t a0, int16_t a1, int16_t a2, 
 		uint64_t timestamp) {
+		if(m_timestamp == 0) {
+			m_timestamp = timestamp;
+			return;
+		}
+		if(m_timestamp > timestamp) {
+
+		}
 		m_g0.add(g0);
 		m_g1.add(g1);
 		m_g2.add(g2);
 		m_a0.add(a0);
 		m_a1.add(a1);
 		m_a2.add(a2);
+		double dt = timestamp - m_timestamp;
 		m_timestamp = timestamp;
-		/*
-		if(++m_count = 100) {
+		// TODO: Apply the offsets once they're calculated. This is a primitive calibration.
+		if(++m_count == 100) {
 			m_g0.setOffset(-m_g0.value());
 			m_g1.setOffset(-m_g1.value());
 			m_g2.setOffset(-m_g2.value());
 			m_a0.setOffset(-m_a0.value());
 			m_a1.setOffset(-m_a1.value());
 			m_a2.setOffset(-m_a2.value());
+			m_displacement << 0, 0, 0;
 		}
-		*/
+		Eigen::Vector3d acc = accel();
+		m_displacement += acc / dt;
 		m_update = true;
 	}
 
@@ -182,7 +193,19 @@ public:
 		);
 	}
 	
-uint64_t timestamp() const {
+	Eigen::Vector3d displacement() const {
+		return m_displacement;
+	}
+
+	Eigen::Vector3d orientation() const {
+		return Eigen::Vector3d(
+			m_a0.value() * A_CONV,
+			m_a1.value() * A_CONV,
+			m_a2.value() * A_CONV
+		);
+	}
+
+	uint64_t timestamp() const {
 		return m_timestamp;
 	}
 

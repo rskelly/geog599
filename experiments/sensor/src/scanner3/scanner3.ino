@@ -2,17 +2,18 @@
 #include "minimu9v5.h"
 
 #define BUFFER_SIZE 512
-#define SERIAL_SIZE 255                           // Has to be a byte
+#define SERIAL_SIZE 255                           // Has to be a uint8_t
 
 #define PWM_1       23                            // PWM output pin 1
-#define LASER_SYNC  ((byte) 2)                    // Laser sync pin
+#define LASER_SYNC  ((uint8_t) 2)                    // Laser sync pin
 
-volatile unsigned long rangeTimes[BUFFER_SIZE];   // Time of next laser pulse on serial.
-volatile unsigned short ranges[BUFFER_SIZE];      // Time of next laser pulse on serial.
+volatile uint64_t rangeTimes[BUFFER_SIZE];   // Time of next laser pulse on serial.
+volatile uint16_t ranges[BUFFER_SIZE];      // Time of next laser pulse on serial.
 
-volatile size_t rangeTimeIdx = 0;
-volatile size_t rangeIdx = 0;
-volatile size_t lastIdx = 0;
+volatile uint64_t rangeTimeIdx = 0;
+volatile uint64_t rangeIdx = 0;
+volatile uint64_t lastIdx = 0;
+
 int imuStatus;                                    // If the IMU fails to initialize, set the error so the loop can deal with it.
 
 MinIMU9v5 imu;
@@ -39,48 +40,45 @@ void setup() {
   attachInterrupt(LASER_SYNC, laserSyncISR, FALLING); // Falls when the shot is taken.
 
   // Start the motor.
-  //analogWrite(PWM_1, 255);
+  analogWrite(PWM_1, 255);
   
   imuStatus = imu.init();
+
 
 }
 
 void loop() {
 
-  static byte buf[SERIAL_SIZE] = {'#', '!', 0};
-  static unsigned short errors[BUFFER_SIZE] = {0};
+  static uint8_t buf[SERIAL_SIZE] = {'#', '!', 0};
+  static uint16_t errors[BUFFER_SIZE] = {0};
   
   // The data start index is 3. 2 is where the packet length will go.
-  size_t idx = 3;
-  size_t errIdx = 0;
+  uint64_t idx = 3;
+  uint64_t errIdx = 0;
 
-  if(imuStatus) {
-    
-    addError(imuStatus, errors, errIdx);
-  
-  } else {
-
+  if(!imuStatus) {
     collectIMU(buf, idx, errors, errIdx);
     collectRanges(buf, idx, errors, errIdx);
-  
+  } else {
+    addError(imuStatus, errors, errIdx);
   }
-  
   collectErrors(buf, idx, errors, errIdx);
   
-  buf[2] = idx - 3;       // Set the number of bytes in the transmission. Excludes the three header bytes, including this count.
+  buf[2] = idx - 3;       // Set the number of int8_ts in the transmission. Excludes the three header int8_ts, including this count.
   
   Serial.write(buf, idx);
 
 }
 
-void collectErrors(byte* buf, size_t& idx, unsigned short* errors, size_t& errIdx) {
+void collectErrors(uint8_t* buf, uint64_t& idx, uint16_t* errors, uint64_t& errIdx) {
   if(errIdx && idx < SERIAL_SIZE - 2) {
     buf[idx++] = 'E';
-    size_t chIdx = idx;
-    buf[idx++] = 0;
-    size_t iCount = 0;
-    size_t i = 0;
-    while(i < errIdx && idx < SERIAL_SIZE - 2) {
+    uint64_t chIdx = idx;
+    uint8_t iCount = 0;
+    buf[idx++] = iCount;
+    
+    uint64_t i = 0;
+    while(i < errIdx && iCount < 256 && idx < SERIAL_SIZE - 2) {
       idx = writeShort(buf, idx, errors[i]);
       ++i;
       ++iCount;
@@ -91,32 +89,37 @@ void collectErrors(byte* buf, size_t& idx, unsigned short* errors, size_t& errId
 
 }
 
-void collectIMU(byte* buf, size_t& idx, unsigned short* errors, size_t& errIdx) {
+void collectIMU(uint8_t* buf, uint64_t& idx, uint16_t* errors, uint64_t& errIdx) {
 
   static int16_t gyro[3] = {0};
   static int16_t accel[3] = {0};
 
+  if(imuStatus) {
+    addError(imuStatus, errors, errIdx);
+    return;  
+  }
+
   int err;
-  size_t imuTime1, imuTime0 = micros();
+  uint64_t imuTime1 = micros();
   
   if((err = imu.getState(gyro, accel))) {
 
-    if(err != -1) // -1 indicates that a reading wasn't ready.
+    //if(err != -1) // -1 indicates that a reading wasn't ready.
       addError(err, errors, errIdx);
     
   } else {
 
-    imuTime1 = micros();
-
     if(idx < SERIAL_SIZE - 2) {
       
       buf[idx++] = 'I';
-      size_t chIdx = idx;
-      buf[idx++] = 0;
-      size_t iCount = 0;
+      uint64_t chIdx = idx;
+      uint8_t iCount = 0;
+      buf[idx++] = iCount;
+  
+      uint64_t imuTime0 = micros();
       
       // FUTURE: Loop over IMU records.
-      while(iCount == 0 && idx < SERIAL_SIZE - 20) {
+      while(iCount < 256 && idx < SERIAL_SIZE - 20) {
         idx = writeShorts(buf, idx, gyro, 3);
         idx = writeShorts(buf, idx, accel, 3);
         idx = writeULong(buf, idx, imuTime0 + (imuTime1 - imuTime0) / 2);
@@ -128,7 +131,7 @@ void collectIMU(byte* buf, size_t& idx, unsigned short* errors, size_t& errIdx) 
   }  
 }
 
-void collectRanges(byte* buf, size_t& idx, unsigned short* errors, size_t& errIdx) {
+void collectRanges(uint8_t* buf, uint64_t& idx, uint16_t* errors, uint64_t& errIdx) {
 
   // If there are ranges, collect them.
   if(rangeTimeIdx > rangeIdx)
@@ -138,11 +141,11 @@ void collectRanges(byte* buf, size_t& idx, unsigned short* errors, size_t& errId
   if(lastIdx < rangeIdx && idx < SERIAL_SIZE - 2) {
     
     buf[idx++] = 'R';     // Header marker.
-    size_t chIdx = idx;   // Save the index of the count slot (next line).
-    size_t iCount = 0;  
+    uint64_t chIdx = idx;   // Save the index of the count slot (next line).
+    uint64_t iCount = 0;  
     buf[idx++] = iCount;  // Number of ranges is initially zero.
     
-    while(lastIdx < rangeIdx && idx < SERIAL_SIZE - 10) {
+    while(lastIdx < rangeIdx && iCount < 256 && idx < SERIAL_SIZE - 10) {
       idx = writeUShort(buf, idx, ranges[lastIdx % BUFFER_SIZE]);
       idx = writeULong(buf, idx, rangeTimes[lastIdx % BUFFER_SIZE]);
       ++lastIdx;
@@ -159,18 +162,18 @@ void collectRanges(byte* buf, size_t& idx, unsigned short* errors, size_t& errId
  */
 void readRanges() {
 
-  static byte laserBuf[BUFFER_SIZE];
-  static size_t bufIdx = 0;
-  static size_t readIdx = 0;
+  static uint8_t laserBuf[BUFFER_SIZE];
+  static uint64_t bufIdx = 0;
+  static uint64_t readIdx = 0;
 
-  // Grab the current available bytes.
+  // Grab the current available uint8_ts.
   int avail = Serial1.available();
   while(--avail > 0) {
     laserBuf[bufIdx % BUFFER_SIZE] = Serial1.read();
     ++bufIdx;
   }
 
-  size_t i;
+  uint64_t i;
 
   // Turn the buffer contents into ranges.
   if(bufIdx > 0) {
@@ -196,32 +199,32 @@ void laserSyncISR() {
   ++rangeTimeIdx;
 }
 
-void addError(int err, unsigned short* errors, size_t& errIdx) {
+void addError(int err, uint16_t* errors, uint64_t& errIdx) {
   errors[errIdx] = err;
   errIdx = (errIdx + 1) % BUFFER_SIZE;
 }
 
 
-inline size_t writeULong(byte* buf, size_t pos, unsigned long v) {
-  for(size_t i = 0; i < 8; ++i)
-    buf[pos++] = (byte) ((v >> ((7 - i) * 8)) & 0xff);
+inline uint64_t writeULong(uint8_t* buf, uint64_t pos, uint64_t v) {
+  for(int i = 0; i < 8; ++i)
+    buf[pos++] = (v >> (7 - i) * 8) & 0xff;
   return pos;
 }
 
-inline size_t writeUShort(byte* buf, size_t pos, unsigned short v) {
+inline uint64_t writeUShort(uint8_t* buf, uint64_t pos, uint16_t v) {
   buf[pos++] = (v >> 8) & 0xff;
   buf[pos++] = v & 0xff;
   return pos;
 }
 
-inline size_t writeShort(byte* buf, size_t pos, short v) {
+inline uint64_t writeShort(uint8_t* buf, uint64_t pos, int16_t v) {
   buf[pos++] = (v >> 8) & 0xff;
   buf[pos++] = v & 0xff;
   return pos;
 }
 
-inline size_t writeShorts(byte* buf, size_t pos, short* v, size_t len) {
-  for(size_t i = 0; i < len; ++i) {
+inline uint64_t writeShorts(uint8_t* buf, uint64_t pos, int16_t* v, uint64_t len) {
+  for(uint64_t i = 0; i < len; ++i) {
     buf[pos++] = (v[i] >> 8) & 0xff;
     buf[pos++] = v[i] & 0xff;
   }
